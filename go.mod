@@ -2,7 +2,10 @@ module jordan-lake-scraper
 
 go 1.26.2
 
-require github.com/prometheus/client_golang v1.23.2
+require (
+	github.com/paulhankin/poker/v2 v2.0.8
+	github.com/prometheus/client_golang v1.23.2
+)
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
