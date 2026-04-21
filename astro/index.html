@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Night Sky Tonight</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦛</text></svg>">
+  <base href="/astronomy/" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>🔭 Night Sky Tonight</h1>
+    <div class="location-bar">
+      <span id="locLabel" class="location-bar__label">Loading location…</span>
+      <button type="button" id="useMyLocation" class="location-bar__button">
+        Use my location
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="highlight" id="highlight" hidden>
+      <div class="highlight__icon" id="highlightIcon">✨</div>
+      <div class="highlight__body">
+        <div class="highlight__title" id="highlightTitle">—</div>
+        <div class="highlight__detail" id="highlightDetail">—</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel__title">☀️ Sun &amp; Twilight</h2>
+      <div class="sun-grid" id="sunGrid">
+        <div class="sun-row placeholder">Loading…</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel__title">🌙 Moon</h2>
+      <div class="moon-layout">
+        <div class="moon-svg-wrap">
+          <svg id="moonSvg" class="moon-svg" viewBox="-60 -60 120 120"
+               aria-hidden="true"></svg>
+        </div>
+        <div class="moon-info" id="moonInfo">
+          <div class="moon-info__row placeholder">Loading…</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel__title">🛰️ ISS Passes (next 48h)</h2>
+      <div class="passes-wrap">
+        <table class="passes" id="passesTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Start</th>
+              <th>Peak</th>
+              <th>Peak Alt</th>
+              <th>Direction</th>
+              <th>Duration</th>
+            </tr>
+          </thead>
+          <tbody id="passesBody">
+            <tr><td colspan="6" class="placeholder">Loading…</td></tr>
+          </tbody>
+        </table>
+        <div id="passesEmpty" class="passes-empty" hidden>
+          No good ISS passes in the next 48 hours.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      Computed locally · ISS via
+      <a href="https://celestrak.org" target="_blank" rel="noopener">Celestrak</a>
+      TLE · sun/moon via Meeus formulas ·
+      <a href="/">Home</a>
+    </p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
