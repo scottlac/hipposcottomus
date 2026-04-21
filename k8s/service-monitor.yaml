@@ -1,0 +1,18 @@
+---
+# ServiceMonitor is a Prometheus Operator CRD. If the operator isn't
+# installed on the cluster, this resource is skipped by the deploy
+# workflow (see .github/workflows/deploy.yml).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: jordan-lake-scraper
+  labels:
+    app: jordan-lake-scraper
+spec:
+  selector:
+    matchLabels:
+      app: jordan-lake-scraper
+  endpoints:
+    - port: metrics
+      interval: 60s
+      path: /metrics
