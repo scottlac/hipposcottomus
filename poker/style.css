@@ -252,7 +252,7 @@ main {
   color: var(--accent-green);
 }
 
-.result__spinner {
+.result__spinner:not([hidden]) {
   position: absolute;
   inset: 0;
   display: flex;
