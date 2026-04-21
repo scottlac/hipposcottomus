@@ -32,6 +32,7 @@
     clearAll:     document.getElementById("clearAll"),
     resultPrompt: document.getElementById("resultPrompt"),
     resultContent:document.querySelector(".result__content"),
+    ringWrap:     document.querySelector(".result__ring-wrap"),
     winPct:       document.getElementById("winPct"),
     ringFg:       document.getElementById("ringFg"),
     spinner:      document.getElementById("spinner"),
@@ -263,6 +264,14 @@
     el.resultContent.hidden = true;
   }
 
+  function tierFor(winProb) {
+    const pct = winProb * 100;
+    if (pct >= 50) return "green";
+    if (pct >= 25) return "yellow";
+    if (pct >= 10) return "red";
+    return "purple";
+  }
+
   function showResult(data) {
     el.resultPrompt.hidden = true;
     el.resultContent.hidden = false;
@@ -274,6 +283,9 @@
     el.winValue.textContent = winPct + "%";
     el.tieValue.textContent = tiePct + "%";
     el.handDesc.textContent = data.handDescription || "—";
+
+    const tier = tierFor(data.winProbability);
+    el.ringWrap.dataset.tier = tier;
 
     const dashOffset = RING_CIRC * (1 - data.winProbability);
     el.ringFg.style.strokeDashoffset = dashOffset.toString();
