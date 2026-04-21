@@ -49,6 +49,14 @@ jobs:
       - name: Apply manifests
         run: kubectl apply -f k8s/manifests.yaml
 
+      - name: Apply ServiceMonitor (if Prometheus Operator is installed)
+        run: |
+          if kubectl get crd servicemonitors.monitoring.coreos.com >/dev/null 2>&1; then
+            kubectl apply -f k8s/service-monitor.yaml
+          else
+            echo "Prometheus Operator CRDs not installed; skipping ServiceMonitor."
+          fi
+
       - name: Roll out new image
         run: |
           kubectl set image deployment/${{ env.DEPLOYMENT }} \
