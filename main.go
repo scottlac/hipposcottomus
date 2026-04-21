@@ -53,7 +53,7 @@ func getDataDir() string {
 	return defaultDataDir
 }
 
-//go:embed static home
+//go:embed static home poker
 var content embed.FS
 
 // DataPoint holds a single date-keyed reading (one per day).
@@ -532,6 +532,9 @@ func main() {
 
 	// --- Ft Lauderdale dashboard ---
 	InitFTL(mux)
+
+	// --- Poker equity calculator ---
+	InitPoker(mux)
 
 	// --- Prometheus metrics (stays at root for scraping) ---
 	mux.Handle("/metrics", promhttp.Handler())
