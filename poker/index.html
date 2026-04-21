@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hold'em Equity Calculator</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦛</text></svg>">
+  <base href="/poker/" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>🂡 Hold'em Equity Calculator</h1>
+    <p class="subtitle">Tap cards to pick your hand &amp; the board</p>
+  </header>
+
+  <main>
+    <section class="selections">
+      <div class="selection-group">
+        <div class="selection-group__label">
+          Your Hand <span id="handCount">(0/2)</span>
+        </div>
+        <div class="selection-display" id="handDisplay">
+          <div class="selection-empty">Tap a card to add it</div>
+        </div>
+      </div>
+
+      <div class="selection-group">
+        <div class="selection-group__label">
+          Board <span id="boardCount">(0/5)</span>
+        </div>
+        <div class="selection-display" id="boardDisplay">
+          <div class="selection-empty">No community cards yet</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="controls">
+      <label class="control">
+        <span class="control__label">Players</span>
+        <select id="numPlayers" class="control__input">
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6" selected>6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+        </select>
+      </label>
+      <button type="button" id="clearAll" class="control__button">Clear All</button>
+    </section>
+
+    <section class="result" id="result">
+      <div class="result__prompt" id="resultPrompt">Select your 2 hole cards to begin</div>
+      <div class="result__content" hidden>
+        <div class="result__ring-wrap">
+          <svg class="result__ring" viewBox="0 0 120 120">
+            <circle class="result__ring-bg" cx="60" cy="60" r="52" />
+            <circle class="result__ring-fg" cx="60" cy="60" r="52" id="ringFg" />
+          </svg>
+          <div class="result__percent" id="winPct">—</div>
+          <div class="result__spinner" id="spinner" hidden></div>
+        </div>
+        <div class="result__details">
+          <div class="result__row">
+            <span class="result__label">Win</span>
+            <span class="result__value result__value--win" id="winValue">—</span>
+          </div>
+          <div class="result__row">
+            <span class="result__label">Tie</span>
+            <span class="result__value result__value--tie" id="tieValue">—</span>
+          </div>
+          <div class="result__row">
+            <span class="result__label">Current hand</span>
+            <span class="result__value" id="handDesc">—</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="picker">
+      <div class="picker__legend">
+        <span class="legend legend--hand"><span class="legend__swatch"></span>Your Hand</span>
+        <span class="legend legend--board"><span class="legend__swatch"></span>Board</span>
+      </div>
+      <div class="suits" id="suits"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      Equity via Monte Carlo · evaluator:
+      <a href="https://github.com/paulhankin/poker" target="_blank" rel="noopener">paulhankin/poker</a>
+      · <a href="/">Home</a>
+    </p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
