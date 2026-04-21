@@ -16,8 +16,10 @@
   --text-muted: #94a3b8;
   --accent-blue: #38bdf8;
   --accent-green: #4ade80;
+  --accent-yellow: #facc15;
   --accent-red: #f87171;
   --accent-orange: #fb923c;
+  --accent-purple: #c084fc;
   --card-face: #f8fafc;
   --card-face-dim: #cbd5e1;
   --card-ink-black: #0f172a;
@@ -225,7 +227,13 @@ main {
   position: relative;
   width: 120px;
   height: 120px;
+  --tier: var(--accent-green);
 }
+
+.result__ring-wrap[data-tier="green"]  { --tier: var(--accent-green); }
+.result__ring-wrap[data-tier="yellow"] { --tier: var(--accent-yellow); }
+.result__ring-wrap[data-tier="red"]    { --tier: var(--accent-red); }
+.result__ring-wrap[data-tier="purple"] { --tier: var(--accent-purple); }
 
 .result__ring {
   width: 120px;
@@ -241,12 +249,12 @@ main {
 
 .result__ring-fg {
   fill: none;
-  stroke: var(--accent-green);
+  stroke: var(--tier);
   stroke-width: 10;
   stroke-linecap: round;
   stroke-dasharray: 326.73;
   stroke-dashoffset: 326.73;
-  transition: stroke-dashoffset 0.4s ease;
+  transition: stroke-dashoffset 0.4s ease, stroke 0.3s ease;
 }
 
 .result__percent {
@@ -257,7 +265,8 @@ main {
   justify-content: center;
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--accent-green);
+  color: var(--tier);
+  transition: color 0.3s ease;
 }
 
 .result__spinner:not([hidden]) {
