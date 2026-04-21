@@ -68,3 +68,19 @@ jobs:
       - name: Show pods
         if: always()
         run: kubectl get pods -l app=${{ env.DEPLOYMENT }} -o wide
+
+      - name: Show pod logs on failure
+        if: failure()
+        run: |
+          echo "=== Deployment status ==="
+          kubectl describe deployment/${{ env.DEPLOYMENT }} || true
+          echo "=== Pods ==="
+          kubectl get pods -l app=${{ env.DEPLOYMENT }} -o wide || true
+          for POD in $(kubectl get pods -l app=${{ env.DEPLOYMENT }} -o jsonpath='{.items[*].metadata.name}'); do
+            echo "=== describe $POD ==="
+            kubectl describe pod "$POD" || true
+            echo "=== logs $POD (current) ==="
+            kubectl logs "$POD" --all-containers --tail=200 || true
+            echo "=== logs $POD (previous) ==="
+            kubectl logs "$POD" --all-containers --previous --tail=200 || true
+          done
