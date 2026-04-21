@@ -2,6 +2,7 @@
   "use strict";
 
   const RANKS = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+  const displayRank = (r) => (r === "T" ? "10" : r);
   const SUITS = [
     { code: "s", glyph: "♠", name: "Spades",   color: "black" },
     { code: "h", glyph: "♥", name: "Hearts",   color: "red"   },
@@ -67,7 +68,7 @@
 
         const r = document.createElement("span");
         r.className = "mini-card__rank";
-        r.textContent = rank;
+        r.textContent = displayRank(rank);
         const s = document.createElement("span");
         s.className = "mini-card__suit";
         s.textContent = suit.glyph;
@@ -150,7 +151,7 @@
 
     const r = document.createElement("span");
     r.className = "card-big__rank";
-    r.textContent = rank;
+    r.textContent = displayRank(rank);
     const s = document.createElement("span");
     s.className = "card-big__suit";
     s.textContent = suit.glyph;
