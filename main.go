@@ -536,6 +536,9 @@ func main() {
 	// --- Poker equity calculator ---
 	InitPoker(mux)
 
+	// --- Night Sky astronomy dashboard ---
+	InitAstro(mux)
+
 	// --- Prometheus metrics (stays at root for scraping) ---
 	mux.Handle("/metrics", promhttp.Handler())
 
