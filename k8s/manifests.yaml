@@ -1,0 +1,160 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jordan-lake-scraper
+  labels:
+    app: jordan-lake-scraper
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: jordan-lake-scraper
+  template:
+    metadata:
+      labels:
+        app: jordan-lake-scraper
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: scraper
+          image: registry.digitalocean.com/jordan-lake-registry/jordan-lake-scraper:latest
+          ports:
+            - containerPort: 8080
+              name: metrics
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "64Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: jordan-lake-scraper-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jordan-lake-scraper-data
+  labels:
+    app: jordan-lake-scraper
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: do-block-storage
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jordan-lake-scraper
+  labels:
+    app: jordan-lake-scraper
+spec:
+  type: ClusterIP
+  selector:
+    app: jordan-lake-scraper
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: jordan-lake-scraper
+  labels:
+    app: jordan-lake-scraper
+spec:
+  selector:
+    matchLabels:
+      app: jordan-lake-scraper
+  endpoints:
+    - port: metrics
+      interval: 60s
+      path: /metrics
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jordan-lake-scraper
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - hipposcottomus.com
+      secretName: hipposcottomus-tls
+  rules:
+    - host: hipposcottomus.com
+      http:
+        paths:
+          - path: /lakedashboard
+            pathType: Prefix
+            backend:
+              service:
+                name: jordan-lake-scraper
+                port:
+                  number: 8080
+          - path: /ftlauderdale
+            pathType: Prefix
+            backend:
+              service:
+                name: jordan-lake-scraper
+                port:
+                  number: 8080
+          - path: /healthz
+            pathType: Exact
+            backend:
+              service:
+                name: jordan-lake-scraper
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: jordan-lake-scraper
+                port:
+                  number: 8080
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: scott@hipposcottomus.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-key
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
