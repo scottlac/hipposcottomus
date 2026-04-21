@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ft. Lauderdale Boating Dashboard</title>
+  <base href="/ftlauderdale/" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>⚓ Ft. Lauderdale Boating Dashboard</h1>
+    <p class="subtitle">Tides · Weather · Marine Forecast — Bahia Mar, FL</p>
+  </header>
+
+  <main>
+    <!-- Current-value cards -->
+    <section class="cards">
+      <div class="card card--tide">
+        <div class="card__icon">🌊</div>
+        <div class="card__body">
+          <span class="card__label">Next Tide</span>
+          <span class="card__value" id="nextTideType">—</span>
+          <span class="card__unit" id="nextTideDetail"></span>
+        </div>
+        <div class="card__updated" id="nextTideTime"></div>
+      </div>
+      <div class="card card--temp">
+        <div class="card__icon">🌡️</div>
+        <div class="card__body">
+          <span class="card__label">Water Temperature</span>
+          <span class="card__value" id="waterTemp">—</span>
+          <span class="card__unit">°F</span>
+        </div>
+      </div>
+      <div class="card card--weather">
+        <div class="card__icon" id="weatherIcon">☀️</div>
+        <div class="card__body">
+          <span class="card__label">Current Conditions</span>
+          <span class="card__value" id="airTemp">—</span>
+          <span class="card__unit">°F <span id="weatherDesc"></span></span>
+        </div>
+      </div>
+      <div class="card card--wind">
+        <div class="card__icon">💨</div>
+        <div class="card__body">
+          <span class="card__label">Wind</span>
+          <span class="card__value" id="windSpeed">—</span>
+          <span class="card__unit" id="windDir"></span>
+        </div>
+        <div class="wind-compass" id="windCompass">
+          <div class="wind-compass__ring">
+            <span class="wind-compass__label" style="top:2px;left:50%;transform:translateX(-50%)">N</span>
+            <span class="wind-compass__label" style="top:50%;right:2px;transform:translateY(-50%)">E</span>
+            <span class="wind-compass__label" style="bottom:2px;left:50%;transform:translateX(-50%)">S</span>
+            <span class="wind-compass__label" style="top:50%;left:2px;transform:translateY(-50%)">W</span>
+            <div class="wind-compass__arrow" id="windArrow"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tide Schedule -->
+    <section class="tide-schedule">
+      <h2>Upcoming Tides</h2>
+      <div class="tide-schedule__list" id="tideSchedule"></div>
+    </section>
+
+    <!-- Charts -->
+    <section class="charts">
+      <div class="chart-container">
+        <h2>Tide Predictions (48 h)</h2>
+        <canvas id="tideChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <h2>Wind Speed (next 24 h)</h2>
+        <canvas id="windChart"></canvas>
+      </div>
+    </section>
+
+    <!-- 7-day Forecast -->
+    <section class="forecast" id="forecastSection">
+      <h2>7-Day Forecast</h2>
+      <div class="forecast__grid" id="forecastGrid"></div>
+    </section>
+
+    <!-- Marine Forecast -->
+    <section class="marine-forecast">
+      <h2>🚢 Marine Forecast — Deerfield Beach to Ocean Reef</h2>
+      <pre class="marine-forecast__text" id="marineForecast">Loading…</pre>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      Tide data: <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722939" target="_blank">NOAA Station 8722939</a>
+      · Weather: <a href="https://weather.gov" target="_blank">NWS</a>
+      · Marine: <a href="https://www.ndbc.noaa.gov/data/Forecasts/FZUS52.KMFL.html" target="_blank">NDBC FZUS52</a>
+      · <a href="/lakedashboard/">Jordan Lake Dashboard</a>
+    </p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

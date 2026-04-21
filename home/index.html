@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>hipposcottomus</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --border: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --blue: #38bdf8;
+      --orange: #fb923c;
+      --green: #4ade80;
+      --radius: 16px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .hero h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+    }
+
+    .hero h1 span { color: var(--blue); }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      max-width: 700px;
+      width: 100%;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem 1.5rem;
+      text-decoration: none;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: var(--blue);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 4px;
+    }
+
+    .card--lake::before { background: linear-gradient(90deg, var(--blue), var(--green)); }
+    .card--ftl::before  { background: linear-gradient(90deg, var(--orange), var(--blue)); }
+
+    .card__icon { font-size: 2.5rem; }
+
+    .card__title {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .card__desc {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .card__arrow {
+      color: var(--blue);
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-top: auto;
+    }
+
+    footer {
+      margin-top: 3rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    footer a {
+      color: var(--blue);
+      text-decoration: none;
+    }
+
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 480px) {
+      .hero h1 { font-size: 1.75rem; }
+      .cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <h1>🦛 hippo<span>scottomus</span></h1>
+    <p>Dashboards &amp; projects by Scott</p>
+  </div>
+
+  <div class="cards">
+    <a href="/lakedashboard/" class="card card--lake">
+      <div class="card__icon">🌊</div>
+      <div class="card__title">Jordan Lake Dashboard</div>
+      <div class="card__desc">
+        Live water temperature, level history, weather forecast, and wind conditions for B. Everett Jordan Lake, NC.
+      </div>
+      <div class="card__arrow">View dashboard →</div>
+    </a>
+
+    <a href="/ftlauderdale/" class="card card--ftl">
+      <div class="card__icon">⚓</div>
+      <div class="card__title">Ft. Lauderdale Boating</div>
+      <div class="card__desc">
+        Tide predictions, water temperature, marine forecast, and wind for boating off Fort Lauderdale, FL.
+      </div>
+      <div class="card__arrow">View dashboard →</div>
+    </a>
+  </div>
+
+  <footer>
+    <p>Built with Go, Chart.js &amp; ☕ · Hosted on DigitalOcean</p>
+  </footer>
+</body>
+</html>
