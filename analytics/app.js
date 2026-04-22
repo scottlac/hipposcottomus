@@ -276,15 +276,18 @@ function renderMap(data) {
 
   if (heatLayer) leafletMap.removeLayer(heatLayer);
   heatLayer = L.heatLayer(points, {
-    radius: 22,
-    blur: 18,
-    maxZoom: 6,
+    radius: 32,
+    blur: 22,
+    maxZoom: 10,
     max: 1.0,
+    // Floor opacity so even a single low-count bucket is visible at
+    // world-zoom levels.
+    minOpacity: 0.45,
     gradient: {
-      0.2: "#38bdf8",
-      0.4: "#c084fc",
+      0.0: "#38bdf8",
+      0.3: "#c084fc",
       0.6: "#fb923c",
-      0.8: "#f87171",
+      0.85: "#f87171",
       1.0: "#facc15",
     },
   }).addTo(leafletMap);
