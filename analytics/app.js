@@ -223,6 +223,73 @@ function renderRuntime(data) {
   `;
 }
 
+let leafletMap;
+let heatLayer;
+let mapDisabledNote;
+
+function renderMap(data) {
+  const container = document.getElementById("map");
+
+  if (!data.geoEnabled) {
+    if (!mapDisabledNote) {
+      container.innerHTML = `
+        <div class="map__disabled">
+          <p class="muted">
+            Geo lookup is disabled on this server — the MaxMind GeoLite2 City
+            DB is not loaded. The map will appear here once the initContainer
+            has downloaded the DB.
+          </p>
+        </div>`;
+      mapDisabledNote = true;
+    }
+    return;
+  }
+
+  // Lazy-init the map + tile layer on the first enabled render.
+  if (!leafletMap) {
+    container.innerHTML = "";
+    mapDisabledNote = false;
+    leafletMap = L.map(container, {
+      attributionControl: true,
+      worldCopyJump: true,
+      minZoom: 1,
+    }).setView([20, 0], 2);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      maxZoom: 19,
+    }).addTo(leafletMap);
+  }
+
+  const raw = data.cityHeatmap || [];
+  if (raw.length === 0) {
+    if (heatLayer) {
+      leafletMap.removeLayer(heatLayer);
+      heatLayer = null;
+    }
+    return;
+  }
+
+  // Normalize intensity to [0, 1] so the heatmap gradient scales sensibly
+  // regardless of absolute traffic volume.
+  const maxCount = raw.reduce((m, p) => Math.max(m, p.count), 1);
+  const points = raw.map((p) => [p.lat, p.lon, p.count / maxCount]);
+
+  if (heatLayer) leafletMap.removeLayer(heatLayer);
+  heatLayer = L.heatLayer(points, {
+    radius: 22,
+    blur: 18,
+    maxZoom: 6,
+    max: 1.0,
+    gradient: {
+      0.2: "#38bdf8",
+      0.4: "#c084fc",
+      0.6: "#fb923c",
+      0.8: "#f87171",
+      1.0: "#facc15",
+    },
+  }).addTo(leafletMap);
+}
+
 function renderCountries(data) {
   const container = document.getElementById("countries");
   if (!data.geoEnabled) {
@@ -275,6 +342,7 @@ async function refresh() {
     renderPageViewsChart(data);
     renderAPIHealth(data);
     renderHeatmap(data);
+    renderMap(data);
     renderCountries(data);
     renderRuntime(data);
   } catch (err) {

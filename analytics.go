@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"log"
 	"net"
@@ -11,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -24,10 +26,14 @@ const (
 	analyticsSaveInterval  = 5 * time.Minute
 	analyticsErrTruncateAt = 200
 
-	// Default path for the MaxMind GeoLite2 Country DB. Override with
+	// Default path for the MaxMind GeoLite2 City DB. Override with
 	// GEOIP_DB env var. If the file is missing, geo tracking is silently
 	// disabled — analytics still work.
-	defaultGeoIPDB = "/data/GeoLite2-Country.mmdb"
+	defaultGeoIPDB = "/data/GeoLite2-City.mmdb"
+
+	// Coordinates are rounded to 1 decimal place (~11km at the equator)
+	// before being stored as bucket counters. Raw lat/lon is never persisted.
+	cityHeatmapPrecision = 1
 )
 
 //go:embed analytics
@@ -72,13 +78,19 @@ type Analytics struct {
 	// Only country codes are stored — never IPs. "??" is used for lookups
 	// that fail (private IPs, DB gaps, etc.).
 	Countries map[string]int64 `json:"countries"`
+
+	// CityHeatmap[bucket] = count. bucket is "lat,lon" rounded to
+	// cityHeatmapPrecision decimal places. Raw coordinates are never
+	// persisted — only the bucket aggregate.
+	CityHeatmap map[string]int64 `json:"cityHeatmap"`
 }
 
 var analytics = &Analytics{
-	StartedAt: time.Now(),
-	PageViews: map[string]map[string]int64{},
-	APIHealth: map[string]*APIHealthEntry{},
-	Countries: map[string]int64{},
+	StartedAt:   time.Now(),
+	PageViews:   map[string]map[string]int64{},
+	APIHealth:   map[string]*APIHealthEntry{},
+	Countries:   map[string]int64{},
+	CityHeatmap: map[string]int64{},
 }
 
 // geoDB is loaded on startup if the MMDB file exists; nil otherwise.
@@ -87,9 +99,14 @@ var (
 	geoEnabled bool
 )
 
+// geoLookup holds the aggregated, privacy-safe outputs of a City DB lookup.
+type geoLookup struct {
+	country string // ISO-3166-1 alpha-2 code; "" if unknown.
+	bucket  string // "lat,lon" rounded to cityHeatmapPrecision; "" if no coords.
+}
+
 // RecordPageView increments counters for a request path if it is tracked.
-// country is the ISO-3166-1 alpha-2 code (e.g. "US") or "" if unknown.
-func (a *Analytics) RecordPageView(path, country string) {
+func (a *Analytics) RecordPageView(path string, geo geoLookup) {
 	kind, ok := trackedPaths[path]
 	if !ok {
 		return
@@ -104,11 +121,14 @@ func (a *Analytics) RecordPageView(path, country string) {
 	a.PageViews[kind][date]++
 	a.Heatmap[int(now.Weekday())][now.Hour()]++
 	if geoEnabled {
-		key := country
+		key := geo.country
 		if key == "" {
 			key = "??"
 		}
 		a.Countries[key]++
+		if geo.bucket != "" {
+			a.CityHeatmap[geo.bucket]++
+		}
 	}
 }
 
@@ -135,17 +155,31 @@ func clientIP(r *http.Request) net.IP {
 	return net.ParseIP(host)
 }
 
-// lookupCountry returns the ISO-3166-1 alpha-2 country code for an IP, or ""
-// if geo is disabled or the lookup fails.
-func lookupCountry(ip net.IP) string {
+// lookupGeo resolves an IP to a country code and a rounded lat/lon bucket.
+// Returns the zero value (both fields "") if geo is disabled, the lookup
+// fails, or the City record has no usable coordinates. The raw IP is never
+// stored — only the aggregate labels returned here.
+func lookupGeo(ip net.IP) geoLookup {
+	var out geoLookup
 	if !geoEnabled || ip == nil {
-		return ""
+		return out
 	}
-	rec, err := geoDB.Country(ip)
+	rec, err := geoDB.City(ip)
 	if err != nil {
-		return ""
+		return out
 	}
-	return rec.Country.IsoCode
+	out.country = rec.Country.IsoCode
+	lat := rec.Location.Latitude
+	lon := rec.Location.Longitude
+	// Null island (0, 0) is the default when the DB has no coords — drop it.
+	if lat == 0 && lon == 0 {
+		return out
+	}
+	// Round to cityHeatmapPrecision decimal places; this is the only form
+	// in which coordinates are ever stored.
+	format := fmt.Sprintf("%%.%df,%%.%df", cityHeatmapPrecision, cityHeatmapPrecision)
+	out.bucket = fmt.Sprintf(format, lat, lon)
+	return out
 }
 
 // TrackAPICall records a success or failure for an external API fetch.
@@ -215,6 +249,9 @@ func (a *Analytics) LoadFromFile() error {
 	if loaded.Countries != nil {
 		a.Countries = loaded.Countries
 	}
+	if loaded.CityHeatmap != nil {
+		a.CityHeatmap = loaded.CityHeatmap
+	}
 	return nil
 }
 
@@ -255,11 +292,11 @@ func analyticsPersistLoop() {
 // trackedPaths and counted if it matches.
 func analyticsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var country string
+		var geo geoLookup
 		if _, tracked := trackedPaths[r.URL.Path]; tracked && geoEnabled {
-			country = lookupCountry(clientIP(r))
+			geo = lookupGeo(clientIP(r))
 		}
-		analytics.RecordPageView(r.URL.Path, country)
+		analytics.RecordPageView(r.URL.Path, geo)
 		next.ServeHTTP(w, r)
 	})
 }
@@ -309,15 +346,22 @@ type countryCount struct {
 	Count int64  `json:"count"`
 }
 
+type heatPoint struct {
+	Lat   float64 `json:"lat"`
+	Lon   float64 `json:"lon"`
+	Count int64   `json:"count"`
+}
+
 type analyticsOverview struct {
-	StartedAt  time.Time                  `json:"startedAt"`
-	UptimeSec  int64                      `json:"uptimeSec"`
-	Series     []pageViewSeries           `json:"series"`
-	Heatmap    [7][24]int64               `json:"heatmap"`
-	APIHealth  map[string]*APIHealthEntry `json:"apiHealth"`
-	Runtime    runtimeStats               `json:"runtime"`
-	Countries  []countryCount             `json:"countries"`
-	GeoEnabled bool                       `json:"geoEnabled"`
+	StartedAt   time.Time                  `json:"startedAt"`
+	UptimeSec   int64                      `json:"uptimeSec"`
+	Series      []pageViewSeries           `json:"series"`
+	Heatmap     [7][24]int64               `json:"heatmap"`
+	APIHealth   map[string]*APIHealthEntry `json:"apiHealth"`
+	Runtime     runtimeStats               `json:"runtime"`
+	Countries   []countryCount             `json:"countries"`
+	CityHeatmap []heatPoint                `json:"cityHeatmap"`
+	GeoEnabled  bool                       `json:"geoEnabled"`
 }
 
 // ── Handlers ────────────────────────────────────────────────────
@@ -360,6 +404,21 @@ func handleAnalyticsOverview(w http.ResponseWriter, r *http.Request) {
 	for code, count := range analytics.Countries {
 		countries = append(countries, countryCount{Code: code, Count: count})
 	}
+
+	// Expand the bucket map into flat (lat, lon, count) points for the map.
+	points := make([]heatPoint, 0, len(analytics.CityHeatmap))
+	for bucket, count := range analytics.CityHeatmap {
+		parts := strings.SplitN(bucket, ",", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		lat, errLat := strconv.ParseFloat(parts[0], 64)
+		lon, errLon := strconv.ParseFloat(parts[1], 64)
+		if errLat != nil || errLon != nil {
+			continue
+		}
+		points = append(points, heatPoint{Lat: lat, Lon: lon, Count: count})
+	}
 	analytics.mu.RUnlock()
 
 	sort.Slice(countries, func(i, j int) bool {
@@ -367,14 +426,15 @@ func handleAnalyticsOverview(w http.ResponseWriter, r *http.Request) {
 	})
 
 	resp := analyticsOverview{
-		StartedAt:  startedAt,
-		UptimeSec:  int64(time.Since(startedAt).Seconds()),
-		Series:     series,
-		Heatmap:    heatmap,
-		APIHealth:  health,
-		Runtime:    currentRuntimeStats(),
-		Countries:  countries,
-		GeoEnabled: geoEnabled,
+		StartedAt:   startedAt,
+		UptimeSec:   int64(time.Since(startedAt).Seconds()),
+		Series:      series,
+		Heatmap:     heatmap,
+		APIHealth:   health,
+		Runtime:     currentRuntimeStats(),
+		Countries:   countries,
+		CityHeatmap: points,
+		GeoEnabled:  geoEnabled,
 	}
 	writeJSON(w, resp)
 }

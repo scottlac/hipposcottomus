@@ -8,6 +8,9 @@
   <base href="/analytics/" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -72,6 +75,16 @@
       <div class="heatmap" id="heatmap"></div>
       <p class="muted heatmap__legend">
         Darker = more page views. Hour 0 = midnight, local server time.
+      </p>
+    </section>
+
+    <!-- Visitor heatmap (world map) -->
+    <section class="panel">
+      <h2>Visitor Heatmap</h2>
+      <div id="map" class="map"></div>
+      <p class="muted map__legend">
+        Locations aggregated into ~11km buckets before storage. Raw IPs and
+        coordinates are never persisted.
       </p>
     </section>
 
