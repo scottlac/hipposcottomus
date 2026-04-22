@@ -277,6 +277,57 @@ canvas {
   margin-top: 0.75rem;
 }
 
+/* ===== Countries ===== */
+.countries {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.countries__row {
+  display: grid;
+  grid-template-columns: auto 1fr 2fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.countries__flag {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.countries__name {
+  font-weight: 500;
+}
+
+.countries__bar {
+  background: var(--bg);
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.countries__bar-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-pink));
+  transition: width 0.3s;
+}
+
+.countries__count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.countries__pct {
+  font-variant-numeric: tabular-nums;
+  min-width: 3.5em;
+  text-align: right;
+}
+
 /* ===== Runtime ===== */
 .runtime {
   display: grid;
@@ -305,4 +356,10 @@ canvas {
     grid-template-columns: auto repeat(24, minmax(10px, 1fr));
   }
   canvas { height: 240px !important; }
+  .countries__row {
+    grid-template-columns: auto 1fr auto;
+    gap: 0.5rem;
+  }
+  .countries__bar,
+  .countries__pct { display: none; }
 }
