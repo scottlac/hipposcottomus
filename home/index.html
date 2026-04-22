@@ -102,10 +102,11 @@
       width: 100%; height: 4px;
     }
 
-    .card--lake::before  { background: linear-gradient(90deg, var(--blue), var(--green)); }
-    .card--ftl::before   { background: linear-gradient(90deg, var(--orange), var(--blue)); }
-    .card--poker::before { background: linear-gradient(90deg, var(--green), var(--orange)); }
-    .card--astro::before { background: linear-gradient(90deg, #c084fc, #38bdf8); }
+    .card--lake::before      { background: linear-gradient(90deg, var(--blue), var(--green)); }
+    .card--ftl::before       { background: linear-gradient(90deg, var(--orange), var(--blue)); }
+    .card--poker::before     { background: linear-gradient(90deg, var(--green), var(--orange)); }
+    .card--astro::before     { background: linear-gradient(90deg, #c084fc, #38bdf8); }
+    .card--analytics::before { background: linear-gradient(90deg, #f472b6, #fb923c); }
 
     .card__icon { font-size: 2.5rem; }
 
@@ -188,6 +189,15 @@
         Tonight's sun &amp; twilight times, moon phase and rise/set, plus upcoming visible ISS passes for your location.
       </div>
       <div class="card__arrow">Look up →</div>
+    </a>
+
+    <a href="/analytics/" class="card card--analytics">
+      <div class="card__icon">📊</div>
+      <div class="card__title">Site Analytics</div>
+      <div class="card__desc">
+        Page views per dashboard, external API health, Go runtime stats, and a traffic heatmap for this site.
+      </div>
+      <div class="card__arrow">View stats →</div>
     </a>
   </div>
 

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Site Analytics</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦛</text></svg>">
+  <base href="/analytics/" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>📊 Site Analytics</h1>
+    <p class="subtitle">Page views · API health · Runtime · Traffic patterns</p>
+  </header>
+
+  <main>
+    <!-- Summary cards -->
+    <section class="cards">
+      <div class="card card--views">
+        <div class="card__icon">👀</div>
+        <div class="card__body">
+          <span class="card__label">Total Page Views</span>
+          <span class="card__value" id="totalViews">—</span>
+        </div>
+      </div>
+      <div class="card card--uptime">
+        <div class="card__icon">⏱️</div>
+        <div class="card__body">
+          <span class="card__label">Uptime (this process)</span>
+          <span class="card__value" id="uptime">—</span>
+        </div>
+      </div>
+      <div class="card card--mem">
+        <div class="card__icon">💾</div>
+        <div class="card__body">
+          <span class="card__label">Memory</span>
+          <span class="card__value" id="memory">—</span>
+          <span class="card__unit" id="memDetail"></span>
+        </div>
+      </div>
+      <div class="card card--goroutines">
+        <div class="card__icon">⚙️</div>
+        <div class="card__body">
+          <span class="card__label">Goroutines</span>
+          <span class="card__value" id="goroutines">—</span>
+          <span class="card__unit" id="goVersion"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Page views chart -->
+    <section class="chart-container">
+      <h2>Page Views by Dashboard</h2>
+      <canvas id="pageViewsChart"></canvas>
+    </section>
+
+    <!-- API health table -->
+    <section class="panel">
+      <h2>External API Health</h2>
+      <div class="api-health" id="apiHealth">
+        <p class="muted">Loading…</p>
+      </div>
+    </section>
+
+    <!-- Heatmap -->
+    <section class="panel">
+      <h2>Traffic Heatmap (day-of-week × hour)</h2>
+      <div class="heatmap" id="heatmap"></div>
+      <p class="muted heatmap__legend">
+        Darker = more page views. Hour 0 = midnight, local server time.
+      </p>
+    </section>
+
+    <!-- Runtime detail -->
+    <section class="panel">
+      <h2>Go Runtime</h2>
+      <dl class="runtime" id="runtime"></dl>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      <a href="/">← Home</a>
+      · <a href="/metrics">Prometheus metrics</a>
+      · Updates every 30s
+    </p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
