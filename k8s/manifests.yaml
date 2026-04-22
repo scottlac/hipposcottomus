@@ -22,7 +22,7 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       initContainers:
-        # Downloads the MaxMind GeoLite2 Country DB to /data/ on pod start.
+        # Downloads the MaxMind GeoLite2 City DB to /data/ on pod start.
         # Fails open: if the download fails, the main container still starts
         # and analytics runs without geographic tracking.
         - name: geoip-init
@@ -41,8 +41,11 @@ spec:
             - |
               set -u
               apk add --no-cache curl ca-certificates >/dev/null 2>&1
-              DB=/data/GeoLite2-Country.mmdb
+              DB=/data/GeoLite2-City.mmdb
               TARBALL=/tmp/geolite.tar.gz
+
+              # Clean up the old Country DB if it's still on the PVC.
+              rm -f /data/GeoLite2-Country.mmdb
 
               # Skip download if DB exists and is < 3 days old.
               if [ -f "$DB" ] && [ -n "$(find "$DB" -mtime -3 2>/dev/null)" ]; then
@@ -50,9 +53,9 @@ spec:
                 exit 0
               fi
 
-              echo "[geoip-init] Downloading GeoLite2-Country DB from MaxMind..."
+              echo "[geoip-init] Downloading GeoLite2-City DB from MaxMind..."
               if ! curl -fsSL -o "$TARBALL" \
-                "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=${MAXMIND_LICENSE_KEY}&suffix=tar.gz"; then
+                "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=${MAXMIND_LICENSE_KEY}&suffix=tar.gz"; then
                 echo "[geoip-init] WARN: download failed; pod will start without geo tracking"
                 exit 0
               fi
@@ -64,16 +67,16 @@ spec:
                 exit 0
               fi
 
-              NEW_DB=$(find /tmp -name 'GeoLite2-Country.mmdb' -type f | head -n1)
+              NEW_DB=$(find /tmp -name 'GeoLite2-City.mmdb' -type f | head -n1)
               if [ -z "$NEW_DB" ]; then
-                echo "[geoip-init] WARN: tarball did not contain GeoLite2-Country.mmdb"
-                rm -rf "$TARBALL" /tmp/GeoLite2-Country_*
+                echo "[geoip-init] WARN: tarball did not contain GeoLite2-City.mmdb"
+                rm -rf "$TARBALL" /tmp/GeoLite2-City_*
                 exit 0
               fi
 
               mv "$NEW_DB" "$DB"
               chmod 0644 "$DB"
-              rm -rf "$TARBALL" /tmp/GeoLite2-Country_*
+              rm -rf "$TARBALL" /tmp/GeoLite2-City_*
               echo "[geoip-init] DB updated at $DB ($(stat -c%s "$DB") bytes)"
           resources:
             requests:
