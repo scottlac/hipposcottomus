@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>hipposcottomus</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦛</text></svg>">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -18,6 +19,21 @@
       --orange: #fb923c;
       --green: #4ade80;
       --radius: 16px;
+
+      /* Harmonize Pico with the existing palette */
+      --pico-background-color: var(--bg);
+      --pico-color: var(--text);
+      --pico-muted-color: var(--muted);
+      --pico-h1-color: var(--text);
+      --pico-h2-color: var(--text);
+      --pico-h3-color: var(--text);
+      --pico-primary: var(--blue);
+      --pico-primary-hover: var(--blue);
+      --pico-primary-focus: rgba(56, 189, 248, 0.25);
+      --pico-card-background-color: var(--surface);
+      --pico-card-border-color: var(--border);
+      --pico-border-color: var(--border);
+      --pico-border-radius: var(--radius);
     }
 
     body {
