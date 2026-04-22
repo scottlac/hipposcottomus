@@ -18,6 +18,25 @@
   --accent-orange: #fb923c;
   --accent-purple: #818cf8;
   --radius: 12px;
+
+  /* Harmonize Pico with the existing palette */
+  --pico-background-color: var(--bg);
+  --pico-color: var(--text);
+  --pico-muted-color: var(--text-muted);
+  --pico-h1-color: var(--text);
+  --pico-h2-color: var(--text);
+  --pico-h3-color: var(--text);
+  --pico-primary: var(--accent-blue);
+  --pico-primary-hover: var(--accent-blue);
+  --pico-primary-focus: rgba(56, 189, 248, 0.25);
+  --pico-card-background-color: var(--surface);
+  --pico-card-border-color: var(--border);
+  --pico-border-color: var(--border);
+  --pico-border-radius: var(--radius);
+  --pico-form-element-background-color: var(--surface);
+  --pico-form-element-border-color: var(--border);
+  --pico-form-element-color: var(--text);
+  --pico-form-element-focus-color: var(--accent-blue);
 }
 
 html { font-size: 16px; }
