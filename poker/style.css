@@ -25,6 +25,25 @@
   --card-ink-black: #0f172a;
   --card-ink-red: #dc2626;
   --radius: 12px;
+
+  /* Harmonize Pico with the existing palette */
+  --pico-background-color: var(--bg);
+  --pico-color: var(--text);
+  --pico-muted-color: var(--text-muted);
+  --pico-h1-color: var(--text);
+  --pico-h2-color: var(--text);
+  --pico-h3-color: var(--text);
+  --pico-primary: var(--accent-blue);
+  --pico-primary-hover: var(--accent-blue);
+  --pico-primary-focus: rgba(56, 189, 248, 0.25);
+  --pico-card-background-color: var(--surface);
+  --pico-card-border-color: var(--border);
+  --pico-border-color: var(--border);
+  --pico-border-radius: var(--radius);
+  --pico-form-element-background-color: var(--surface);
+  --pico-form-element-border-color: var(--border);
+  --pico-form-element-color: var(--text);
+  --pico-form-element-focus-color: var(--accent-blue);
 }
 
 html { font-size: 16px; }
@@ -192,6 +211,8 @@ main {
   cursor: pointer;
   font-weight: 600;
   transition: background 0.15s, border-color 0.15s;
+  width: auto;
+  margin: 0;
 }
 
 .control__button:hover {
@@ -388,6 +409,7 @@ main {
   transition: transform 0.1s, border-color 0.15s, box-shadow 0.15s, background 0.15s;
   user-select: none;
   position: relative;
+  margin: 0;
 }
 
 .mini-card:hover {
