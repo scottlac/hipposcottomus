@@ -1,0 +1,308 @@
+/* ===== Reset & Base ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface-2: #273449;
+  --border: #334155;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --accent-blue: #38bdf8;
+  --accent-green: #4ade80;
+  --accent-orange: #fb923c;
+  --accent-red: #f87171;
+  --accent-pink: #f472b6;
+  --accent-yellow: #facc15;
+  --radius: 12px;
+
+  /* Harmonize Pico with the existing palette */
+  --pico-background-color: var(--bg);
+  --pico-color: var(--text);
+  --pico-muted-color: var(--text-muted);
+  --pico-h1-color: var(--text);
+  --pico-h2-color: var(--text);
+  --pico-h3-color: var(--text);
+  --pico-primary: var(--accent-pink);
+  --pico-primary-hover: var(--accent-pink);
+  --pico-primary-focus: rgba(244, 114, 182, 0.25);
+  --pico-card-background-color: var(--surface);
+  --pico-card-border-color: var(--border);
+  --pico-border-color: var(--border);
+  --pico-border-radius: var(--radius);
+  --pico-form-element-background-color: var(--surface);
+  --pico-form-element-border-color: var(--border);
+  --pico-form-element-color: var(--text);
+}
+
+html { font-size: 16px; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Header / Main / Footer ===== */
+header {
+  text-align: center;
+  padding: 2rem 1rem 1rem;
+}
+
+header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+}
+
+main {
+  flex: 1;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+footer {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+}
+
+footer a {
+  color: var(--accent-pink);
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* ===== Cards ===== */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+}
+
+.card--views::before      { background: var(--accent-pink); }
+.card--uptime::before     { background: var(--accent-green); }
+.card--mem::before        { background: var(--accent-orange); }
+.card--goroutines::before { background: var(--accent-blue); }
+
+.card__icon { font-size: 2rem; flex-shrink: 0; }
+.card__body { display: flex; flex-direction: column; }
+
+.card__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.card__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.card--views     .card__value { color: var(--accent-pink); }
+.card--uptime    .card__value { color: var(--accent-green); }
+.card--mem       .card__value { color: var(--accent-orange); }
+.card--goroutines .card__value { color: var(--accent-blue); }
+
+.card__unit {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+/* ===== Panels & charts ===== */
+.chart-container,
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+
+.chart-container h2,
+.panel h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+canvas {
+  width: 100% !important;
+  height: 300px !important;
+}
+
+/* ===== API Health ===== */
+.api-health {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.api-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-green);
+  border-radius: 8px;
+}
+
+.api-row--ok        { border-left-color: var(--accent-green); }
+.api-row--recovered { border-left-color: var(--accent-yellow); }
+.api-row--failing   { border-left-color: var(--accent-red); }
+
+.api-row__name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.api-row__stats {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+}
+
+.api-row__rate {
+  color: var(--accent-green);
+  font-weight: 700;
+}
+
+.api-row--recovered .api-row__rate { color: var(--accent-yellow); }
+.api-row--failing   .api-row__rate { color: var(--accent-red); }
+
+.api-row__meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: right;
+  line-height: 1.5;
+}
+
+.api-row__meta strong { color: var(--text); font-weight: 600; }
+
+.api-row__error {
+  color: var(--accent-red);
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 0.25rem;
+}
+
+/* ===== Heatmap ===== */
+.heatmap {
+  display: grid;
+  grid-template-columns: auto repeat(24, minmax(14px, 1fr));
+  gap: 2px;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.heatmap__corner,
+.heatmap__hour,
+.heatmap__day {
+  text-align: center;
+  padding: 2px;
+}
+
+.heatmap__day { text-align: right; padding-right: 6px; font-weight: 600; }
+
+.heatmap__cell {
+  aspect-ratio: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+.heatmap__legend {
+  margin-top: 0.75rem;
+}
+
+/* ===== Runtime ===== */
+.runtime {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.runtime dt {
+  color: var(--text-muted);
+}
+
+.runtime dd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85rem;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+  .api-row {
+    grid-template-columns: 1fr;
+  }
+  .api-row__meta { text-align: left; }
+  .heatmap {
+    font-size: 0.55rem;
+    grid-template-columns: auto repeat(24, minmax(10px, 1fr));
+  }
+  canvas { height: 240px !important; }
+}
