@@ -53,6 +53,25 @@ function sumSeries(series) {
   return total;
 }
 
+// Convert a 2-letter ISO code into a regional-indicator flag emoji.
+function flagEmoji(iso) {
+  if (!iso || iso.length !== 2 || iso === "??") return "🏳️";
+  const base = 0x1F1E6 - "A".charCodeAt(0);
+  const codes = [...iso.toUpperCase()].map((c) => base + c.charCodeAt(0));
+  return String.fromCodePoint(...codes);
+}
+
+const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+
+function countryName(iso) {
+  if (!iso || iso === "??") return "Unknown";
+  try {
+    return regionNames.of(iso) || iso;
+  } catch {
+    return iso;
+  }
+}
+
 // ===== Rendering =====
 
 let pageViewsChart;
@@ -204,6 +223,49 @@ function renderRuntime(data) {
   `;
 }
 
+function renderCountries(data) {
+  const container = document.getElementById("countries");
+  if (!data.geoEnabled) {
+    container.innerHTML = `
+      <p class="muted">
+        Geo lookup is disabled on this server — the MaxMind GeoLite2 DB is not
+        loaded. See <code>analytics.go</code> and the deployment notes for how
+        to enable it.
+      </p>`;
+    return;
+  }
+  const countries = data.countries || [];
+  if (countries.length === 0) {
+    container.innerHTML = `<p class="muted">No page views recorded yet with a resolvable country.</p>`;
+    return;
+  }
+
+  const total = countries.reduce((sum, c) => sum + c.count, 0);
+  const top = countries.slice(0, 20);
+  const max = top[0].count;
+
+  container.innerHTML = `
+    <ul class="countries">
+      ${top.map((c) => {
+        const pct = total === 0 ? 0 : (100 * c.count) / total;
+        const widthPct = max === 0 ? 0 : (100 * c.count) / max;
+        return `
+          <li class="countries__row">
+            <span class="countries__flag">${flagEmoji(c.code)}</span>
+            <span class="countries__name">${countryName(c.code)}</span>
+            <span class="countries__bar">
+              <span class="countries__bar-fill" style="width: ${widthPct.toFixed(1)}%"></span>
+            </span>
+            <span class="countries__count">${c.count.toLocaleString()}</span>
+            <span class="countries__pct muted">${pct.toFixed(1)}%</span>
+          </li>
+        `;
+      }).join("")}
+    </ul>
+    ${countries.length > 20 ? `<p class="muted">Showing top 20 of ${countries.length} countries.</p>` : ""}
+  `;
+}
+
 async function refresh() {
   try {
     const resp = await fetch("api/overview");
@@ -213,6 +275,7 @@ async function refresh() {
     renderPageViewsChart(data);
     renderAPIHealth(data);
     renderHeatmap(data);
+    renderCountries(data);
     renderRuntime(data);
   } catch (err) {
     console.error("Failed to refresh analytics:", err);

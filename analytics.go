@@ -5,13 +5,17 @@ import (
 	"encoding/json"
 	"io/fs"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/oschwald/geoip2-golang"
 )
 
 const (
@@ -19,6 +23,11 @@ const (
 	analyticsFile          = "analytics.json"
 	analyticsSaveInterval  = 5 * time.Minute
 	analyticsErrTruncateAt = 200
+
+	// Default path for the MaxMind GeoLite2 Country DB. Override with
+	// GEOIP_DB env var. If the file is missing, geo tracking is silently
+	// disabled — analytics still work.
+	defaultGeoIPDB = "/data/GeoLite2-Country.mmdb"
 )
 
 //go:embed analytics
@@ -58,16 +67,29 @@ type Analytics struct {
 
 	// APIHealth[source] = aggregate counters + timestamps.
 	APIHealth map[string]*APIHealthEntry `json:"apiHealth"`
+
+	// Countries[ISO-3166-1 alpha-2 code] = cumulative count across all time.
+	// Only country codes are stored — never IPs. "??" is used for lookups
+	// that fail (private IPs, DB gaps, etc.).
+	Countries map[string]int64 `json:"countries"`
 }
 
 var analytics = &Analytics{
 	StartedAt: time.Now(),
 	PageViews: map[string]map[string]int64{},
 	APIHealth: map[string]*APIHealthEntry{},
+	Countries: map[string]int64{},
 }
 
+// geoDB is loaded on startup if the MMDB file exists; nil otherwise.
+var (
+	geoDB      *geoip2.Reader
+	geoEnabled bool
+)
+
 // RecordPageView increments counters for a request path if it is tracked.
-func (a *Analytics) RecordPageView(path string) {
+// country is the ISO-3166-1 alpha-2 code (e.g. "US") or "" if unknown.
+func (a *Analytics) RecordPageView(path, country string) {
 	kind, ok := trackedPaths[path]
 	if !ok {
 		return
@@ -81,6 +103,49 @@ func (a *Analytics) RecordPageView(path string) {
 	}
 	a.PageViews[kind][date]++
 	a.Heatmap[int(now.Weekday())][now.Hour()]++
+	if geoEnabled {
+		key := country
+		if key == "" {
+			key = "??"
+		}
+		a.Countries[key]++
+	}
+}
+
+// clientIP extracts the real client IP from request headers. Returns nil if
+// no usable address is found. Trusts X-Real-IP and X-Forwarded-For because
+// the service is expected to run behind an ingress that sets them.
+func clientIP(r *http.Request) net.IP {
+	if v := r.Header.Get("X-Real-IP"); v != "" {
+		if ip := net.ParseIP(strings.TrimSpace(v)); ip != nil {
+			return ip
+		}
+	}
+	if v := r.Header.Get("X-Forwarded-For"); v != "" {
+		// Leftmost entry is the original client.
+		first := strings.TrimSpace(strings.SplitN(v, ",", 2)[0])
+		if ip := net.ParseIP(first); ip != nil {
+			return ip
+		}
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		host = r.RemoteAddr
+	}
+	return net.ParseIP(host)
+}
+
+// lookupCountry returns the ISO-3166-1 alpha-2 country code for an IP, or ""
+// if geo is disabled or the lookup fails.
+func lookupCountry(ip net.IP) string {
+	if !geoEnabled || ip == nil {
+		return ""
+	}
+	rec, err := geoDB.Country(ip)
+	if err != nil {
+		return ""
+	}
+	return rec.Country.IsoCode
 }
 
 // TrackAPICall records a success or failure for an external API fetch.
@@ -147,7 +212,31 @@ func (a *Analytics) LoadFromFile() error {
 	if loaded.APIHealth != nil {
 		a.APIHealth = loaded.APIHealth
 	}
+	if loaded.Countries != nil {
+		a.Countries = loaded.Countries
+	}
 	return nil
+}
+
+// loadGeoDB opens the MaxMind GeoLite2 Country DB if it exists. Missing DB
+// is not an error — geo tracking simply stays disabled.
+func loadGeoDB() {
+	path := os.Getenv("GEOIP_DB")
+	if path == "" {
+		path = defaultGeoIPDB
+	}
+	db, err := geoip2.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Printf("[Analytics] geo disabled: %s not found (set GEOIP_DB or place the MMDB at the default path to enable)", path)
+		} else {
+			log.Printf("[Analytics] geo disabled: %v", err)
+		}
+		return
+	}
+	geoDB = db
+	geoEnabled = true
+	log.Printf("[Analytics] geo enabled: loaded %s", path)
 }
 
 func analyticsPersistLoop() {
@@ -166,7 +255,11 @@ func analyticsPersistLoop() {
 // trackedPaths and counted if it matches.
 func analyticsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		analytics.RecordPageView(r.URL.Path)
+		var country string
+		if _, tracked := trackedPaths[r.URL.Path]; tracked && geoEnabled {
+			country = lookupCountry(clientIP(r))
+		}
+		analytics.RecordPageView(r.URL.Path, country)
 		next.ServeHTTP(w, r)
 	})
 }
@@ -211,13 +304,20 @@ type pageViewPoint struct {
 	Count int64  `json:"count"`
 }
 
+type countryCount struct {
+	Code  string `json:"code"`
+	Count int64  `json:"count"`
+}
+
 type analyticsOverview struct {
-	StartedAt time.Time                  `json:"startedAt"`
-	UptimeSec int64                      `json:"uptimeSec"`
-	Series    []pageViewSeries           `json:"series"`
-	Heatmap   [7][24]int64               `json:"heatmap"`
-	APIHealth map[string]*APIHealthEntry `json:"apiHealth"`
-	Runtime   runtimeStats               `json:"runtime"`
+	StartedAt  time.Time                  `json:"startedAt"`
+	UptimeSec  int64                      `json:"uptimeSec"`
+	Series     []pageViewSeries           `json:"series"`
+	Heatmap    [7][24]int64               `json:"heatmap"`
+	APIHealth  map[string]*APIHealthEntry `json:"apiHealth"`
+	Runtime    runtimeStats               `json:"runtime"`
+	Countries  []countryCount             `json:"countries"`
+	GeoEnabled bool                       `json:"geoEnabled"`
 }
 
 // ── Handlers ────────────────────────────────────────────────────
@@ -254,15 +354,27 @@ func handleAnalyticsOverview(w http.ResponseWriter, r *http.Request) {
 	}
 	heatmap := analytics.Heatmap
 	startedAt := analytics.StartedAt
+
+	// Build sorted country list (descending by count).
+	countries := make([]countryCount, 0, len(analytics.Countries))
+	for code, count := range analytics.Countries {
+		countries = append(countries, countryCount{Code: code, Count: count})
+	}
 	analytics.mu.RUnlock()
 
+	sort.Slice(countries, func(i, j int) bool {
+		return countries[i].Count > countries[j].Count
+	})
+
 	resp := analyticsOverview{
-		StartedAt: startedAt,
-		UptimeSec: int64(time.Since(startedAt).Seconds()),
-		Series:    series,
-		Heatmap:   heatmap,
-		APIHealth: health,
-		Runtime:   currentRuntimeStats(),
+		StartedAt:  startedAt,
+		UptimeSec:  int64(time.Since(startedAt).Seconds()),
+		Series:     series,
+		Heatmap:    heatmap,
+		APIHealth:  health,
+		Runtime:    currentRuntimeStats(),
+		Countries:  countries,
+		GeoEnabled: geoEnabled,
 	}
 	writeJSON(w, resp)
 }
@@ -281,6 +393,8 @@ func InitAnalytics(mux *http.ServeMux) {
 	} else {
 		log.Println("[Analytics] loaded persisted data")
 	}
+
+	loadGeoDB()
 
 	go analyticsPersistLoop()
 

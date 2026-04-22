@@ -53,7 +53,13 @@
 - Heatmap is a `[7][24]int64` cumulative grid keyed by weekday × hour of request time.
 - External API health is tracked via `TrackAPICall(source string, err error)` — called at each fetch site (USACE, USGS, NWS-Raleigh, NOAA-Tides, NOAA-WaterTemp, NWS-Miami, NDBC-Marine, CelesTrak-TLE). When adding a new external fetch, call `TrackAPICall` with a stable source label and the error (nil = success).
 - `analytics.json` is saved every 5 minutes; page views are bucketed by local date (`YYYY-MM-DD`).
-- **Privacy:** only request counts are tracked — no IPs, user agents, or session identifiers are stored.
+- **Privacy:** only aggregate counts are tracked — no IPs, user agents, or session identifiers are stored. Country lookup reads the client IP from `X-Real-IP` / `X-Forwarded-For`, resolves it to an ISO code, and increments a per-code counter. The IP itself is never written to disk.
+
+### Geo (country) lookup
+- Uses `github.com/oschwald/geoip2-golang` against the MaxMind GeoLite2 **Country** DB (free with a MaxMind account).
+- The DB path defaults to `/data/GeoLite2-Country.mmdb` and is overridable via the `GEOIP_DB` env var.
+- If the file is missing, geo tracking is silently disabled at startup — analytics keep working without it. The overview payload exposes `geoEnabled` so the frontend shows an informational message instead of an empty chart.
+- To enable in prod: download `GeoLite2-Country.mmdb` from MaxMind with a license key, drop it on the existing `/data/` PVC (e.g. `kubectl cp` or an initContainer that curls it from the MaxMind mirror), and restart the Pod.
 
 ## Infrastructure
 - **Hosting:** DigitalOcean Kubernetes (`jordan-lake-cluster`, nyc3 region)
