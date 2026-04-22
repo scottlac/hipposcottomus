@@ -225,6 +225,7 @@ function renderRuntime(data) {
 
 let leafletMap;
 let heatLayer;
+let markerLayer;
 let mapDisabledNote;
 
 function renderMap(data) {
@@ -261,27 +262,45 @@ function renderMap(data) {
   }
 
   const raw = data.cityHeatmap || [];
-  if (raw.length === 0) {
-    if (heatLayer) {
-      leafletMap.removeLayer(heatLayer);
-      heatLayer = null;
-    }
-    return;
+
+  // Tear down any existing layers before re-rendering.
+  if (heatLayer) {
+    leafletMap.removeLayer(heatLayer);
+    heatLayer = null;
   }
+  if (markerLayer) {
+    leafletMap.removeLayer(markerLayer);
+    markerLayer = null;
+  }
+  if (raw.length === 0) return;
 
-  // Normalize intensity to [0, 1] so the heatmap gradient scales sensibly
-  // regardless of absolute traffic volume.
+  // Circle markers: always visible, regardless of heat-layer tuning.
   const maxCount = raw.reduce((m, p) => Math.max(m, p.count), 1);
-  const points = raw.map((p) => [p.lat, p.lon, p.count / maxCount]);
+  markerLayer = L.layerGroup(
+    raw.map((p) => {
+      // Radius scales with sqrt(count) so a 4x-count bucket is 2x the
+      // visual area.
+      const radius = Math.max(6, Math.min(22, 4 + 3 * Math.sqrt(p.count)));
+      return L.circleMarker([p.lat, p.lon], {
+        radius,
+        color: "#f87171",
+        weight: 1.5,
+        fillColor: "#facc15",
+        fillOpacity: 0.65,
+      }).bindTooltip(
+        `${p.count} ${p.count === 1 ? "visit" : "visits"} near ${p.lat.toFixed(1)}, ${p.lon.toFixed(1)}`
+      );
+    })
+  ).addTo(leafletMap);
 
-  if (heatLayer) leafletMap.removeLayer(heatLayer);
+  // Heat layer: density visualization on top of the markers. Normalized to
+  // [0, 1] per render so the gradient scales with relative traffic.
+  const points = raw.map((p) => [p.lat, p.lon, p.count / maxCount]);
   heatLayer = L.heatLayer(points, {
     radius: 32,
     blur: 22,
     maxZoom: 10,
     max: 1.0,
-    // Floor opacity so even a single low-count bucket is visible at
-    // world-zoom levels.
     minOpacity: 0.45,
     gradient: {
       0.0: "#38bdf8",
@@ -291,6 +310,9 @@ function renderMap(data) {
       1.0: "#facc15",
     },
   }).addTo(leafletMap);
+
+  // Guard against the map being created at 0x0 before CSS settles.
+  setTimeout(() => leafletMap.invalidateSize(), 0);
 }
 
 function renderCountries(data) {
