@@ -55,11 +55,13 @@
 - `analytics.json` is saved every 5 minutes; page views are bucketed by local date (`YYYY-MM-DD`).
 - **Privacy:** only aggregate counts are tracked — no IPs, user agents, or session identifiers are stored. Country lookup reads the client IP from `X-Real-IP` / `X-Forwarded-For`, resolves it to an ISO code, and increments a per-code counter. The IP itself is never written to disk.
 
-### Geo (country) lookup
-- Uses `github.com/oschwald/geoip2-golang` against the MaxMind GeoLite2 **Country** DB (free with a MaxMind account).
-- The DB path defaults to `/data/GeoLite2-Country.mmdb` and is overridable via the `GEOIP_DB` env var.
-- If the file is missing, geo tracking is silently disabled at startup — analytics keep working without it. The overview payload exposes `geoEnabled` so the frontend shows an informational message instead of an empty chart.
-- **Deploy:** a `geoip-init` initContainer in `k8s/manifests.yaml` downloads the DB to the `/data/` PVC on every Pod start, reading the license key from the `maxmind-license` Secret (`kubectl create secret generic maxmind-license --from-literal=license-key=<KEY>`). The container skips download if the existing DB is less than 3 days old, and fails open if MaxMind is unreachable (the main container still starts, geo just stays disabled).
+### Geo lookup (country + city heatmap)
+- Uses `github.com/oschwald/geoip2-golang` against the MaxMind GeoLite2 **City** DB (~70MB, free with a MaxMind account). The City DB includes country info, so both the country list and the visitor heatmap come from a single lookup.
+- The DB path defaults to `/data/GeoLite2-City.mmdb` and is overridable via the `GEOIP_DB` env var.
+- If the file is missing, geo tracking is silently disabled at startup — analytics keep working without it. The overview payload exposes `geoEnabled` so the frontend shows a placeholder on the map and countries panels instead of broken widgets.
+- **Privacy:** raw IPs are discarded after the synchronous lookup. Latitude/longitude are rounded to 1 decimal place (~11km at the equator) before being stored as bucket counters in `Analytics.CityHeatmap` — raw coordinates are never persisted. The constant `cityHeatmapPrecision` controls the rounding.
+- **Deploy:** the `geoip-init` initContainer in `k8s/manifests.yaml` downloads the DB to the `/data/` PVC on every Pod start, reading the license key from the `maxmind-license` Secret (`kubectl create secret generic maxmind-license --from-literal=license-key=<KEY>`). The container skips download if the existing DB is less than 3 days old, cleans up any legacy `GeoLite2-Country.mmdb`, and fails open if MaxMind is unreachable.
+- **Frontend map:** Leaflet 1.9 + `leaflet.heat` loaded from unpkg, rendered over CartoDB dark-matter tiles. No build step, no API key.
 - **Refresh cadence:** tied to pod restarts (deploys, node reschedules). Because the PVC is RWO, a scheduled `CronJob` can't cleanly run alongside the main pod; if a weekly refresh is needed, either `kubectl rollout restart deployment/jordan-lake-scraper` on a schedule, or move the download into the Go app's startup.
 
 ## Infrastructure
