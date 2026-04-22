@@ -95,6 +95,7 @@ func fetchTidePredictions() {
 	hiloURL := fmt.Sprintf("%s?station=%s&product=predictions&datum=MLLW&time_zone=lst_ldt&units=english&interval=hilo&format=json&begin_date=%s&end_date=%s",
 		noaaBaseURL, noaaStation, begin, end)
 	hiLoEvents, err := fetchNOAAHiLo(hiloURL)
+	TrackAPICall("NOAA-Tides", err)
 	if err != nil {
 		log.Printf("[FTL] tide hi-lo fetch error: %v", err)
 	}
@@ -197,20 +198,25 @@ func fetchNOAAWaterTemp() {
 	client := &http.Client{Timeout: 15 * time.Second}
 	resp, err := client.Get(url)
 	if err != nil {
+		TrackAPICall("NOAA-WaterTemp", err)
 		log.Printf("[FTL] water temp fetch error: %v", err)
 		return
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
+		statusErr := fmt.Errorf("status %d", resp.StatusCode)
+		TrackAPICall("NOAA-WaterTemp", statusErr)
 		log.Printf("[FTL] water temp: NOAA returned %d (station may not have sensor)", resp.StatusCode)
 		return
 	}
 	var data noaaDataResp
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		TrackAPICall("NOAA-WaterTemp", err)
 		log.Printf("[FTL] water temp decode error: %v", err)
 		return
 	}
 	if len(data.Data) == 0 {
+		TrackAPICall("NOAA-WaterTemp", fmt.Errorf("no data returned"))
 		log.Println("[FTL] water temp: no data returned")
 		return
 	}
@@ -218,8 +224,10 @@ func fetchNOAAWaterTemp() {
 	last := data.Data[len(data.Data)-1]
 	v, err := strconv.ParseFloat(last.V, 64)
 	if err != nil {
+		TrackAPICall("NOAA-WaterTemp", err)
 		return
 	}
+	TrackAPICall("NOAA-WaterTemp", nil)
 	ftlStore.mu.Lock()
 	ftlStore.WaterTemp = &v
 	ftlStore.mu.Unlock()
@@ -264,6 +272,7 @@ func updateFTLWeather() {
 	}
 
 	forecast, err := fetchNWSForecast(ftlForecastURL)
+	TrackAPICall("NWS-Miami", err)
 	if err != nil {
 		log.Printf("[FTL] forecast error: %v", err)
 	}
@@ -291,12 +300,14 @@ func fetchMarineForecast() {
 	client := &http.Client{Timeout: 15 * time.Second}
 	resp, err := client.Get(marineForecastURL)
 	if err != nil {
+		TrackAPICall("NDBC-Marine", err)
 		log.Printf("[FTL] marine forecast fetch error: %v", err)
 		return
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 	text := string(body)
+	TrackAPICall("NDBC-Marine", nil)
 
 	// Extract the section for "Deerfield Beach to Ocean Reef" (AMZ651)
 	section := extractMarineZone(text, "Deerfield Beach to Ocean Reef")

@@ -102,7 +102,9 @@ func fetchISSTLE() error {
 
 func tleLoop() {
 	for {
-		if err := fetchISSTLE(); err != nil {
+		err := fetchISSTLE()
+		TrackAPICall("CelesTrak-TLE", err)
+		if err != nil {
 			log.Printf("[Astro] TLE fetch failed: %v — retry in %s", err, tleRetryInterval)
 			time.Sleep(tleRetryInterval)
 			continue
