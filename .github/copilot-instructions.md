@@ -3,7 +3,7 @@
 ## Project Overview
 - **Name:** hipposcottomus
 - **Repo:** https://github.com/scottlac/hipposcottomus
-- **Language:** Go 1.26 backend, vanilla JS/CSS frontend (Chart.js 4)
+- **Language:** Go 1.26 backend, vanilla JS frontend with Pico.css v2 baseline + custom CSS (Chart.js 4)
 - **Purpose:** Multi-dashboard web app for boating/lake conditions, hosted at **hipposcottomus.com**
 - **Module name:** `jordan-lake-scraper` (in go.mod — historical, don't change)
 
@@ -65,6 +65,9 @@ kubectl rollout status deployment/jordan-lake-scraper --timeout=90s
 ## Conventions
 - Standard Go project layout, static binary (`CGO_ENABLED=0`)
 - Multi-stage Docker builds
-- Dark theme UI across all dashboards
+- Dark theme UI across all dashboards (`<html data-theme="dark">`)
 - Chart.js 4 + chartjs-adapter-date-fns 3 for all charts
-- Vanilla JS (no frameworks), CSS custom properties for theming
+- Vanilla JS (no JS frameworks)
+- **Pico.css v2** pulled in via CDN on every page for typography, forms, and link defaults; loaded **before** each page's `style.css` so page-specific styles override Pico where needed
+- Shared palette tokens (`--bg`, `--surface`, `--border`, `--text`, `--accent-*`, `--radius`) are defined per-page in `:root` and also mapped onto Pico's CSS variables (`--pico-background-color`, `--pico-primary`, `--pico-card-*`, etc.) so Pico harmonizes with the custom design
+- Pico v2 defaults buttons to `width: 100%` with bottom margin — custom button classes (`.range-btn`, `.overlay-btn`, `.control__button`, `.mini-card`, `.location-bar__button`) explicitly set `width: auto; margin: 0` to opt out
