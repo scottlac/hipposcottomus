@@ -59,7 +59,8 @@
 - Uses `github.com/oschwald/geoip2-golang` against the MaxMind GeoLite2 **Country** DB (free with a MaxMind account).
 - The DB path defaults to `/data/GeoLite2-Country.mmdb` and is overridable via the `GEOIP_DB` env var.
 - If the file is missing, geo tracking is silently disabled at startup — analytics keep working without it. The overview payload exposes `geoEnabled` so the frontend shows an informational message instead of an empty chart.
-- To enable in prod: download `GeoLite2-Country.mmdb` from MaxMind with a license key, drop it on the existing `/data/` PVC (e.g. `kubectl cp` or an initContainer that curls it from the MaxMind mirror), and restart the Pod.
+- **Deploy:** a `geoip-init` initContainer in `k8s/manifests.yaml` downloads the DB to the `/data/` PVC on every Pod start, reading the license key from the `maxmind-license` Secret (`kubectl create secret generic maxmind-license --from-literal=license-key=<KEY>`). The container skips download if the existing DB is less than 3 days old, and fails open if MaxMind is unreachable (the main container still starts, geo just stays disabled).
+- **Refresh cadence:** tied to pod restarts (deploys, node reschedules). Because the PVC is RWO, a scheduled `CronJob` can't cleanly run alongside the main pod; if a weekly refresh is needed, either `kubectl rollout restart deployment/jordan-lake-scraper` on a schedule, or move the download into the Go app's startup.
 
 ## Infrastructure
 - **Hosting:** DigitalOcean Kubernetes (`jordan-lake-cluster`, nyc3 region)
