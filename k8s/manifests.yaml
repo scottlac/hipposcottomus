@@ -21,6 +21,67 @@ spec:
         prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
     spec:
+      initContainers:
+        # Downloads the MaxMind GeoLite2 Country DB to /data/ on pod start.
+        # Fails open: if the download fails, the main container still starts
+        # and analytics runs without geographic tracking.
+        - name: geoip-init
+          image: alpine:3.20
+          env:
+            - name: MAXMIND_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: maxmind-license
+                  key: license-key
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -u
+              apk add --no-cache curl ca-certificates >/dev/null 2>&1
+              DB=/data/GeoLite2-Country.mmdb
+              TARBALL=/tmp/geolite.tar.gz
+
+              # Skip download if DB exists and is < 3 days old.
+              if [ -f "$DB" ] && [ -n "$(find "$DB" -mtime -3 2>/dev/null)" ]; then
+                echo "[geoip-init] $DB is fresh; skipping download"
+                exit 0
+              fi
+
+              echo "[geoip-init] Downloading GeoLite2-Country DB from MaxMind..."
+              if ! curl -fsSL -o "$TARBALL" \
+                "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=${MAXMIND_LICENSE_KEY}&suffix=tar.gz"; then
+                echo "[geoip-init] WARN: download failed; pod will start without geo tracking"
+                exit 0
+              fi
+
+              cd /tmp
+              if ! tar -xzf "$TARBALL"; then
+                echo "[geoip-init] WARN: tar extraction failed; pod will start without geo tracking"
+                rm -f "$TARBALL"
+                exit 0
+              fi
+
+              NEW_DB=$(find /tmp -name 'GeoLite2-Country.mmdb' -type f | head -n1)
+              if [ -z "$NEW_DB" ]; then
+                echo "[geoip-init] WARN: tarball did not contain GeoLite2-Country.mmdb"
+                rm -rf "$TARBALL" /tmp/GeoLite2-Country_*
+                exit 0
+              fi
+
+              mv "$NEW_DB" "$DB"
+              chmod 0644 "$DB"
+              rm -rf "$TARBALL" /tmp/GeoLite2-Country_*
+              echo "[geoip-init] DB updated at $DB ($(stat -c%s "$DB") bytes)"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
       containers:
         - name: scraper
           image: registry.digitalocean.com/jordan-lake-registry/jordan-lake-scraper:latest
