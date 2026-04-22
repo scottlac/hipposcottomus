@@ -10,13 +10,22 @@
 ## Dashboards
 1. **Jordan Lake Dashboard** (`/lakedashboard/`) — Water temp, water level, weather, wind for B. Everett Jordan Lake, NC
 2. **Ft. Lauderdale Boating** (`/ftlauderdale/`) — Tides, water temp, marine forecast, wind for Fort Lauderdale, FL
-3. **Homepage** (`/`) — Landing page linking to both dashboards
+3. **Hold'em Equity Calculator** (`/poker/`) — Pick hole cards + board, computes Texas Hold'em win probability
+4. **Night Sky** (`/astronomy/`) — Sun/twilight times, moon phase, ISS pass predictions for user location
+5. **Site Analytics** (`/analytics/`) — Page views per dashboard, external API health, Go runtime stats, traffic heatmap
+6. **Homepage** (`/`) — Landing page linking to all dashboards
 
 ## File Structure
-- `main.go` (~616 lines) — Jordan Lake backend: scraper, USGS backfill, NWS weather proxy, API handlers, history persistence, serves homepage + static files
-- `ftl.go` (~461 lines) — Ft. Lauderdale backend: NOAA CO-OPS tides, NWS weather, NDBC marine forecast, water temp
+- `main.go` — Jordan Lake backend: scraper, USGS backfill, NWS weather proxy, API handlers, history persistence, serves homepage + static files
+- `ftl.go` — Ft. Lauderdale backend: NOAA CO-OPS tides, NWS weather, NDBC marine forecast, water temp
+- `poker.go` — Hold'em equity calculator backend (uses `github.com/paulhankin/poker/v2`)
+- `astro.go` — Night Sky backend: sun/moon/twilight computations, ISS TLE fetch + pass predictions (uses `github.com/joshuaferrara/go-satellite`)
+- `analytics.go` — Site analytics backend: page-view middleware, API health tracker (`TrackAPICall`), heatmap, runtime stats, persistence
 - `static/` — Jordan Lake frontend (index.html, app.js, style.css)
-- `ftl/` — Ft. Lauderdale frontend (index.html, app.js, style.css)
+- `ftl/` — Ft. Lauderdale frontend
+- `poker/` — Poker frontend
+- `astro/` — Night Sky frontend
+- `analytics/` — Site Analytics frontend
 - `home/index.html` — Homepage
 - `k8s/manifests.yaml` — Full K8s deployment (Deployment, PVC, Service, Ingress, ClusterIssuer)
 - `Dockerfile` — Multi-stage build (golang:1.26-alpine → alpine:3.20)
@@ -30,13 +39,21 @@
 - **FTL Marine Forecast:** NDBC `FZUS52.KMFL`
 
 ## Key Architecture Details
-- Go `embed.FS` for all static assets (`static/`, `ftl/`, `home/`)
+- Go `embed.FS` for all static assets — each feature file embeds its own directory (`main.go` embeds `static/ home/ poker/`, `ftl.go` embeds `ftl/`, `astro.go` embeds `astro/`, `analytics.go` embeds `analytics/`)
+- Each feature exposes an `InitXxx(mux *http.ServeMux)` function called from `main.go` to register routes
 - `History` type with `Add`, `AddWithDate`, `Sort`, `SaveToFile`, `LoadFromFile` — no max cap
-- Persistence: `/data/temp_history.json` and `/data/level_history.json` (saved on scrape + hourly)
-- Prometheus gauges: `jordan_lake_water_temperature_fahrenheit`, `jordan_lake_water_level_feet`
+- Persistence under `/data/` (env-overridable via `DATA_DIR`): `temp_history.json`, `level_history.json`, `analytics.json`
+- Prometheus gauges: `jordan_lake_water_temperature_fahrenheit`, `jordan_lake_water_level_feet` — scraped from `/metrics` (distinct from the UI at `/analytics/`)
 - Charts use year-selectable overlays with month-day windowing for comparing across years
 - "Now" line plugin (pink dashed vertical) on temp, wind, and tide charts
 - NWS forecast renderer handles night-first periods and strips "Night" suffix
+
+### Analytics instrumentation
+- `analyticsMiddleware` wraps the top-level mux; it counts requests whose exact path matches an entry in `trackedPaths` (home, lake, ftl, poker, astro, analytics). Assets, API calls, `/metrics`, and `/healthz` are ignored.
+- Heatmap is a `[7][24]int64` cumulative grid keyed by weekday × hour of request time.
+- External API health is tracked via `TrackAPICall(source string, err error)` — called at each fetch site (USACE, USGS, NWS-Raleigh, NOAA-Tides, NOAA-WaterTemp, NWS-Miami, NDBC-Marine, CelesTrak-TLE). When adding a new external fetch, call `TrackAPICall` with a stable source label and the error (nil = success).
+- `analytics.json` is saved every 5 minutes; page views are bucketed by local date (`YYYY-MM-DD`).
+- **Privacy:** only request counts are tracked — no IPs, user agents, or session identifiers are stored.
 
 ## Infrastructure
 - **Hosting:** DigitalOcean Kubernetes (`jordan-lake-cluster`, nyc3 region)

@@ -279,18 +279,22 @@ func backfillFromUSGS() {
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Get(url)
 	if err != nil {
+		TrackAPICall("USGS", err)
 		log.Printf("Warning: USGS backfill failed (fetch): %v", err)
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("Warning: USGS backfill failed (status %d)", resp.StatusCode)
+		statusErr := fmt.Errorf("status %d", resp.StatusCode)
+		TrackAPICall("USGS", statusErr)
+		log.Printf("Warning: USGS backfill failed (%v)", statusErr)
 		return
 	}
 
 	var usgs usgsResponse
 	if err := json.NewDecoder(resp.Body).Decode(&usgs); err != nil {
+		TrackAPICall("USGS", err)
 		log.Printf("Warning: USGS backfill failed (decode): %v", err)
 		return
 	}
@@ -310,6 +314,7 @@ func backfillFromUSGS() {
 		}
 	}
 
+	TrackAPICall("USGS", nil)
 	log.Printf("Backfilled %d days of water level history from USGS", count)
 }
 
@@ -459,6 +464,7 @@ func fetchNWSForecast(url string) ([]WeatherPeriod, error) {
 
 func updateWeather() {
 	forecast, err := fetchNWSForecast(nwsForecastURL)
+	TrackAPICall("NWS-Raleigh", err)
 	if err != nil {
 		log.Printf("Warning: failed to fetch NWS forecast: %v", err)
 	}
@@ -496,7 +502,9 @@ func weatherLoop() {
 // scrapeLoop runs the scraper immediately, then every pollInterval.
 func scrapeLoop() {
 	log.Println("Running initial scrape...")
-	if err := fetchAndParse(); err != nil {
+	err := fetchAndParse()
+	TrackAPICall("USACE", err)
+	if err != nil {
 		log.Printf("Error during initial scrape: %v", err)
 	}
 
@@ -504,7 +512,9 @@ func scrapeLoop() {
 	defer ticker.Stop()
 	for range ticker.C {
 		log.Println("Running scheduled scrape...")
-		if err := fetchAndParse(); err != nil {
+		err := fetchAndParse()
+		TrackAPICall("USACE", err)
+		if err != nil {
 			log.Printf("Error during scrape: %v", err)
 		}
 	}
@@ -539,6 +549,9 @@ func main() {
 	// --- Night Sky astronomy dashboard ---
 	InitAstro(mux)
 
+	// --- Analytics page ---
+	InitAnalytics(mux)
+
 	// --- Prometheus metrics (stays at root for scraping) ---
 	mux.Handle("/metrics", promhttp.Handler())
 
@@ -564,7 +577,7 @@ func main() {
 
 	log.Printf("Serving dashboard on %s%s/", listenAddr, basePath)
 	log.Printf("Prometheus metrics on %s/metrics", listenAddr)
-	if err := http.ListenAndServe(listenAddr, mux); err != nil {
+	if err := http.ListenAndServe(listenAddr, analyticsMiddleware(mux)); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
