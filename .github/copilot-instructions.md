@@ -73,6 +73,13 @@
 - **Storage:** 1Gi PVC (`do-block-storage`) mounted at `/data/` for history persistence
 - **Strategy:** Recreate (required by RWO PVC)
 
+## Testing
+- Tests live alongside source files as `*_test.go` in the `main` package (so they can see unexported types/helpers).
+- Prefer local instances over the package-level globals (`tempHistory`, `levelHistory`, `analytics`) — use `newTestAnalytics()` for fresh state. When a test *must* mutate a global, save and restore it via `t.Cleanup` so ordering isn't fragile.
+- Network-touching code isn't unit-tested; cover it by testing the pure helpers it composes (regex parsers, interpolation, header extraction, etc.) or via `httptest.NewServer` when exercising handlers/middleware.
+- Run tests: `go test -race -count=1 ./...`. CI runs the same command plus `go vet` and `go build` on every PR and push to `main` (`.github/workflows/ci.yml`).
+- Deploy (`.github/workflows/deploy.yml`) still runs only on push-to-`main` and doesn't yet depend on the CI job passing — a future change could chain them via `workflow_run` or a `needs:` block if that's desired.
+
 ## Build & Deploy
 ```bash
 # Build locally
