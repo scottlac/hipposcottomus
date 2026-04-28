@@ -74,6 +74,13 @@
 - **Storage:** 1Gi PVC (`do-block-storage`) mounted at `/data/` for history persistence
 - **Strategy:** Recreate (required by RWO PVC)
 
+## Open Graph link previews
+- Every dashboard's HTML head includes `og:*` and `twitter:*` meta tags so links shared on WhatsApp, iMessage, Slack, Discord, Twitter, etc. render with a title, description, and a preview image. Crawlers don't run JS, so anything per-URL has to be server-rendered.
+- **Generic `/og.png`** (in `site_og.go`) is a 1200×630 PNG with the hippo wordmark and dashboard list. All non-poker dashboards reference it from a static `<meta property="og:image">` in their HTML.
+- **Per-hand `/poker/og.png?hand=…&board=…`** (in `poker_og.go`) draws the actual selected cards onto the same 1200×630 canvas. The poker page is the only one served through a Go template (in `poker.go`'s `servePokerHTML`) — it injects `og:image`, `og:title`, etc. with the current query params so a shared `/poker/?hand=AsKh&board=…` URL gets a preview showing those cards. Other `/poker/*` paths still flow through the static `FileServer` untouched.
+- Image rendering uses `golang.org/x/image` with the Go fonts (`gofont/gobold`, `gofont/goregular`) — pure Go, no font files committed. Palette in `poker_og.go` mirrors the site's CSS custom properties.
+- `absoluteURL(r, path)` builds full URLs honoring `X-Forwarded-Proto` / `X-Forwarded-Host` from the nginx ingress so OG tags get `https://hipposcottomus.com/...` rather than the in-cluster service hostname.
+
 ## Progressive Web App
 - The whole site is one installable PWA. `home/manifest.json` advertises `start_url: "/"` and `scope: "/"`, so any of the dashboards can trigger the install prompt. `home/icon.svg` is the SVG icon — Chrome/Android render it fine; iOS may fall back to a generic icon until a PNG `apple-touch-icon` is added (intentional follow-up).
 - `home/sw.js` is the service worker, served at `/sw.js`. Strategy:
