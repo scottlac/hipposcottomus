@@ -204,5 +204,14 @@
   <footer>
     <p>Built with Go, Chart.js &amp; ☕ · Hosted on DigitalOcean</p>
   </footer>
+
+  <script>
+    try {
+      navigator.sendBeacon(
+        "/analytics/api/screen",
+        JSON.stringify({ size: screen.width + "x" + screen.height })
+      );
+    } catch (e) {}
+  </script>
 </body>
 </html>

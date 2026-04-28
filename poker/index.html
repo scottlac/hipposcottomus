@@ -100,5 +100,13 @@
   </footer>
 
   <script src="app.js"></script>
+  <script>
+    try {
+      navigator.sendBeacon(
+        "/analytics/api/screen",
+        JSON.stringify({ size: screen.width + "x" + screen.height })
+      );
+    } catch (e) {}
+  </script>
 </body>
 </html>
