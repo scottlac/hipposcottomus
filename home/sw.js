@@ -9,12 +9,15 @@
 //
 // Bump CACHE_VERSION on any frontend change you want to force-refresh.
 
-const CACHE_VERSION = "hippo-v1";
+const CACHE_VERSION = "hippo-v2";
 
 const SHELL = [
   "/",
   "/manifest.json",
   "/icon.svg",
+  "/apple-touch-icon.png",
+  "/icon-512.png",
+  "/og.png",
   "/lakedashboard/",
   "/ftlauderdale/",
   "/poker/",
