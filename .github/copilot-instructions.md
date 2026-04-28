@@ -82,7 +82,7 @@
 - `absoluteURL(r, path)` builds full URLs honoring `X-Forwarded-Proto` / `X-Forwarded-Host` from the nginx ingress so OG tags get `https://hipposcottomus.com/...` rather than the in-cluster service hostname.
 
 ## Progressive Web App
-- The whole site is one installable PWA. `home/manifest.json` advertises `start_url: "/"` and `scope: "/"`, so any of the dashboards can trigger the install prompt. `home/icon.svg` is the SVG icon — Chrome/Android render it fine; iOS may fall back to a generic icon until a PNG `apple-touch-icon` is added (intentional follow-up).
+- The whole site is one installable PWA. `home/manifest.json` advertises `start_url: "/"` and `scope: "/"`, so any of the dashboards can trigger the install prompt. `home/icon.svg` is the SVG icon for browsers that handle SVG; `/apple-touch-icon.png` (180×180) and `/icon-512.png` (512×512, marked `any maskable`) are rendered on demand by `site_og.go` — same pure-Go pipeline as `/og.png`, no committed PNG files. Icon design is the "hippo" wordmark on the dark-navy brand color with a small accent stripe (the Go bold font doesn't include emoji glyphs, so the 🦛 from the favicon SVG isn't reproducible there).
 - `home/sw.js` is the service worker, served at `/sw.js`. Strategy:
   - Pre-cache the app shell (home + each dashboard root + manifest + icon) on `install`.
   - **Network-only** for `/api/*`, `/metrics`, `/healthz` — these are time-sensitive and must never be served stale.
