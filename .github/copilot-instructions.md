@@ -74,6 +74,17 @@
 - **Storage:** 1Gi PVC (`do-block-storage`) mounted at `/data/` for history persistence
 - **Strategy:** Recreate (required by RWO PVC)
 
+## Progressive Web App
+- The whole site is one installable PWA. `home/manifest.json` advertises `start_url: "/"` and `scope: "/"`, so any of the dashboards can trigger the install prompt. `home/icon.svg` is the SVG icon — Chrome/Android render it fine; iOS may fall back to a generic icon until a PNG `apple-touch-icon` is added (intentional follow-up).
+- `home/sw.js` is the service worker, served at `/sw.js`. Strategy:
+  - Pre-cache the app shell (home + each dashboard root + manifest + icon) on `install`.
+  - **Network-only** for `/api/*`, `/metrics`, `/healthz` — these are time-sensitive and must never be served stale.
+  - **Cache-first with runtime caching** for other same-origin GETs. Successful basic responses get added to the cache so subsequent navigations work offline.
+  - On total network failure, falls back to the cached `/` so the app at least opens.
+- Cross-origin requests (Pico, Chart.js, Leaflet, unpkg) bypass the SW entirely so their own caching rules apply.
+- Bump the `CACHE_VERSION` constant in `sw.js` whenever you want to force-refresh cached static assets across all clients. Combined with `skipWaiting()` + `clients.claim()`, updates take effect on the next page load rather than after every tab is closed.
+- Each dashboard HTML adds the same boilerplate to `<head>`: `<link rel="manifest">`, `theme-color` meta, and Apple-specific PWA meta tags. The closing `<script>` block now also registers the SW after page load.
+
 ## Poker equity calculator
 - Monte Carlo iterations live in `pokerIterations` (currently 50000). At 50k the standard error on a 50/50 race is ~0.22%, so percentages stay visually stable across reloads. There's a `BenchmarkCalcEquity` in `poker_bench_test.go` for sizing it; reduce if request latency on the 0.1-CPU pod becomes a problem.
 - `computeThreats(hero, board)` enumerates every possible 2-card opponent hand from the remaining deck (C(45,2)=990 on the river), evaluates each against hero with the current board, and groups the losing combos by `HandCategory`. Returns nil when the board has fewer than 3 cards (hero has no 5-card hand to compare against yet). Output is ordered strongest-first.
