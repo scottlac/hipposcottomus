@@ -221,6 +221,18 @@ main {
   color: var(--accent-red);
 }
 
+/* Share variant — a non-destructive accent so it reads differently from
+   "Clear All". */
+.control__button--share:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+.control__button--copied {
+  border-color: var(--accent-green) !important;
+  color: var(--accent-green) !important;
+}
+
 /* ===== Result ===== */
 .result {
   background: var(--surface);
