@@ -555,6 +555,10 @@ func main() {
 	// --- Generic Open Graph preview image at /og.png ---
 	mux.HandleFunc("/og.png", handleSiteOGImage)
 
+	// --- App icons rendered on demand ---
+	mux.HandleFunc("/apple-touch-icon.png", handleAppleTouchIcon)
+	mux.HandleFunc("/icon-512.png", handleIcon512)
+
 	// --- Prometheus metrics (stays at root for scraping) ---
 	mux.Handle("/metrics", promhttp.Handler())
 
