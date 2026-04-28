@@ -52,8 +52,9 @@
 - `analyticsMiddleware` wraps the top-level mux; it counts requests whose exact path matches an entry in `trackedPaths` (home, lake, ftl, poker, astro, analytics). Assets, API calls, `/metrics`, and `/healthz` are ignored.
 - Heatmap is a `[7][24]int64` cumulative grid keyed by weekday × hour of request time.
 - External API health is tracked via `TrackAPICall(source string, err error)` — called at each fetch site (USACE, USGS, NWS-Raleigh, NOAA-Tides, NOAA-WaterTemp, NWS-Miami, NDBC-Marine, CelesTrak-TLE). When adding a new external fetch, call `TrackAPICall` with a stable source label and the error (nil = success).
+- **Screen resolutions** are reported by a tiny `navigator.sendBeacon` snippet on every tracked page that POSTs `{"size": "WxH"}` to `/analytics/api/screen`. The handler validates bounds (100–16384px each axis), caps unique-key cardinality at 5000, and bumps `Analytics.ScreenSizes`. Stored independently from page-view, country, and city counters — never linked.
 - `analytics.json` is saved every 5 minutes; page views are bucketed by local date (`YYYY-MM-DD`).
-- **Privacy:** only aggregate counts are tracked — no IPs, user agents, or session identifiers are stored. Country lookup reads the client IP from `X-Real-IP` / `X-Forwarded-For`, resolves it to an ISO code, and increments a per-code counter. The IP itself is never written to disk.
+- **Privacy:** only aggregate counts are tracked — no IPs, user agents, or session identifiers are stored. Country lookup reads the client IP from `X-Real-IP` / `X-Forwarded-For`, resolves it to an ISO code, and increments a per-code counter. The IP itself is never written to disk. Each metric (page views, country, city heatmap, screen resolution) is a standalone counter — there is no per-visit record connecting them.
 
 ### Geo lookup (country + city heatmap)
 - Uses `github.com/oschwald/geoip2-golang` against the MaxMind GeoLite2 **City** DB (~70MB, free with a MaxMind account). The City DB includes country info, so both the country list and the visitor heatmap come from a single lookup.

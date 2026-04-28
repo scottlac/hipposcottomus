@@ -83,6 +83,11 @@ type Analytics struct {
 	// cityHeatmapPrecision decimal places. Raw coordinates are never
 	// persisted — only the bucket aggregate.
 	CityHeatmap map[string]int64 `json:"cityHeatmap"`
+
+	// ScreenSizes["WxH"] = count. Reported by a small browser beacon on
+	// page load. Stored as a separate aggregate counter — never linked
+	// to any other dimension (country, IP, session, etc.).
+	ScreenSizes map[string]int64 `json:"screenSizes"`
 }
 
 var analytics = &Analytics{
@@ -91,6 +96,7 @@ var analytics = &Analytics{
 	APIHealth:   map[string]*APIHealthEntry{},
 	Countries:   map[string]int64{},
 	CityHeatmap: map[string]int64{},
+	ScreenSizes: map[string]int64{},
 }
 
 // geoDB is loaded on startup if the MMDB file exists; nil otherwise.
@@ -182,6 +188,42 @@ func lookupGeo(ip net.IP) geoLookup {
 	return out
 }
 
+// RecordScreenSize parses a "WxH" string from the browser beacon, validates
+// it, and bumps the per-resolution counter. Invalid or out-of-range inputs
+// are silently dropped to keep junk out of the aggregate.
+func (a *Analytics) RecordScreenSize(size string) {
+	const (
+		minDim    = 100
+		maxDim    = 16384
+		maxLen    = 12 // "65535x65535" is the realistic worst case
+		maxUnique = 5000
+	)
+	if len(size) == 0 || len(size) > maxLen {
+		return
+	}
+	parts := strings.SplitN(size, "x", 2)
+	if len(parts) != 2 {
+		return
+	}
+	w, errW := strconv.Atoi(parts[0])
+	h, errH := strconv.Atoi(parts[1])
+	if errW != nil || errH != nil {
+		return
+	}
+	if w < minDim || w > maxDim || h < minDim || h > maxDim {
+		return
+	}
+	canonical := strconv.Itoa(w) + "x" + strconv.Itoa(h)
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	// Cap the unique-key cardinality so a malicious client can't blow up
+	// memory by submitting random sizes.
+	if _, exists := a.ScreenSizes[canonical]; !exists && len(a.ScreenSizes) >= maxUnique {
+		return
+	}
+	a.ScreenSizes[canonical]++
+}
+
 // TrackAPICall records a success or failure for an external API fetch.
 // Call it from each fetch site with the error (nil = success).
 func TrackAPICall(source string, err error) {
@@ -251,6 +293,9 @@ func (a *Analytics) LoadFromFile() error {
 	}
 	if loaded.CityHeatmap != nil {
 		a.CityHeatmap = loaded.CityHeatmap
+	}
+	if loaded.ScreenSizes != nil {
+		a.ScreenSizes = loaded.ScreenSizes
 	}
 	return nil
 }
@@ -352,6 +397,11 @@ type heatPoint struct {
 	Count int64   `json:"count"`
 }
 
+type screenCount struct {
+	Size  string `json:"size"`
+	Count int64  `json:"count"`
+}
+
 type analyticsOverview struct {
 	StartedAt   time.Time                  `json:"startedAt"`
 	UptimeSec   int64                      `json:"uptimeSec"`
@@ -361,6 +411,7 @@ type analyticsOverview struct {
 	Runtime     runtimeStats               `json:"runtime"`
 	Countries   []countryCount             `json:"countries"`
 	CityHeatmap []heatPoint                `json:"cityHeatmap"`
+	Screens     []screenCount              `json:"screens"`
 	GeoEnabled  bool                       `json:"geoEnabled"`
 }
 
@@ -419,10 +470,19 @@ func handleAnalyticsOverview(w http.ResponseWriter, r *http.Request) {
 		}
 		points = append(points, heatPoint{Lat: lat, Lon: lon, Count: count})
 	}
+
+	// Flatten screen sizes into a sortable slice.
+	screens := make([]screenCount, 0, len(analytics.ScreenSizes))
+	for size, count := range analytics.ScreenSizes {
+		screens = append(screens, screenCount{Size: size, Count: count})
+	}
 	analytics.mu.RUnlock()
 
 	sort.Slice(countries, func(i, j int) bool {
 		return countries[i].Count > countries[j].Count
+	})
+	sort.Slice(screens, func(i, j int) bool {
+		return screens[i].Count > screens[j].Count
 	})
 
 	resp := analyticsOverview{
@@ -434,9 +494,30 @@ func handleAnalyticsOverview(w http.ResponseWriter, r *http.Request) {
 		Runtime:     currentRuntimeStats(),
 		Countries:   countries,
 		CityHeatmap: points,
+		Screens:     screens,
 		GeoEnabled:  geoEnabled,
 	}
 	writeJSON(w, resp)
+}
+
+// handleAnalyticsScreen accepts a small JSON beacon from the browser:
+// {"size": "1920x1080"}. Method must be POST. Body is capped to a small
+// size to make abuse unattractive.
+func handleAnalyticsScreen(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "POST only", http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		Size string `json:"size"`
+	}
+	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 256))
+	if err := dec.Decode(&body); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	analytics.RecordScreenSize(body.Size)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // ── Init ────────────────────────────────────────────────────────
@@ -459,6 +540,7 @@ func InitAnalytics(mux *http.ServeMux) {
 	go analyticsPersistLoop()
 
 	mux.HandleFunc(analyticsBasePath+"/api/overview", handleAnalyticsOverview)
+	mux.HandleFunc(analyticsBasePath+"/api/screen", handleAnalyticsScreen)
 
 	staticSub, err := fs.Sub(analyticsFiles, "analytics")
 	if err != nil {
