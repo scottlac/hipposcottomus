@@ -552,6 +552,9 @@ func main() {
 	// --- Analytics page ---
 	InitAnalytics(mux)
 
+	// --- Generic Open Graph preview image at /og.png ---
+	mux.HandleFunc("/og.png", handleSiteOGImage)
+
 	// --- Prometheus metrics (stays at root for scraping) ---
 	mux.Handle("/metrics", promhttp.Handler())
 

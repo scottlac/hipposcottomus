@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io/fs"
 	"log"
 	"math/rand"
@@ -587,18 +588,188 @@ func handlePokerEquity(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, resp)
 }
 
+// ── OG image + HTML templating ──────────────────────────────────
+
+// parseShareCards mirrors the frontend's parseCardList helper: each card is
+// exactly 2 chars (rank + suit), so the param is just the cards
+// concatenated. Invalid pieces are silently skipped.
+func parseShareCards(s string) []poker.Card {
+	out := make([]poker.Card, 0, len(s)/2)
+	used := map[poker.Card]bool{}
+	for i := 0; i+2 <= len(s); i += 2 {
+		c, err := parseCard(s[i : i+2])
+		if err != nil || used[c] {
+			continue
+		}
+		used[c] = true
+		out = append(out, c)
+	}
+	return out
+}
+
+// handlePokerOGImage renders a 1200×630 PNG showing the hand and board
+// described in the query string. Empty params produce a placeholder image.
+func handlePokerOGImage(w http.ResponseWriter, r *http.Request) {
+	hand := parseShareCards(r.URL.Query().Get("hand"))
+	if len(hand) > 2 {
+		hand = hand[:2]
+	}
+	board := parseShareCards(r.URL.Query().Get("board"))
+	if len(board) > 5 {
+		board = board[:5]
+	}
+
+	w.Header().Set("Content-Type", "image/png")
+	// Per-URL caching is fine for a long time — same query → same image.
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	if err := renderPokerOG(w, hand, board); err != nil {
+		log.Printf("[Poker] OG render failed: %v", err)
+	}
+}
+
+// pokerHTMLTemplate is the index.html content with placeholder OG meta tags
+// replaced at request time. Initialized lazily on first request.
+var (
+	pokerHTMLOnce sync.Once
+	pokerHTMLTpl  *template.Template
+)
+
+// pokerOGData is the data passed to pokerHTMLTpl.
+type pokerOGData struct {
+	Title       string
+	Description string
+	URL         string
+	ImageURL    string
+}
+
+func loadPokerHTMLTemplate(staticSub fs.FS) {
+	pokerHTMLOnce.Do(func() {
+		raw, err := fs.ReadFile(staticSub, "index.html")
+		if err != nil {
+			log.Fatalf("[Poker] failed to read embedded index.html: %v", err)
+		}
+		// Inject the OG action right before </head>. The base HTML stays
+		// untouched on disk; the template is purely additive.
+		const headClose = `</head>`
+		injected := strings.Replace(string(raw), headClose, `{{.OGMeta}}`+"\n"+headClose, 1)
+		pokerHTMLTpl = template.Must(template.New("poker").Parse(injected))
+	})
+}
+
+const pokerOGTagsTpl = `
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="hipposcottomus">
+  <meta property="og:title" content="{{.Title}}">
+  <meta property="og:description" content="{{.Description}}">
+  <meta property="og:url" content="{{.URL}}">
+  <meta property="og:image" content="{{.ImageURL}}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{.Title}}">
+  <meta name="twitter:description" content="{{.Description}}">
+  <meta name="twitter:image" content="{{.ImageURL}}">
+`
+
+var pokerOGFragment = template.Must(template.New("og").Parse(pokerOGTagsTpl))
+
+// servePokerHTML renders index.html with OG meta tags reflecting the
+// current ?hand=&board= query string, so link previews on
+// WhatsApp/iMessage/Slack/etc. show the actual hand.
+func servePokerHTML(w http.ResponseWriter, r *http.Request) {
+	hand := parseShareCards(r.URL.Query().Get("hand"))
+	board := parseShareCards(r.URL.Query().Get("board"))
+
+	title, desc := pokerOGCopy(hand, board)
+	imageURL := absoluteURL(r, pokerBasePath+"/og.png")
+	if r.URL.RawQuery != "" {
+		imageURL = absoluteURL(r, pokerBasePath+"/og.png?"+r.URL.RawQuery)
+	}
+	pageURL := absoluteURL(r, r.URL.Path)
+	if r.URL.RawQuery != "" {
+		pageURL = absoluteURL(r, r.URL.Path+"?"+r.URL.RawQuery)
+	}
+
+	var ogBuf strings.Builder
+	if err := pokerOGFragment.Execute(&ogBuf, pokerOGData{
+		Title: title, Description: desc, URL: pageURL, ImageURL: imageURL,
+	}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache")
+	if err := pokerHTMLTpl.Execute(w, struct{ OGMeta template.HTML }{OGMeta: template.HTML(ogBuf.String())}); err != nil {
+		log.Printf("[Poker] HTML render failed: %v", err)
+	}
+}
+
+// pokerOGCopy returns the OG title and description for a hand/board.
+func pokerOGCopy(hand, board []poker.Card) (title, desc string) {
+	if len(hand) == 0 {
+		return "Hold'em Equity Calculator",
+			"Pick your hole cards and the board, then see your win probability against random opponents."
+	}
+	handStr := cardsString(hand)
+	if len(board) == 0 {
+		return "Hold'em Equity · " + handStr,
+			"Win probability for " + handStr + " preflop against random opponents."
+	}
+	return "Hold'em Equity · " + handStr + " / " + cardsString(board),
+		"Win probability for " + handStr + " on board " + cardsString(board) + "."
+}
+
+func cardsString(cards []poker.Card) string {
+	parts := make([]string, len(cards))
+	for i, c := range cards {
+		parts[i] = rankLabel(c.Rank()) + suitGlyph(c.Suit())
+	}
+	return strings.Join(parts, " ")
+}
+
+// absoluteURL builds an absolute URL from the request, honoring
+// X-Forwarded-Proto / X-Forwarded-Host (set by the nginx ingress).
+func absoluteURL(r *http.Request, path string) string {
+	scheme := r.Header.Get("X-Forwarded-Proto")
+	if scheme == "" {
+		if r.TLS != nil {
+			scheme = "https"
+		} else {
+			scheme = "http"
+		}
+	}
+	host := r.Header.Get("X-Forwarded-Host")
+	if host == "" {
+		host = r.Host
+	}
+	return scheme + "://" + host + path
+}
+
 // ── Init ────────────────────────────────────────────────────────
 
 // InitPoker registers the poker equity calculator routes.
 func InitPoker(mux *http.ServeMux) {
 	mux.HandleFunc(pokerBasePath+"/api/equity", handlePokerEquity)
+	mux.HandleFunc(pokerBasePath+"/og.png", handlePokerOGImage)
 
 	staticSub, err := fs.Sub(content, "poker")
 	if err != nil {
 		log.Fatalf("[Poker] failed to load embedded static files: %v", err)
 	}
+	loadPokerHTMLTemplate(staticSub)
 	fileServer := http.FileServer(http.FS(staticSub))
-	mux.Handle(pokerBasePath+"/", http.StripPrefix(pokerBasePath, fileServer))
+
+	// Intercept the bare /poker/ and /poker/index.html requests so we can
+	// inject OG meta. Everything else (assets) flows through the static
+	// FileServer untouched.
+	mux.HandleFunc(pokerBasePath+"/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == pokerBasePath+"/" || r.URL.Path == pokerBasePath+"/index.html" {
+			servePokerHTML(w, r)
+			return
+		}
+		http.StripPrefix(pokerBasePath, fileServer).ServeHTTP(w, r)
+	})
 
 	log.Printf("[Poker] Poker equity calculator registered at %s/", pokerBasePath)
 }
