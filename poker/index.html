@@ -7,7 +7,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦛</text></svg>">
   <base href="/poker/" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=2" />
 </head>
 <body>
   <header>
@@ -83,6 +83,11 @@
       </div>
     </section>
 
+    <section class="threats" id="threatsSection" hidden>
+      <h2 class="threats__title">Hands that beat you</h2>
+      <ul class="threats__list" id="threatsList"></ul>
+    </section>
+
     <section class="picker">
       <div class="picker__legend">
         <span class="legend legend--hand"><span class="legend__swatch"></span>Your Hand</span>
@@ -100,7 +105,7 @@
     </p>
   </footer>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=2"></script>
   <script>
     try {
       navigator.sendBeacon(
