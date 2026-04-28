@@ -358,6 +358,49 @@ function renderCountries(data) {
   `;
 }
 
+function classifyScreen(size) {
+  const [w] = size.split("x").map(Number);
+  if (!Number.isFinite(w)) return "";
+  if (w < 600) return "📱";    // phone-ish
+  if (w < 1024) return "📱"; // small tablet / phablet
+  if (w < 1600) return "💻";  // laptop
+  return "🖥️";                  // desktop / large monitor
+}
+
+function renderScreens(data) {
+  const container = document.getElementById("screens");
+  const screens = data.screens || [];
+  if (screens.length === 0) {
+    container.innerHTML = `<p class="muted">No screen sizes reported yet.</p>`;
+    return;
+  }
+
+  const total = screens.reduce((sum, s) => sum + s.count, 0);
+  const top = screens.slice(0, 20);
+  const max = top[0].count;
+
+  container.innerHTML = `
+    <ul class="screens">
+      ${top.map((s) => {
+        const pct = total === 0 ? 0 : (100 * s.count) / total;
+        const widthPct = max === 0 ? 0 : (100 * s.count) / max;
+        return `
+          <li class="screens__row">
+            <span class="screens__icon">${classifyScreen(s.size)}</span>
+            <span class="screens__size">${s.size}</span>
+            <span class="screens__bar">
+              <span class="screens__bar-fill" style="width: ${widthPct.toFixed(1)}%"></span>
+            </span>
+            <span class="screens__count">${s.count.toLocaleString()}</span>
+            <span class="screens__pct muted">${pct.toFixed(1)}%</span>
+          </li>
+        `;
+      }).join("")}
+    </ul>
+    ${screens.length > 20 ? `<p class="muted">Showing top 20 of ${screens.length} resolutions.</p>` : ""}
+  `;
+}
+
 async function refresh() {
   try {
     const resp = await fetch("api/overview");
@@ -369,6 +412,7 @@ async function refresh() {
     renderHeatmap(data);
     renderMap(data);
     renderCountries(data);
+    renderScreens(data);
     renderRuntime(data);
   } catch (err) {
     console.error("Failed to refresh analytics:", err);

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -16,6 +18,7 @@ func newTestAnalytics() *Analytics {
 		APIHealth:   map[string]*APIHealthEntry{},
 		Countries:   map[string]int64{},
 		CityHeatmap: map[string]int64{},
+		ScreenSizes: map[string]int64{},
 	}
 }
 
@@ -206,6 +209,105 @@ func TestTrackAPICall(t *testing.T) {
 type errFake struct{ msg string }
 
 func (e errFake) Error() string { return e.msg }
+
+// ── RecordScreenSize ────────────────────────────────────────────
+
+func TestRecordScreenSize(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantStore map[string]int64
+	}{
+		{"valid", "1920x1080", map[string]int64{"1920x1080": 1}},
+		{"valid trim leading zeros", "01920x01080", map[string]int64{"1920x1080": 1}},
+		{"empty", "", map[string]int64{}},
+		{"missing x", "1920", map[string]int64{}},
+		{"non-numeric", "WIDExHIGH", map[string]int64{}},
+		{"too small", "10x10", map[string]int64{}},
+		{"too large", "99999x99999", map[string]int64{}},
+		{"too long", strings.Repeat("9", 50), map[string]int64{}},
+		{"negative", "-100x-100", map[string]int64{}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := newTestAnalytics()
+			a.RecordScreenSize(tt.input)
+			if !reflect.DeepEqual(a.ScreenSizes, tt.wantStore) {
+				t.Errorf("ScreenSizes = %+v, want %+v", a.ScreenSizes, tt.wantStore)
+			}
+		})
+	}
+}
+
+func TestRecordScreenSize_Increments(t *testing.T) {
+	a := newTestAnalytics()
+	for i := 0; i < 3; i++ {
+		a.RecordScreenSize("1920x1080")
+	}
+	a.RecordScreenSize("1366x768")
+	if a.ScreenSizes["1920x1080"] != 3 {
+		t.Errorf("1920x1080 count = %d, want 3", a.ScreenSizes["1920x1080"])
+	}
+	if a.ScreenSizes["1366x768"] != 1 {
+		t.Errorf("1366x768 count = %d, want 1", a.ScreenSizes["1366x768"])
+	}
+}
+
+// ── handleAnalyticsScreen ───────────────────────────────────────
+
+func TestHandleAnalyticsScreen(t *testing.T) {
+	origAnalytics := analytics
+	analytics = newTestAnalytics()
+	t.Cleanup(func() { analytics = origAnalytics })
+
+	tests := []struct {
+		name       string
+		method     string
+		body       string
+		wantStatus int
+		wantStored bool
+	}{
+		{"valid POST", "POST", `{"size":"1920x1080"}`, http.StatusNoContent, true},
+		{"GET rejected", "GET", "", http.StatusMethodNotAllowed, false},
+		{"bad JSON", "POST", `not json`, http.StatusBadRequest, false},
+		{"empty size silently ignored", "POST", `{"size":""}`, http.StatusNoContent, false},
+		{"junk size silently ignored", "POST", `{"size":"abc"}`, http.StatusNoContent, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			analytics.ScreenSizes = map[string]int64{}
+			req := httptest.NewRequest(tt.method, "/analytics/api/screen", bytes.NewBufferString(tt.body))
+			rr := httptest.NewRecorder()
+			handleAnalyticsScreen(rr, req)
+			if rr.Code != tt.wantStatus {
+				t.Errorf("status = %d, want %d", rr.Code, tt.wantStatus)
+			}
+			if tt.wantStored && analytics.ScreenSizes["1920x1080"] != 1 {
+				t.Errorf("expected 1920x1080 to be stored, got %+v", analytics.ScreenSizes)
+			}
+			if !tt.wantStored && len(analytics.ScreenSizes) != 0 {
+				t.Errorf("expected empty store, got %+v", analytics.ScreenSizes)
+			}
+		})
+	}
+}
+
+func TestHandleAnalyticsScreen_BodySizeCap(t *testing.T) {
+	// MaxBytesReader caps at 256 bytes; a much larger body should be rejected
+	// before parsing.
+	origAnalytics := analytics
+	analytics = newTestAnalytics()
+	t.Cleanup(func() { analytics = origAnalytics })
+
+	huge := `{"size":"` + strings.Repeat("A", 500) + `"}`
+	req := httptest.NewRequest("POST", "/analytics/api/screen", strings.NewReader(huge))
+	rr := httptest.NewRecorder()
+	handleAnalyticsScreen(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for oversized body, got %d", rr.Code)
+	}
+}
 
 // ── Persistence round trip ──────────────────────────────────────
 

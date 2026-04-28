@@ -12,7 +12,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
 <body>
   <header>
@@ -96,6 +96,14 @@
       </div>
     </section>
 
+    <!-- Screen Resolutions -->
+    <section class="panel">
+      <h2>Screen Resolutions</h2>
+      <div id="screens">
+        <p class="muted">Loading…</p>
+      </div>
+    </section>
+
     <!-- Runtime detail -->
     <section class="panel">
       <h2>Go Runtime</h2>
@@ -111,6 +119,14 @@
     </p>
   </footer>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
+  <script>
+    try {
+      navigator.sendBeacon(
+        "/analytics/api/screen",
+        JSON.stringify({ size: screen.width + "x" + screen.height })
+      );
+    } catch (e) {}
+  </script>
 </body>
 </html>
