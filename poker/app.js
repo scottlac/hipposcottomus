@@ -40,6 +40,8 @@
     winValue:     document.getElementById("winValue"),
     tieValue:     document.getElementById("tieValue"),
     handDesc:     document.getElementById("handDesc"),
+    threatsSection: document.getElementById("threatsSection"),
+    threatsList: document.getElementById("threatsList"),
   };
 
   // ── Picker grid ───────────────────────────────────────────────
@@ -265,6 +267,7 @@
     el.resultPrompt.hidden = false;
     el.resultPrompt.textContent = msg;
     el.resultContent.hidden = true;
+    if (el.threatsSection) el.threatsSection.hidden = true;
   }
 
   function tierFor(winProb) {
@@ -292,6 +295,33 @@
 
     const dashOffset = RING_CIRC * (1 - data.winProbability);
     el.ringFg.style.strokeDashoffset = dashOffset.toString();
+
+    renderThreats(data.threats);
+  }
+
+  function renderThreats(threats) {
+    if (!el.threatsSection) return;
+    if (!threats || threats.length === 0) {
+      el.threatsSection.hidden = true;
+      return;
+    }
+    el.threatsSection.hidden = false;
+    el.threatsList.innerHTML = threats.map((t) => {
+      const pct = t.totalCombos > 0 ? (100 * t.combos / t.totalCombos).toFixed(2) : "0.00";
+      return `
+        <li class="threat">
+          <span class="threat__category">${escapeHTML(t.category)}</span>
+          <span class="threat__combos">${t.combos.toLocaleString()} of ${t.totalCombos.toLocaleString()} combos</span>
+          <span class="threat__pct">${pct}%</span>
+        </li>
+      `;
+    }).join("");
+  }
+
+  function escapeHTML(s) {
+    return String(s).replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+    );
   }
 
   function showSpinner(visible) {

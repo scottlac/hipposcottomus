@@ -19,7 +19,9 @@ const (
 	// Number of Monte Carlo iterations for equity calculation.
 	// Each iteration samples a random opponent configuration and a random
 	// completed board, then calls HoldemEquities for a single evaluation.
-	pokerIterations = 1500
+	// At 50k, the standard error on a 50/50 race is ~0.22% — visually stable
+	// across reloads. Reduce if request latency becomes a problem.
+	pokerIterations = 50000
 )
 
 // pokerRNGPool provides per-request random sources so concurrent requests
@@ -39,9 +41,18 @@ type equityRequest struct {
 }
 
 type equityResponse struct {
-	WinProbability  float64 `json:"winProbability"`
-	TieProbability  float64 `json:"tieProbability"`
-	HandDescription string  `json:"handDescription"`
+	WinProbability  float64  `json:"winProbability"`
+	TieProbability  float64  `json:"tieProbability"`
+	HandDescription string   `json:"handDescription"`
+	Threats         []threat `json:"threats,omitempty"`
+}
+
+// threat is one poker hand category that a single random opponent could hold
+// to beat the hero, given the current board.
+type threat struct {
+	Category    string `json:"category"`
+	Combos      int    `json:"combos"`      // number of 2-card opponent hands in this category that beat hero
+	TotalCombos int    `json:"totalCombos"` // total 2-card opponent hands considered (denominator)
 }
 
 // ── Card parsing ────────────────────────────────────────────────
@@ -263,6 +274,249 @@ func bestSubsetDescription(cards []poker.Card) string {
 	return d
 }
 
+// ── Hand category classification ────────────────────────────────
+
+// HandCategory enumerates the nine standard 5-card poker hand categories,
+// ordered from weakest to strongest.
+type HandCategory int
+
+const (
+	CatHighCard HandCategory = iota
+	CatPair
+	CatTwoPair
+	CatTrips
+	CatStraight
+	CatFlush
+	CatFullHouse
+	CatQuads
+	CatStraightFlush
+)
+
+func (c HandCategory) String() string {
+	switch c {
+	case CatHighCard:
+		return "High Card"
+	case CatPair:
+		return "Pair"
+	case CatTwoPair:
+		return "Two Pair"
+	case CatTrips:
+		return "Three of a Kind"
+	case CatStraight:
+		return "Straight"
+	case CatFlush:
+		return "Flush"
+	case CatFullHouse:
+		return "Full House"
+	case CatQuads:
+		return "Four of a Kind"
+	case CatStraightFlush:
+		return "Straight Flush"
+	}
+	return ""
+}
+
+// classify5 returns the poker category for an exact 5-card hand. It is
+// independent of paulhankin/poker's score packing — small and easy to test.
+func classify5(cards [5]poker.Card) HandCategory {
+	rankCount := [13]int{}
+	suitCount := [4]int{}
+	for _, c := range cards {
+		rankCount[c.RawRank()]++
+		suitCount[int(c.Suit())]++
+	}
+
+	flush := false
+	for _, n := range suitCount {
+		if n == 5 {
+			flush = true
+			break
+		}
+	}
+
+	straight := false
+	// Standard run of 5 consecutive ranks.
+	for i := 0; i <= 12-4; i++ {
+		if rankCount[i] == 1 && rankCount[i+1] == 1 && rankCount[i+2] == 1 &&
+			rankCount[i+3] == 1 && rankCount[i+4] == 1 {
+			straight = true
+			break
+		}
+	}
+	// The wheel: A-2-3-4-5. RawRank: 2=0, 3=1, 4=2, 5=3, A=12.
+	if !straight && rankCount[0] == 1 && rankCount[1] == 1 &&
+		rankCount[2] == 1 && rankCount[3] == 1 && rankCount[12] == 1 {
+		straight = true
+	}
+
+	if straight && flush {
+		return CatStraightFlush
+	}
+	if flush {
+		return CatFlush
+	}
+	if straight {
+		return CatStraight
+	}
+
+	// Pair / trips / quads via rank-multiplicity histogram.
+	var pairs, trips, quads int
+	for _, n := range rankCount {
+		switch n {
+		case 2:
+			pairs++
+		case 3:
+			trips++
+		case 4:
+			quads++
+		}
+	}
+	switch {
+	case quads == 1:
+		return CatQuads
+	case trips == 1 && pairs >= 1:
+		return CatFullHouse
+	case trips == 1:
+		return CatTrips
+	case pairs >= 2:
+		return CatTwoPair
+	case pairs == 1:
+		return CatPair
+	}
+	return CatHighCard
+}
+
+// bestCategory finds the strongest 5-card subset of the given cards (5–7
+// cards) and returns its category. For 5 cards it just classifies directly;
+// for 6 or 7 it iterates 5-card subsets, picks the highest by Eval5, and
+// classifies that.
+func bestCategory(cards []poker.Card) HandCategory {
+	n := len(cards)
+	if n < 5 {
+		return CatHighCard
+	}
+	if n == 5 {
+		var h [5]poker.Card
+		copy(h[:], cards)
+		return classify5(h)
+	}
+
+	var bestRank int16 = -1
+	var bestSubset [5]poker.Card
+	var subset [5]poker.Card
+
+	idx := []int{0, 1, 2, 3, 4}
+	for {
+		for i, j := range idx {
+			subset[i] = cards[j]
+		}
+		ev := poker.Eval5(&subset)
+		if ev > bestRank {
+			bestRank = ev
+			bestSubset = subset
+		}
+		if !nextCombination(idx, n) {
+			break
+		}
+	}
+	return classify5(bestSubset)
+}
+
+// computeThreats enumerates every possible opponent 2-card hand from the
+// remaining deck and groups those that beat the hero (with the current
+// board) by hand category. Returns nil when the board has fewer than 3
+// cards, since hero doesn't yet have a 5-card hand to compare against.
+func computeThreats(hero [2]poker.Card, board []poker.Card) []threat {
+	if len(board) < 3 {
+		return nil
+	}
+
+	used := map[poker.Card]bool{hero[0]: true, hero[1]: true}
+	for _, c := range board {
+		used[c] = true
+	}
+	deck := make([]poker.Card, 0, 52)
+	for _, c := range poker.Cards {
+		if !used[c] {
+			deck = append(deck, c)
+		}
+	}
+
+	heroAll := make([]poker.Card, 0, 2+len(board))
+	heroAll = append(heroAll, hero[0], hero[1])
+	heroAll = append(heroAll, board...)
+	heroEval := evalAll(heroAll)
+
+	totals := [9]int{}
+	losing := [9]int{}
+	oppAll := make([]poker.Card, 0, 2+len(board))
+	for i := 0; i < len(deck); i++ {
+		for j := i + 1; j < len(deck); j++ {
+			oppAll = append(oppAll[:0], deck[i], deck[j])
+			oppAll = append(oppAll, board...)
+			oppEval := evalAll(oppAll)
+			cat := bestCategory(oppAll)
+			totals[int(cat)]++
+			if oppEval > heroEval {
+				losing[int(cat)]++
+			}
+		}
+	}
+
+	totalCombos := 0
+	for _, n := range totals {
+		totalCombos += n
+	}
+
+	out := make([]threat, 0, 9)
+	for cat := CatStraightFlush; cat >= CatHighCard; cat-- {
+		if losing[int(cat)] == 0 {
+			continue
+		}
+		out = append(out, threat{
+			Category:    cat.String(),
+			Combos:      losing[int(cat)],
+			TotalCombos: totalCombos,
+		})
+	}
+	return out
+}
+
+// evalAll returns the highest-ranking poker eval int16 across all 5-card
+// subsets of the given cards. Cards must be 5, 6, or 7 (preconditions
+// guaranteed by the call sites).
+func evalAll(cards []poker.Card) int16 {
+	switch len(cards) {
+	case 5:
+		var h [5]poker.Card
+		copy(h[:], cards)
+		return poker.Eval5(&h)
+	case 7:
+		var h [7]poker.Card
+		copy(h[:], cards)
+		return poker.Eval7(&h)
+	case 6:
+		var subset [5]poker.Card
+		var best int16 = -1
+		for skip := 0; skip < 6; skip++ {
+			i := 0
+			for j := 0; j < 6; j++ {
+				if j == skip {
+					continue
+				}
+				subset[i] = cards[j]
+				i++
+			}
+			ev := poker.Eval5(&subset)
+			if ev > best {
+				best = ev
+			}
+		}
+		return best
+	}
+	return -1
+}
+
 // nextCombination advances idx to the next k-combination of {0..n-1}
 // in lexicographic order. Returns false when exhausted.
 func nextCombination(idx []int, n int) bool {
@@ -328,6 +582,7 @@ func handlePokerEquity(w http.ResponseWriter, r *http.Request) {
 		WinProbability:  win,
 		TieProbability:  tie,
 		HandDescription: describeHand(hero, board),
+		Threats:         computeThreats(hero, board),
 	}
 	writeJSON(w, resp)
 }
