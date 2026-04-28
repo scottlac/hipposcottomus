@@ -30,6 +30,7 @@
     boardDisplay: document.getElementById("boardDisplay"),
     numPlayers:   document.getElementById("numPlayers"),
     clearAll:     document.getElementById("clearAll"),
+    shareUrl:     document.getElementById("shareUrl"),
     resultPrompt: document.getElementById("resultPrompt"),
     resultContent:document.querySelector(".result__content"),
     ringWrap:     document.querySelector(".result__ring-wrap"),
@@ -114,6 +115,7 @@
       state.selections.delete(id);
     }
     render();
+    syncURL();
     scheduleEquityUpdate();
   }
 
@@ -127,6 +129,7 @@
   function clearAll() {
     state.selections.clear();
     render();
+    syncURL();
     scheduleEquityUpdate();
   }
 
@@ -295,19 +298,92 @@
     el.spinner.hidden = !visible;
   }
 
+  // ── Shareable URL state ───────────────────────────────────────
+
+  const CARD_RE = /^[AKQJT98765432][shdc]$/;
+  const DEFAULT_PLAYERS = 6;
+
+  // Each card is exactly 2 chars (rank + suit), so a card-list query value
+  // is just the cards concatenated, e.g. "AsKh" for the hand.
+  function parseCardList(s) {
+    if (!s) return [];
+    const out = [];
+    for (let i = 0; i + 2 <= s.length; i += 2) {
+      const card = s.slice(i, i + 2);
+      if (CARD_RE.test(card)) out.push(card);
+    }
+    return out;
+  }
+
+  function loadFromURL() {
+    const params = new URLSearchParams(location.search);
+    const handCards  = parseCardList(params.get("hand")).slice(0, MAX_HAND);
+    const boardCards = parseCardList(params.get("board")).slice(0, MAX_BOARD);
+    const used = new Set();
+    for (const c of handCards) {
+      if (!used.has(c)) { state.selections.set(c, "hand"); used.add(c); }
+    }
+    for (const c of boardCards) {
+      if (!used.has(c)) { state.selections.set(c, "board"); used.add(c); }
+    }
+    const players = parseInt(params.get("players"), 10);
+    if (players >= 2 && players <= 10) {
+      state.numPlayers = players;
+      el.numPlayers.value = String(players);
+    }
+  }
+
+  function syncURL() {
+    const hand = [];
+    const board = [];
+    state.selections.forEach((v, k) => {
+      if (v === "hand")  hand.push(k);
+      if (v === "board") board.push(k);
+    });
+    const params = new URLSearchParams();
+    if (hand.length)  params.set("hand", hand.join(""));
+    if (board.length) params.set("board", board.join(""));
+    if (state.numPlayers !== DEFAULT_PLAYERS) {
+      params.set("players", String(state.numPlayers));
+    }
+    const q = params.toString();
+    history.replaceState(null, "", location.pathname + (q ? "?" + q : ""));
+  }
+
+  async function copyShareURL() {
+    const btn = el.shareUrl;
+    if (!btn) return;
+    const original = btn.textContent;
+    try {
+      await navigator.clipboard.writeText(location.href);
+      btn.textContent = "Copied!";
+      btn.classList.add("control__button--copied");
+    } catch (e) {
+      btn.textContent = "Copy failed";
+    }
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.classList.remove("control__button--copied");
+    }, 1500);
+  }
+
   // ── Events ────────────────────────────────────────────────────
 
   el.numPlayers.addEventListener("change", (e) => {
     state.numPlayers = parseInt(e.target.value, 10);
+    syncURL();
     scheduleEquityUpdate();
   });
   el.clearAll.addEventListener("click", clearAll);
+  if (el.shareUrl) el.shareUrl.addEventListener("click", copyShareURL);
 
   // ── Init ──────────────────────────────────────────────────────
 
   el.ringFg.style.strokeDasharray = RING_CIRC.toString();
   el.ringFg.style.strokeDashoffset = RING_CIRC.toString();
 
+  loadFromURL();
   buildPicker();
   render();
+  scheduleEquityUpdate();
 })();

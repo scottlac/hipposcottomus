@@ -74,6 +74,13 @@
 - **Storage:** 1Gi PVC (`do-block-storage`) mounted at `/data/` for history persistence
 - **Strategy:** Recreate (required by RWO PVC)
 
+## Shareable state URLs
+- The poker page reads/writes its UI state to query params: `hand`, `board`, `players` (e.g. `/poker/?hand=AsKh&board=QhJcTd&players=8`). Each card is exactly 2 chars (rank + suit), so card-list params are just the cards concatenated.
+- `loadFromURL()` runs once at init before the first render. Invalid cards, duplicates, and out-of-range values are silently ignored — bad URLs degrade to "no state set" rather than throwing.
+- `syncURL()` is called after every state mutation (`onCardTap`, `clearAll`, `numPlayers` change) and uses `history.replaceState` so each card tap doesn't add a Back-history entry.
+- A "Copy share URL" button (`#shareUrl`, styled with `.control__button--share`) writes `location.href` to the clipboard via `navigator.clipboard.writeText`.
+- Other dashboards don't currently mirror their state to the URL — the lake/ftl chart range buttons and the astro location are reasonable next candidates.
+
 ## Testing
 - Tests live alongside source files as `*_test.go` in the `main` package (so they can see unexported types/helpers).
 - Prefer local instances over the package-level globals (`tempHistory`, `levelHistory`, `analytics`) — use `newTestAnalytics()` for fresh state. When a test *must* mutate a global, save and restore it via `t.Cleanup` so ordering isn't fragile.
