@@ -351,6 +351,70 @@ main {
 .result__value--win { color: var(--accent-green); }
 .result__value--tie { color: var(--accent-orange); }
 
+/* ===== Threats ===== */
+.threats {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.threats__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.threats__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0;
+  margin: 0;
+}
+
+.threat {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1rem;
+  align-items: baseline;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-red);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.threat__category {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.threat__combos {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.threat__pct {
+  color: var(--accent-red);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 4em;
+  text-align: right;
+}
+
+@media (max-width: 480px) {
+  .threat {
+    grid-template-columns: 1fr auto;
+  }
+  .threat__combos { grid-column: 1 / -1; }
+}
+
 /* ===== Picker ===== */
 .picker__legend {
   display: flex;

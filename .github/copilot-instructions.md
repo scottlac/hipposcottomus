@@ -74,6 +74,11 @@
 - **Storage:** 1Gi PVC (`do-block-storage`) mounted at `/data/` for history persistence
 - **Strategy:** Recreate (required by RWO PVC)
 
+## Poker equity calculator
+- Monte Carlo iterations live in `pokerIterations` (currently 50000). At 50k the standard error on a 50/50 race is ~0.22%, so percentages stay visually stable across reloads. There's a `BenchmarkCalcEquity` in `poker_bench_test.go` for sizing it; reduce if request latency on the 0.1-CPU pod becomes a problem.
+- `computeThreats(hero, board)` enumerates every possible 2-card opponent hand from the remaining deck (C(45,2)=990 on the river), evaluates each against hero with the current board, and groups the losing combos by `HandCategory`. Returns nil when the board has fewer than 3 cards (hero has no 5-card hand to compare against yet). Output is ordered strongest-first.
+- `classify5([5]Card) HandCategory` is a small standalone classifier independent of paulhankin's score packing — easy to test against the standard 9 hand categories. `bestCategory` finds the strongest 5-card subset of 5/6/7 cards using Eval5 to pick the winner, then runs `classify5` on those 5.
+
 ## Shareable state URLs
 - The poker page reads/writes its UI state to query params: `hand`, `board`, `players` (e.g. `/poker/?hand=AsKh&board=QhJcTd&players=8`). Each card is exactly 2 chars (rank + suit), so card-list params are just the cards concatenated.
 - `loadFromURL()` runs once at init before the first render. Invalid cards, duplicates, and out-of-range values are silently ignored — bad URLs degrade to "no state set" rather than throwing.
