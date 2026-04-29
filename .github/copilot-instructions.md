@@ -74,6 +74,10 @@
 - **Storage:** 1Gi PVC (`do-block-storage`) mounted at `/data/` for history persistence
 - **Strategy:** Recreate (required by RWO PVC)
 
+## Homepage layout
+- The homepage groups its links into three top-level cards: **Dashboards** (Lake / FTL / Astro), **Tools** (Poker), and **Analytics**. Dashboards and Tools are click-to-expand `<details>`/`<summary>` elements styled as cards — adding a new dashboard or tool just adds a child `<a class="card-mini">` row, no homepage layout change needed.
+- An **"Add to Home Screen"** button in the hero section listens for `beforeinstallprompt` and, when fired (Chrome/Edge/Android), reveals itself; clicking it triggers the native install dialog. iOS Safari never fires that event, so a small text hint shows the manual `Share → Add to Home Screen` path on iPhone/iPad. Both the button and the hint hide on `appinstalled`.
+
 ## Open Graph link previews
 - Every dashboard's HTML head includes `og:*` and `twitter:*` meta tags so links shared on WhatsApp, iMessage, Slack, Discord, Twitter, etc. render with a title, description, and a preview image. Crawlers don't run JS, so anything per-URL has to be server-rendered.
 - **Generic `/og.png`** (in `site_og.go`) is a 1200×630 PNG with the hippo wordmark and dashboard list. All non-poker dashboards reference it from a static `<meta property="og:image">` in their HTML.
