@@ -30,12 +30,15 @@
     :root {
       --bg: #0f172a;
       --surface: #1e293b;
+      --surface-2: #273449;
       --border: #334155;
       --text: #e2e8f0;
       --muted: #94a3b8;
       --blue: #38bdf8;
       --orange: #fb923c;
       --green: #4ade80;
+      --pink: #f472b6;
+      --purple: #c084fc;
       --radius: 16px;
 
       /* Harmonize Pico with the existing palette */
@@ -68,7 +71,7 @@
 
     .hero {
       text-align: center;
-      margin-bottom: 3rem;
+      margin-bottom: 2.5rem;
     }
 
     .hero h1 {
@@ -85,14 +88,48 @@
       font-size: 1.05rem;
     }
 
+    .install {
+      margin-top: 1.25rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: transparent;
+      color: var(--blue);
+      border: 1px solid var(--blue);
+      border-radius: 999px;
+      padding: 0.5rem 1.25rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: auto;
+      margin-bottom: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+    .install:hover { background: var(--blue); color: var(--bg); }
+
+    .install-hint {
+      margin-top: 0.75rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .install-hint code {
+      background: var(--surface);
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: var(--text);
+    }
+
     .cards {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 1.25rem;
       max-width: 700px;
       width: 100%;
+      align-items: start;
     }
 
+    /* Base card — used for the Analytics direct-link, the Dashboards
+       summary, and the Tools summary. */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -108,10 +145,7 @@
       transition: transform 0.15s, border-color 0.15s;
     }
 
-    .card:hover {
-      transform: translateY(-3px);
-      border-color: var(--blue);
-    }
+    a.card:hover { transform: translateY(-3px); border-color: var(--blue); }
 
     .card::before {
       content: "";
@@ -120,31 +154,71 @@
       width: 100%; height: 4px;
     }
 
-    .card--lake::before      { background: linear-gradient(90deg, var(--blue), var(--green)); }
-    .card--ftl::before       { background: linear-gradient(90deg, var(--orange), var(--blue)); }
-    .card--poker::before     { background: linear-gradient(90deg, var(--green), var(--orange)); }
-    .card--astro::before     { background: linear-gradient(90deg, #c084fc, #38bdf8); }
-    .card--analytics::before { background: linear-gradient(90deg, #f472b6, #fb923c); }
+    .card--dashboards::before { background: linear-gradient(90deg, var(--blue), var(--green)); }
+    .card--tools::before      { background: linear-gradient(90deg, var(--green), var(--orange)); }
+    .card--analytics::before  { background: linear-gradient(90deg, var(--pink), var(--orange)); }
 
     .card__icon { font-size: 2.5rem; }
-
-    .card__title {
-      font-size: 1.25rem;
-      font-weight: 700;
-    }
-
-    .card__desc {
-      color: var(--muted);
-      font-size: 0.9rem;
-      line-height: 1.5;
-    }
-
+    .card__title { font-size: 1.25rem; font-weight: 700; }
+    .card__desc  { color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
     .card__arrow {
       color: var(--blue);
       font-size: 0.85rem;
       font-weight: 600;
       margin-top: auto;
     }
+
+    /* Expandable card variant — uses a <details>/<summary> wrapper. */
+    .card-expand { padding: 0; }
+    .card-expand > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      position: relative;
+    }
+    .card-expand > summary::-webkit-details-marker { display: none; }
+    .card-expand[open] > summary { border-bottom: 1px solid var(--border); }
+    .card-expand:hover { border-color: var(--blue); }
+
+    .card-expand .card__arrow::after {
+      content: "▾";
+      display: inline-block;
+      margin-left: 0.35em;
+      transition: transform 0.15s ease;
+    }
+    .card-expand[open] .card__arrow::after { transform: rotate(180deg); }
+
+    .card-children {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem 1rem;
+    }
+
+    .card-mini {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 0.65rem 0.85rem;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .card-mini:hover {
+      border-color: var(--blue);
+      background: var(--bg);
+    }
+    .card-mini__icon { font-size: 1.25rem; line-height: 1; }
+    .card-mini__title { font-weight: 600; }
+    .card-mini__chev { color: var(--muted); }
 
     footer {
       margin-top: 3rem;
@@ -153,11 +227,7 @@
       font-size: 0.8rem;
     }
 
-    footer a {
-      color: var(--blue);
-      text-decoration: none;
-    }
-
+    footer a { color: var(--blue); text-decoration: none; }
     footer a:hover { text-decoration: underline; }
 
     @media (max-width: 480px) {
@@ -170,44 +240,54 @@
   <div class="hero">
     <h1>🦛 hippo<span>scottomus</span></h1>
     <p>Dashboards &amp; projects by Scott</p>
+    <button id="installBtn" class="install" hidden>📲 Add to Home Screen</button>
+    <p id="installHint" class="install-hint" hidden>
+      To install on iOS: tap <code>Share</code> → <code>Add to Home Screen</code>.
+    </p>
   </div>
 
   <div class="cards">
-    <a href="/lakedashboard/" class="card card--lake">
-      <div class="card__icon">🌊</div>
-      <div class="card__title">Jordan Lake Dashboard</div>
-      <div class="card__desc">
-        Live water temperature, level history, weather forecast, and wind conditions for B. Everett Jordan Lake, NC.
+    <details class="card card-expand card--dashboards">
+      <summary>
+        <div class="card__icon">📈</div>
+        <div class="card__title">Dashboards</div>
+        <div class="card__desc">Live water and sky data for places I care about.</div>
+        <div class="card__arrow">3 dashboards</div>
+      </summary>
+      <div class="card-children">
+        <a href="/lakedashboard/" class="card-mini">
+          <span class="card-mini__icon">🌊</span>
+          <span class="card-mini__title">Jordan Lake</span>
+          <span class="card-mini__chev">→</span>
+        </a>
+        <a href="/ftlauderdale/" class="card-mini">
+          <span class="card-mini__icon">⚓</span>
+          <span class="card-mini__title">Ft. Lauderdale Boating</span>
+          <span class="card-mini__chev">→</span>
+        </a>
+        <a href="/astronomy/" class="card-mini">
+          <span class="card-mini__icon">🔭</span>
+          <span class="card-mini__title">Night Sky</span>
+          <span class="card-mini__chev">→</span>
+        </a>
       </div>
-      <div class="card__arrow">View dashboard →</div>
-    </a>
+    </details>
 
-    <a href="/ftlauderdale/" class="card card--ftl">
-      <div class="card__icon">⚓</div>
-      <div class="card__title">Ft. Lauderdale Boating</div>
-      <div class="card__desc">
-        Tide predictions, water temperature, marine forecast, and wind for boating off Fort Lauderdale, FL.
+    <details class="card card-expand card--tools">
+      <summary>
+        <div class="card__icon">🛠️</div>
+        <div class="card__title">Tools</div>
+        <div class="card__desc">Interactive calculators and utilities.</div>
+        <div class="card__arrow">1 tool</div>
+      </summary>
+      <div class="card-children">
+        <a href="/poker/" class="card-mini">
+          <span class="card-mini__icon">🂡</span>
+          <span class="card-mini__title">Hold'em Equity</span>
+          <span class="card-mini__chev">→</span>
+        </a>
       </div>
-      <div class="card__arrow">View dashboard →</div>
-    </a>
-
-    <a href="/poker/" class="card card--poker">
-      <div class="card__icon">🂡</div>
-      <div class="card__title">Hold'em Equity Calculator</div>
-      <div class="card__desc">
-        Pick your hole cards and the board, then see your win probability against random opponents in Texas Hold'em.
-      </div>
-      <div class="card__arrow">Open calculator →</div>
-    </a>
-
-    <a href="/astronomy/" class="card card--astro">
-      <div class="card__icon">🔭</div>
-      <div class="card__title">Night Sky</div>
-      <div class="card__desc">
-        Tonight's sun &amp; twilight times, moon phase and rise/set, plus upcoming visible ISS passes for your location.
-      </div>
-      <div class="card__arrow">Look up →</div>
-    </a>
+    </details>
 
     <a href="/analytics/" class="card card--analytics">
       <div class="card__icon">📊</div>
@@ -224,16 +304,56 @@
   </footer>
 
   <script>
+    // Screen-size beacon (existing).
     try {
       navigator.sendBeacon(
         "/analytics/api/screen",
         JSON.stringify({ size: screen.width + "x" + screen.height })
       );
     } catch (e) {}
+
+    // Service-worker registration (existing).
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("/sw.js").catch((e) => console.warn("SW registration failed:", e));
       });
+    }
+
+    // PWA install button.
+    const installBtn = document.getElementById("installBtn");
+    const installHint = document.getElementById("installHint");
+    let deferredPrompt = null;
+
+    function isStandalone() {
+      return window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone === true;
+    }
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.hidden = false;
+    });
+
+    installBtn.addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+      installBtn.hidden = true;
+      deferredPrompt.prompt();
+      try { await deferredPrompt.userChoice; } catch (e) {}
+      deferredPrompt = null;
+    });
+
+    window.addEventListener("appinstalled", () => {
+      installBtn.hidden = true;
+      installHint.hidden = true;
+    });
+
+    // iOS Safari never fires beforeinstallprompt, but does support "Add
+    // to Home Screen" via the Share sheet. Show a small text hint when
+    // we detect iOS and the page isn't already installed.
+    if (isIOS && !isStandalone()) {
+      installHint.hidden = false;
     }
   </script>
 </body>
