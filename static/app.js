@@ -194,8 +194,13 @@ function updateTempHistoryChart() {
   cutoff.setDate(cutoff.getDate() - _tempRange);
   const startMD = cutoff.toISOString().slice(5, 10);
   const rangeWraps = startMD > endMD;
+  // For a 1Y+ range the start and end month-day land on the same day, which
+  // would collapse the window to that single day. Skip the MD filter and let
+  // the per-year filter handle scope.
+  const fullYear = _tempRange >= 365;
 
   function inRange(md) {
+    if (fullYear) return true;
     if (rangeWraps) return md >= startMD || md <= endMD;
     return md >= startMD && md <= endMD;
   }
@@ -426,8 +431,13 @@ function updateLevelChart() {
   cutoff.setDate(cutoff.getDate() - _levelRange);
   const startMD = cutoff.toISOString().slice(5, 10); // e.g. "03-20"
   const rangeWraps = startMD > endMD; // crosses year boundary (e.g. Dec→Jan)
+  // For a 1Y+ range the start and end month-day land on the same day, which
+  // would collapse the window to that single day. Skip the MD filter and let
+  // the per-year filter handle scope.
+  const fullYear = _levelRange >= 365;
 
   function inRange(md) {
+    if (fullYear) return true;
     if (rangeWraps) return md >= startMD || md <= endMD;
     return md >= startMD && md <= endMD;
   }
