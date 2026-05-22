@@ -19,9 +19,16 @@ const (
 
 	// USGS station: Lake Gaston (Roanoke River) Near Elams, NC
 	gastonUSGSSite = "02079785"
-	// We try both common reservoir-elevation codes since the canonical one
-	// varies by station; whichever returns data wins.
-	gastonUSGSParams = "62614,62615,00010" // NGVD-29 elev, NAVD-88 elev, water temp °C
+	// Cover every reservoir-style code USGS uses so we don't have to know
+	// the canonical one for this station up front. Whichever the station
+	// actually reports gets used; the rest come back as empty time series.
+	//   62614 — lake elevation NGVD-29
+	//   62615 — lake elevation NAVD-88
+	//   62616 — reservoir water surface elevation (newer code)
+	//   00062 — elevation of reservoir water surface above datum
+	//   00010 — water temperature, °C
+	//   00011 — water temperature, °F
+	gastonUSGSParams = "62614,62615,62616,00062,00010,00011"
 
 	gastonUSGSIVURL = "https://waterservices.usgs.gov/nwis/iv/"
 	gastonUSGSDVURL = "https://waterservices.usgs.gov/nwis/dv/"
@@ -106,6 +113,7 @@ func gastonFetchIV() error {
 	var (
 		gotLevel, gotTemp bool
 		level, temp       float64
+		observed          []string
 	)
 	for _, ts := range data.Value.TimeSeries {
 		if len(ts.Variable.VariableCode) == 0 {
@@ -123,20 +131,33 @@ func gastonFetchIV() error {
 			}
 		}
 		if latest == "" {
+			// Code was requested but the station has no data for it.
 			continue
 		}
+		observed = append(observed, code+" "+ts.Variable.VariableName)
 		x, err := strconv.ParseFloat(latest, 64)
 		if err != nil {
 			continue
 		}
 		switch code {
-		case "62614", "62615":
+		case "62614", "62615", "62616", "00062":
 			level = x
 			gotLevel = true
 		case "00010":
 			temp = celsiusToFahrenheit(x)
 			gotTemp = true
+		case "00011":
+			temp = x
+			gotTemp = true
 		}
+	}
+
+	// Self-diagnostic: surface every parameter the station actually reports
+	// so we can extend the recognized list without guessing further.
+	if len(observed) > 0 {
+		log.Printf("[Gaston] USGS IV reported params: %v", observed)
+	} else {
+		log.Println("[Gaston] USGS IV returned 200 but no values for any requested param")
 	}
 
 	if gotLevel {
@@ -202,11 +223,14 @@ func gastonBackfillFromUSGS() {
 					continue
 				}
 				switch code {
-				case "62614", "62615":
+				case "62614", "62615", "62616", "00062":
 					gastonLevelHistory.AddWithDate(date, x)
 					levelCount++
 				case "00010":
 					gastonTempHistory.AddWithDate(date, celsiusToFahrenheit(x))
+					tempCount++
+				case "00011":
+					gastonTempHistory.AddWithDate(date, x)
 					tempCount++
 				}
 			}
