@@ -45,6 +45,7 @@ var analyticsFiles embed.FS
 var trackedPaths = map[string]string{
 	"/":                "home",
 	"/lakedashboard/":  "lake",
+	"/gaston/":         "gaston",
 	"/ftlauderdale/":   "ftl",
 	"/poker/":          "poker",
 	"/astronomy/":      "astro",

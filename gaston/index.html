@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lake Gaston Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦛</text></svg>">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="hippo">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="hipposcottomus">
+  <meta property="og:title" content="Lake Gaston Dashboard">
+  <meta property="og:description" content="Live water temperature, level history, weather forecast, and wind for Lake Gaston, NC/VA.">
+  <meta property="og:url" content="https://hipposcottomus.com/gaston/">
+  <meta property="og:image" content="https://hipposcottomus.com/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Lake Gaston Dashboard">
+  <meta name="twitter:description" content="Live water temperature, level history, weather and wind for Lake Gaston, NC/VA.">
+  <meta name="twitter:image" content="https://hipposcottomus.com/og.png">
+  <base href="/gaston/" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>🚤 Lake Gaston Dashboard</h1>
+    <p class="subtitle">Live water conditions · Updated every 15 min</p>
+  </header>
+
+  <main>
+    <!-- Current-value cards -->
+    <section class="cards">
+      <div class="card card--temp">
+        <div class="card__icon">🌡️</div>
+        <div class="card__body">
+          <span class="card__label">Water Temperature</span>
+          <span class="card__value" id="currentTemp">—</span>
+          <span class="card__unit">°F</span>
+        </div>
+        <div class="card__updated" id="tempUpdated"></div>
+      </div>
+      <div class="card card--level">
+        <div class="card__icon">📏</div>
+        <div class="card__body">
+          <span class="card__label">Water Level (vs. full pool)</span>
+          <span class="card__value" id="currentLevel">—</span>
+          <span class="card__unit">ft</span>
+          <span class="card__absolute" id="absoluteLevel"></span>
+        </div>
+        <div class="card__updated" id="levelUpdated"></div>
+      </div>
+      <div class="card card--weather">
+        <div class="card__icon" id="weatherIcon">☀️</div>
+        <div class="card__body">
+          <span class="card__label">Current Conditions</span>
+          <span class="card__value" id="airTemp">—</span>
+          <span class="card__unit">°F <span id="weatherDesc"></span></span>
+        </div>
+        <div class="card__updated" id="weatherPeriod"></div>
+      </div>
+      <div class="card card--wind">
+        <div class="card__icon">💨</div>
+        <div class="card__body">
+          <span class="card__label">Wind</span>
+          <span class="card__value" id="windSpeed">—</span>
+          <span class="card__unit" id="windDir"></span>
+        </div>
+        <div class="wind-compass" id="windCompass">
+          <div class="wind-compass__ring">
+            <span class="wind-compass__label" style="top:2px;left:50%;transform:translateX(-50%)">N</span>
+            <span class="wind-compass__label" style="top:50%;right:2px;transform:translateY(-50%)">E</span>
+            <span class="wind-compass__label" style="bottom:2px;left:50%;transform:translateX(-50%)">S</span>
+            <span class="wind-compass__label" style="top:50%;left:2px;transform:translateY(-50%)">W</span>
+            <div class="wind-compass__arrow" id="windArrow"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Forecast -->
+    <section class="forecast" id="forecastSection">
+      <h2>7-Day Forecast</h2>
+      <div class="forecast__grid" id="forecastGrid"></div>
+    </section>
+
+    <!-- Charts -->
+    <section class="charts">
+      <div class="chart-container">
+        <h2>Temperature — Water vs. Air (24h forecast)</h2>
+        <canvas id="tempChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <h2>Water Level History (relative to full pool: 200 ft)</h2>
+        <div class="chart-controls">
+          <div class="range-buttons" id="rangeButtons">
+            <button data-range="7" class="range-btn">1W</button>
+            <button data-range="30" class="range-btn active">1M</button>
+            <button data-range="90" class="range-btn">3M</button>
+            <button data-range="365" class="range-btn">1Y</button>
+            <button data-range="all" class="range-btn">All</button>
+          </div>
+          <div class="overlay-buttons" id="overlayButtons"></div>
+        </div>
+        <canvas id="levelChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <h2>Water Temperature History</h2>
+        <div class="chart-controls">
+          <div class="range-buttons" id="tempRangeButtons">
+            <button data-range="7" class="range-btn">1W</button>
+            <button data-range="30" class="range-btn active">1M</button>
+            <button data-range="90" class="range-btn">3M</button>
+            <button data-range="365" class="range-btn">1Y</button>
+            <button data-range="all" class="range-btn">All</button>
+          </div>
+          <div class="overlay-buttons" id="tempOverlayButtons"></div>
+        </div>
+        <canvas id="waterTempChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <h2>Wind Speed (next 24h)</h2>
+        <canvas id="windChart"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      Data source:
+      <a href="https://waterdata.usgs.gov/monitoring-location/USGS-02079785/" target="_blank" rel="noopener">
+        USGS — Lake Gaston (Roanoke River) Near Elams, NC
+      </a>
+      · <a href="/metrics">Prometheus Metrics</a>
+    </p>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    try {
+      navigator.sendBeacon(
+        "/analytics/api/screen",
+        JSON.stringify({ size: screen.width + "x" + screen.height })
+      );
+    } catch (e) {}
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch((e) => console.warn("SW registration failed:", e));
+      });
+    }
+  </script>
+</body>
+</html>

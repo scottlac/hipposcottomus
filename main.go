@@ -543,6 +543,9 @@ func main() {
 	// --- Ft Lauderdale dashboard ---
 	InitFTL(mux)
 
+	// --- Lake Gaston dashboard ---
+	InitGaston(mux)
+
 	// --- Poker equity calculator ---
 	InitPoker(mux)
 
