@@ -5,6 +5,7 @@ const REFRESH_MS = 30_000;
 const DASHBOARD_META = {
   home:      { label: "Home",            color: "#38bdf8", emoji: "🦛" },
   lake:      { label: "Jordan Lake",     color: "#4ade80", emoji: "🌊" },
+  gaston:    { label: "Lake Gaston",     color: "#818cf8", emoji: "🚤" },
   ftl:       { label: "Ft. Lauderdale",  color: "#fb923c", emoji: "⚓" },
   poker:     { label: "Poker Equity",    color: "#facc15", emoji: "🂡" },
   astro:     { label: "Night Sky",       color: "#c084fc", emoji: "🔭" },
@@ -12,14 +13,17 @@ const DASHBOARD_META = {
 };
 
 const API_META = {
-  "USACE":          { label: "USACE (Jordan Lake report)",   category: "lake" },
-  "USGS":           { label: "USGS (water level backfill)",  category: "lake" },
-  "NWS-Raleigh":    { label: "NWS Raleigh (lake forecast)",  category: "lake" },
-  "NOAA-Tides":     { label: "NOAA CO-OPS (tide predictions)", category: "ftl" },
-  "NOAA-WaterTemp": { label: "NOAA CO-OPS (FTL water temp)", category: "ftl" },
-  "NWS-Miami":      { label: "NWS Miami (FTL forecast)",     category: "ftl" },
-  "NDBC-Marine":    { label: "NDBC (marine forecast)",       category: "ftl" },
-  "CelesTrak-TLE":  { label: "CelesTrak (ISS TLE)",          category: "astro" },
+  "USACE":            { label: "USACE (Jordan Lake report)",      category: "lake" },
+  "USGS":             { label: "USGS (Jordan Lake DV backfill)",  category: "lake" },
+  "NWS-Raleigh":      { label: "NWS Raleigh (Jordan forecast)",   category: "lake" },
+  "USGS-Gaston-IV":   { label: "USGS (Lake Gaston live)",         category: "gaston" },
+  "USGS-Gaston-DV":   { label: "USGS (Lake Gaston DV backfill)",  category: "gaston" },
+  "NWS-Gaston":       { label: "NWS (Lake Gaston forecast)",      category: "gaston" },
+  "NOAA-Tides":       { label: "NOAA CO-OPS (tide predictions)",  category: "ftl" },
+  "NOAA-WaterTemp":   { label: "NOAA CO-OPS (FTL water temp)",    category: "ftl" },
+  "NWS-Miami":        { label: "NWS Miami (FTL forecast)",        category: "ftl" },
+  "NDBC-Marine":      { label: "NDBC (marine forecast)",          category: "ftl" },
+  "CelesTrak-TLE":    { label: "CelesTrak (ISS TLE)",             category: "astro" },
 };
 
 // ===== Helpers =====

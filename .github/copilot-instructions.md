@@ -8,20 +8,23 @@
 - **Module name:** `jordan-lake-scraper` (in go.mod — historical, don't change)
 
 ## Dashboards
-1. **Jordan Lake Dashboard** (`/lakedashboard/`) — Water temp, water level, weather, wind for B. Everett Jordan Lake, NC
-2. **Ft. Lauderdale Boating** (`/ftlauderdale/`) — Tides, water temp, marine forecast, wind for Fort Lauderdale, FL
-3. **Hold'em Equity Calculator** (`/poker/`) — Pick hole cards + board, computes Texas Hold'em win probability
-4. **Night Sky** (`/astronomy/`) — Sun/twilight times, moon phase, ISS pass predictions for user location
-5. **Site Analytics** (`/analytics/`) — Page views per dashboard, external API health, Go runtime stats, traffic heatmap
-6. **Homepage** (`/`) — Landing page linking to all dashboards
+1. **Jordan Lake Dashboard** (`/lakedashboard/`) — Water temp, water level, weather, wind for B. Everett Jordan Lake, NC. Live data via USACE bejrept.txt + USGS DV backfill.
+2. **Lake Gaston Dashboard** (`/gaston/`) — Water temp, water level, weather, wind for Lake Gaston, NC/VA. Live data via USGS IV (station 02079785 at Elams, NC) + USGS DV backfill. Full pool ~200 ft. NWS grid is dynamically discovered from the lake centroid (36.50, -77.90).
+3. **Ft. Lauderdale Boating** (`/ftlauderdale/`) — Tides, water temp, marine forecast, wind for Fort Lauderdale, FL
+4. **Hold'em Equity Calculator** (`/poker/`) — Pick hole cards + board, computes Texas Hold'em win probability
+5. **Night Sky** (`/astronomy/`) — Sun/twilight times, moon phase, ISS pass predictions for user location
+6. **Site Analytics** (`/analytics/`) — Page views per dashboard, external API health, Go runtime stats, traffic heatmap
+7. **Homepage** (`/`) — Landing page linking to all dashboards
 
 ## File Structure
 - `main.go` — Jordan Lake backend: scraper, USGS backfill, NWS weather proxy, API handlers, history persistence, serves homepage + static files
+- `gaston.go` — Lake Gaston backend: USGS IV (live) + DV (5-year backfill), NWS weather proxy, API handlers, history persistence. Mirrors the Jordan Lake handlers/loops but driven entirely by USGS (no USACE source for this reservoir).
 - `ftl.go` — Ft. Lauderdale backend: NOAA CO-OPS tides, NWS weather, NDBC marine forecast, water temp
 - `poker.go` — Hold'em equity calculator backend (uses `github.com/paulhankin/poker/v2`)
 - `astro.go` — Night Sky backend: sun/moon/twilight computations, ISS TLE fetch + pass predictions (uses `github.com/joshuaferrara/go-satellite`)
 - `analytics.go` — Site analytics backend: page-view middleware, API health tracker (`TrackAPICall`), heatmap, runtime stats, persistence
 - `static/` — Jordan Lake frontend (index.html, app.js, style.css)
+- `gaston/` — Lake Gaston frontend; clone of `static/` with `FULL_POOL=200.0` and `<base href="/gaston/">` so the same app.js hits `/gaston/api/*`
 - `ftl/` — Ft. Lauderdale frontend
 - `poker/` — Poker frontend
 - `astro/` — Night Sky frontend
@@ -33,6 +36,7 @@
 ## Data Sources
 - **Jordan Lake live:** USACE `https://epec.saw.usace.army.mil/bejrept.txt` (regex extraction, 15-min poll)
 - **Jordan Lake history:** USGS API station `02098197`, parameter `62614` (water level, 5-year backfill)
+- **Lake Gaston live + history:** USGS station `02079785` ("Lake Gaston near Elams, NC"). Live readings via the IV endpoint every 15 min; 5-year DV backfill at startup. The same request queries elevation under both NGVD-29 (`62614`) and NAVD-88 (`62615`) plus water temp (`00010`, °C → °F conversion in `celsiusToFahrenheit`) — whichever codes the station actually reports get populated; the others come back empty and are silently ignored.
 - **NWS Weather:** `api.weather.gov` (air temp, wind, forecast)
 - **FTL Tides:** NOAA CO-OPS station `8722939` (hi-lo only — cosine-interpolated into smooth curve)
 - **FTL Water Temp:** NOAA CO-OPS Virginia Key station `8723214` (closest station with water temp)
