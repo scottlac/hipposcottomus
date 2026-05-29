@@ -20,9 +20,11 @@ const (
 	// Number of Monte Carlo iterations for equity calculation.
 	// Each iteration samples a random opponent configuration and a random
 	// completed board, then calls HoldemEquities for a single evaluation.
-	// At 50k, the standard error on a 50/50 race is ~0.22% — visually stable
-	// across reloads. Reduce if request latency becomes a problem.
-	pokerIterations = 50000
+	// 1500 keeps per-click latency in the ~50ms range on the 0.1-CPU prod
+	// pod, at the cost of ±~2% jitter on close-to-50% races between
+	// reloads. Bump to ~25-50k if you need visually stable percentages
+	// (see BenchmarkCalcEquity in poker_bench_test.go for sizing).
+	pokerIterations = 1500
 )
 
 // pokerRNGPool provides per-request random sources so concurrent requests
