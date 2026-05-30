@@ -287,6 +287,12 @@ func updateGastonWeather() {
 		log.Printf("[Gaston] hourly error: %v", errH)
 	}
 
+	uv, uvErr := fetchUVIndex(36.50, -77.90) // Lake Gaston centroid
+	TrackAPICall("OpenMeteo-UV", uvErr)
+	if uvErr != nil {
+		log.Printf("[Gaston] UV index error: %v", uvErr)
+	}
+
 	gastonWeather.mu.Lock()
 	defer gastonWeather.mu.Unlock()
 	if forecast != nil {
@@ -299,6 +305,10 @@ func updateGastonWeather() {
 		}
 		gastonWeather.Hourly = hourly
 		log.Printf("[Gaston] Updated hourly forecast: %d hours", len(hourly))
+	}
+	if uv != nil {
+		gastonWeather.UV = uv
+		log.Printf("[Gaston] Updated UV index: %.1f", uv.Current)
 	}
 }
 
@@ -407,9 +417,11 @@ func handleGastonWeather(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, struct {
 		Forecast []WeatherPeriod `json:"forecast"`
 		Hourly   []WeatherPeriod `json:"hourly"`
+		UV       *UVData         `json:"uv,omitempty"`
 	}{
 		Forecast: gastonWeather.Forecast,
 		Hourly:   gastonWeather.Hourly,
+		UV:       gastonWeather.UV,
 	})
 }
 
