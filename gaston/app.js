@@ -675,8 +675,53 @@ async function fetchWeather() {
     if (data.forecast?.length) {
       renderForecast(data.forecast);
     }
+
+    // --- UV index card ---
+    renderUVCard(data.uv);
   } catch (err) {
     console.error("Failed to fetch weather:", err);
+  }
+}
+
+// WHO UV index tiers — color, label, sunscreen guidance abbreviated.
+function uvTier(value) {
+  if (value < 3)  return { label: "Low",       color: "#4ade80" };
+  if (value < 6)  return { label: "Moderate",  color: "#facc15" };
+  if (value < 8)  return { label: "High",      color: "#fb923c" };
+  if (value < 11) return { label: "Very High", color: "#f87171" };
+  return            { label: "Extreme",   color: "#c084fc" };
+}
+
+function renderUVCard(uv) {
+  const card = document.getElementById("uvCard");
+  if (!card) return;
+  if (!uv || typeof uv.current !== "number") {
+    document.getElementById("uvValue").textContent = "—";
+    document.getElementById("uvTier").textContent = "";
+    document.getElementById("uvPeak").textContent = "";
+    return;
+  }
+  const current = uv.current;
+  const tier = uvTier(current);
+  const valueEl = document.getElementById("uvValue");
+  valueEl.textContent = current.toFixed(1);
+  valueEl.style.color = tier.color;
+  document.getElementById("uvTier").textContent = tier.label;
+  if (Array.isArray(uv.hourly) && uv.hourly.length) {
+    const today = (uv.updatedAt || "").slice(0, 10);
+    let peak = -1;
+    for (const h of uv.hourly) {
+      if (today && !h.time.startsWith(today)) continue;
+      if (typeof h.uvIndex === "number" && h.uvIndex > peak) peak = h.uvIndex;
+    }
+    if (peak >= 0) {
+      document.getElementById("uvPeak").textContent =
+        `Peak today: ${peak.toFixed(1)}`;
+    } else {
+      document.getElementById("uvPeak").textContent = "";
+    }
+  } else {
+    document.getElementById("uvPeak").textContent = "";
   }
 }
 
