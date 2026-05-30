@@ -24,6 +24,7 @@ const API_META = {
   "NWS-Miami":        { label: "NWS Miami (FTL forecast)",        category: "ftl" },
   "NDBC-Marine":      { label: "NDBC (marine forecast)",          category: "ftl" },
   "CelesTrak-TLE":    { label: "CelesTrak (ISS TLE)",             category: "astro" },
+  "OpenMeteo-UV":     { label: "Open-Meteo (UV index, all lakes)", category: "lake" },
 };
 
 // ===== Helpers =====

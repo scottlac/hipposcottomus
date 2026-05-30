@@ -109,6 +109,7 @@ main {
 .card--temp::before  { background: var(--accent-orange); }
 .card--weather::before { background: var(--accent-green); }
 .card--wind::before  { background: var(--text-muted); }
+.card--uv::before    { background: linear-gradient(180deg, #facc15, #fb923c, #f87171); }
 
 .card__icon { font-size: 2rem; flex-shrink: 0; }
 

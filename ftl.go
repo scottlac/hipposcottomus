@@ -73,6 +73,7 @@ type FTLStore struct {
 	WaterTemp      *float64        `json:"waterTemp"`
 	Forecast       []WeatherPeriod `json:"forecast"`
 	Hourly         []WeatherPeriod `json:"hourly"`
+	UV             *UVData         `json:"uv,omitempty"`
 	MarineForecast string          `json:"marineForecast"`
 }
 
@@ -281,6 +282,12 @@ func updateFTLWeather() {
 		log.Printf("[FTL] hourly error: %v", err2)
 	}
 
+	uv, uvErr := fetchUVIndex(26.12, -80.10) // Bahia Mar / Fort Lauderdale beach
+	TrackAPICall("OpenMeteo-UV", uvErr)
+	if uvErr != nil {
+		log.Printf("[FTL] UV index error: %v", uvErr)
+	}
+
 	ftlStore.mu.Lock()
 	if forecast != nil {
 		ftlStore.Forecast = forecast
@@ -290,6 +297,10 @@ func updateFTLWeather() {
 			hourly = hourly[:24]
 		}
 		ftlStore.Hourly = hourly
+	}
+	if uv != nil {
+		ftlStore.UV = uv
+		log.Printf("[FTL] Updated UV index: %.1f", uv.Current)
 	}
 	ftlStore.mu.Unlock()
 }
@@ -428,10 +439,12 @@ func handleFTLWeather(w http.ResponseWriter, r *http.Request) {
 		Forecast  []WeatherPeriod `json:"forecast"`
 		Hourly    []WeatherPeriod `json:"hourly"`
 		WaterTemp *float64        `json:"waterTemp"`
+		UV        *UVData         `json:"uv,omitempty"`
 	}{
 		Forecast:  ftlStore.Forecast,
 		Hourly:    ftlStore.Hourly,
 		WaterTemp: ftlStore.WaterTemp,
+		UV:        ftlStore.UV,
 	}
 	ftlStore.mu.RUnlock()
 	writeJSON(w, resp)
