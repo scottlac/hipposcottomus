@@ -178,6 +178,10 @@ main {
   background: var(--text-muted);
 }
 
+.card--uv::before {
+  background: linear-gradient(180deg, #facc15, #fb923c, #f87171);
+}
+
 .card--wind {
   display: flex;
   align-items: center;

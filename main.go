@@ -28,6 +28,10 @@ const (
 	basePath      = "/lakedashboard"
 	fullPoolLevel = 216.0 // full pool elevation in feet
 
+	// Jordan Lake centroid for UV lookups (lat/lon)
+	jordanLat = 35.73
+	jordanLon = -79.02
+
 	// USGS API for historical water level backfill
 	usgsAPIURL   = "https://waterservices.usgs.gov/nwis/dv/"
 	usgsSiteID   = "02098197" // B. Everett Jordan Lake at Dam
@@ -404,6 +408,7 @@ type WeatherData struct {
 	mu       sync.RWMutex
 	Forecast []WeatherPeriod `json:"forecast"` // day/night periods (next 7 days)
 	Hourly   []WeatherPeriod `json:"hourly"`   // hourly (next 24h)
+	UV       *UVData         `json:"uv,omitempty"`
 }
 
 var weather = &WeatherData{}
@@ -474,6 +479,12 @@ func updateWeather() {
 		log.Printf("Warning: failed to fetch NWS hourly: %v", err)
 	}
 
+	uv, uvErr := fetchUVIndex(jordanLat, jordanLon)
+	TrackAPICall("OpenMeteo-UV", uvErr)
+	if uvErr != nil {
+		log.Printf("Warning: failed to fetch UV index: %v", uvErr)
+	}
+
 	weather.mu.Lock()
 	defer weather.mu.Unlock()
 	if forecast != nil {
@@ -487,6 +498,10 @@ func updateWeather() {
 		}
 		weather.Hourly = hourly
 		log.Printf("Updated hourly forecast: %d hours", len(hourly))
+	}
+	if uv != nil {
+		weather.UV = uv
+		log.Printf("Updated UV index: %.1f", uv.Current)
 	}
 }
 
@@ -628,9 +643,11 @@ func handleWeather(w http.ResponseWriter, r *http.Request) {
 	resp := struct {
 		Forecast []WeatherPeriod `json:"forecast"`
 		Hourly   []WeatherPeriod `json:"hourly"`
+		UV       *UVData         `json:"uv,omitempty"`
 	}{
 		Forecast: weather.Forecast,
 		Hourly:   weather.Hourly,
+		UV:       weather.UV,
 	}
 	weather.mu.RUnlock()
 	writeJSON(w, resp)
