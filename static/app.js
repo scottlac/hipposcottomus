@@ -780,6 +780,35 @@ async function refresh() {
   // before fetchWeather draws the reference line on the temp chart.
   await Promise.all([fetchCurrent(), fetchHistory()]);
   await fetchWeather();
+  fetchBlurb();
+}
+
+// AI-generated boating blurb — 204 from the server means we haven't generated
+// one yet (just-restarted pod), in which case we keep the section hidden.
+async function fetchBlurb() {
+  try {
+    const res = await fetch(`${BASE}/api/blurb`);
+    if (res.status === 204) {
+      document.getElementById("blurbSection").hidden = true;
+      return;
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const section = document.getElementById("blurbSection");
+    document.getElementById("blurbText").textContent = data.text || "";
+    const ts = data.generatedAt ? new Date(data.generatedAt) : null;
+    if (ts && !isNaN(ts)) {
+      const mins = Math.max(0, Math.round((Date.now() - ts.getTime()) / 60000));
+      document.getElementById("blurbMeta").textContent =
+        mins === 0 ? "just now" : `${mins} min ago`;
+    } else {
+      document.getElementById("blurbMeta").textContent = "";
+    }
+    section.hidden = false;
+  } catch (err) {
+    console.warn("blurb fetch failed:", err);
+    document.getElementById("blurbSection").hidden = true;
+  }
 }
 
 refresh();

@@ -413,6 +413,7 @@ type analyticsOverview struct {
 	Countries   []countryCount             `json:"countries"`
 	CityHeatmap []heatPoint                `json:"cityHeatmap"`
 	Screens     []screenCount              `json:"screens"`
+	LLMUsage    []LLMUsageEntry            `json:"llmUsage"`
 	GeoEnabled  bool                       `json:"geoEnabled"`
 }
 
@@ -496,6 +497,7 @@ func handleAnalyticsOverview(w http.ResponseWriter, r *http.Request) {
 		Countries:   countries,
 		CityHeatmap: points,
 		Screens:     screens,
+		LLMUsage:    snapshotLLMUsage(),
 		GeoEnabled:  geoEnabled,
 	}
 	writeJSON(w, resp)
