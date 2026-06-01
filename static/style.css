@@ -79,6 +79,33 @@ main {
   padding: 0 1rem 2rem;
 }
 
+/* ===== AI-generated blurb ===== */
+.blurb {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.08), rgba(244, 114, 182, 0.06));
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-blue);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.blurb__text {
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.blurb__meta {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  margin: 0.5rem 0 0;
+}
+
+.blurb__attr {
+  margin-left: 0.35rem;
+}
+
 /* ===== Cards ===== */
 .cards {
   display: grid;

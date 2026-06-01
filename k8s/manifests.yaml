@@ -91,6 +91,18 @@ spec:
           ports:
             - containerPort: 8080
               name: metrics
+          env:
+            # Optional — when set, enables the AI-generated boating blurb on
+            # the Jordan Lake dashboard. The key is mounted from a separately-
+            # managed Secret so it never appears in the manifest or repo. If
+            # the Secret is missing, the env var is empty and blurb generation
+            # is silently disabled (analytics will show 0 LLM calls).
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: anthropic-api-key
+                  key: api-key
+                  optional: true
           volumeMounts:
             - name: data
               mountPath: /data

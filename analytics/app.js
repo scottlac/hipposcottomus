@@ -213,6 +213,71 @@ function renderHeatmap(data) {
   container.innerHTML = cells.join("");
 }
 
+function renderLLMUsage(data) {
+  const container = document.getElementById("llmUsage");
+  const usage = data.llmUsage || [];
+  if (usage.length === 0) {
+    container.innerHTML = `<p class="muted">No LLM calls recorded yet.</p>`;
+    return;
+  }
+  // Cumulative totals across all models.
+  const totalCost = usage.reduce((s, u) => s + u.totalCostUsd, 0);
+  const totalCalls = usage.reduce((s, u) => s + u.calls, 0);
+  const totalInput = usage.reduce((s, u) => s + u.inputTokens, 0);
+  const totalOutput = usage.reduce((s, u) => s + u.outputTokens, 0);
+  const totalCacheRead = usage.reduce((s, u) => s + u.cacheReadTokens, 0);
+  const totalCacheWrite = usage.reduce((s, u) => s + u.cacheCreationTokens, 0);
+  const cacheableInput = totalCacheRead + totalCacheWrite;
+  const hitRate = cacheableInput > 0
+    ? ((totalCacheRead / cacheableInput) * 100).toFixed(1)
+    : "—";
+
+  container.innerHTML = `
+    <div class="llm-totals">
+      <div class="llm-totals__cell"><span class="llm-totals__label">Total spend</span><span class="llm-totals__value">$${totalCost.toFixed(4)}</span></div>
+      <div class="llm-totals__cell"><span class="llm-totals__label">Calls</span><span class="llm-totals__value">${totalCalls.toLocaleString()}</span></div>
+      <div class="llm-totals__cell"><span class="llm-totals__label">Avg / call</span><span class="llm-totals__value">$${(totalCost / Math.max(1, totalCalls)).toFixed(5)}</span></div>
+      <div class="llm-totals__cell"><span class="llm-totals__label">Cache hit rate</span><span class="llm-totals__value">${hitRate}${hitRate === "—" ? "" : "%"}</span></div>
+    </div>
+    <table class="llm-table">
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th class="num">Calls</th>
+          <th class="num">Input</th>
+          <th class="num">Output</th>
+          <th class="num">Cache read</th>
+          <th class="num">Cache write</th>
+          <th class="num">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${usage.map((u) => `
+          <tr>
+            <td><code>${escapeHTML(u.model)}</code></td>
+            <td class="num">${u.calls.toLocaleString()}</td>
+            <td class="num">${u.inputTokens.toLocaleString()}</td>
+            <td class="num">${u.outputTokens.toLocaleString()}</td>
+            <td class="num">${u.cacheReadTokens.toLocaleString()}</td>
+            <td class="num">${u.cacheCreationTokens.toLocaleString()}</td>
+            <td class="num"><strong>$${u.totalCostUsd.toFixed(4)}</strong></td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    <p class="muted llm-hint">
+      Token counts are cumulative since the analytics state file was created.
+      Cache read tokens are billed at 10% of the input rate; cache write at 125%.
+    </p>
+  `;
+}
+
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
 function renderRuntime(data) {
   const dl = document.getElementById("runtime");
   const rt = data.runtime;
@@ -418,6 +483,7 @@ async function refresh() {
     renderMap(data);
     renderCountries(data);
     renderScreens(data);
+    renderLLMUsage(data);
     renderRuntime(data);
   } catch (err) {
     console.error("Failed to refresh analytics:", err);
