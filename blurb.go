@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	_ "time/tzdata" // embed the IANA tz database so America/New_York loads on alpine
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
@@ -19,7 +20,7 @@ const (
 	blurbBasePath        = basePath + "/api/blurb" // /lakedashboard/api/blurb
 	blurbModel           = anthropic.ModelClaudeHaiku4_5_20251001
 	blurbModelLabel      = "claude-haiku-4-5"
-	blurbRefreshInterval = 30 * time.Minute
+	blurbMinInterval     = 30 * time.Minute // min time between on-demand generations
 	blurbMaxOutputTokens = 280 // ~3 sentences, with a comfortable ceiling
 	blurbStateFile       = "llm_usage.json"
 )
@@ -70,13 +71,14 @@ var (
 )
 
 // jordanBoatingSystemPrompt is the static persona + interpretation guide we
-// send on every generation. Kept intentionally long so it crosses the 4096-token
-// Haiku 4.5 cache minimum — at ~5000 tokens, prompt caching cuts the per-call
-// input cost ~10× from the 2nd call onward (verified via resp.Usage.CacheReadInputTokens).
+// send on every generation.
 //
-// IMPORTANT: every byte of this string is part of the cache prefix. Do NOT
-// interpolate timestamps, request IDs, or any other per-call data here, or
-// the cache will silently invalidate on every request.
+// NOTE on caching: we deliberately do NOT set cache_control on this prompt.
+// Generations are on-demand and at least 30 minutes apart, but the default
+// ephemeral cache TTL is only 5 minutes — so a cached prefix would always
+// expire between calls. Every call would pay the 1.25× cache-WRITE premium
+// and never get a cache READ, making caching strictly more expensive at this
+// frequency. Plain uncached input ($1/M) is the cheapest option here.
 const jordanBoatingSystemPrompt = `You write 2–3 sentence boating advisories for the Jordan Lake dashboard at hipposcottomus.com/lakedashboard/. The dashboard already shows users every raw reading — your job is to synthesize them into one paragraph a human can act on without doing the mental math themselves.
 
 # Hard rules (non-negotiable)
@@ -291,8 +293,7 @@ func generateLakeBlurb(ctx context.Context) error {
 		Model:     blurbModel,
 		MaxTokens: blurbMaxOutputTokens,
 		System: []anthropic.TextBlockParam{{
-			Text:         jordanBoatingSystemPrompt,
-			CacheControl: anthropic.NewCacheControlEphemeralParam(),
+			Text: jordanBoatingSystemPrompt,
 		}},
 		Messages: []anthropic.MessageParam{
 			anthropic.NewUserMessage(anthropic.NewTextBlock(snapshot)),
@@ -423,45 +424,76 @@ func loadLLMUsage() {
 	log.Printf("[Blurb] loaded LLM usage for %d model(s)", len(loaded))
 }
 
-// Background loop — generate immediately on startup, then every refresh interval.
-func blurbLoop() {
-	// Wait a moment for the initial scrape + NWS update to populate the
-	// snapshot. Without this, the first call gets "n/a" for everything.
-	time.Sleep(20 * time.Second)
+// ── On-demand generation ────────────────────────────────────────
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	err := generateLakeBlurb(ctx)
-	cancel()
-	TrackAPICall("Anthropic-Blurb", err)
+// etLocation is America/New_York, used for the overnight blackout window.
+// The time/tzdata blank import guarantees this resolves even on alpine.
+var etLocation *time.Location
+
+func init() {
+	loc, err := time.LoadLocation("America/New_York")
 	if err != nil {
-		log.Printf("[Blurb] initial generation failed: %v", err)
+		log.Printf("[Blurb] could not load America/New_York (%v); blackout will use UTC", err)
+		loc = time.UTC
 	}
-	if err == nil {
-		if e := saveLLMUsage(); e != nil {
-			log.Printf("[Blurb] failed to save LLM usage: %v", e)
-		}
-	}
-
-	ticker := time.NewTicker(blurbRefreshInterval)
-	defer ticker.Stop()
-	for range ticker.C {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		err := generateLakeBlurb(ctx)
-		cancel()
-		TrackAPICall("Anthropic-Blurb", err)
-		if err != nil {
-			log.Printf("[Blurb] scheduled generation failed: %v", err)
-			continue
-		}
-		if e := saveLLMUsage(); e != nil {
-			log.Printf("[Blurb] failed to save LLM usage: %v", e)
-		}
-	}
+	etLocation = loc
 }
 
-// HTTP handler — returns the cached blurb. 204 (no content) if we've never
-// generated one yet; the frontend hides the section in that case.
+// inBlackout reports whether t falls in the overnight no-generation window
+// (8pm–6am Eastern). Nobody's checking lake conditions to go boating at 3am,
+// so we don't spend tokens refreshing the blurb then.
+func inBlackout(t time.Time) bool {
+	h := t.In(etLocation).Hour()
+	return h >= 20 || h < 6
+}
+
+// blurbGenMu is held only for the duration of an in-flight generation, so a
+// burst of page loads triggers at most one API call (single-flight).
+var blurbGenMu sync.Mutex
+
+// maybeTriggerGeneration kicks off a background regeneration iff the current
+// blurb is stale (or absent), we're outside the overnight blackout, and no
+// generation is already running. It never blocks the caller — the request
+// that triggers it still gets served the current (possibly stale) blurb, and
+// the frontend's 60s auto-refresh picks up the new one a couple seconds later.
+func maybeTriggerGeneration() {
+	currentBlurbMu.RLock()
+	b := currentBlurb
+	currentBlurbMu.RUnlock()
+
+	if b != nil && time.Since(b.GeneratedAt) < blurbMinInterval {
+		return // still fresh
+	}
+	if inBlackout(time.Now()) {
+		return // overnight — leave the last blurb in place
+	}
+	if !blurbGenMu.TryLock() {
+		return // a generation is already in flight
+	}
+
+	go func() {
+		defer blurbGenMu.Unlock()
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		err := generateLakeBlurb(ctx)
+		TrackAPICall("Anthropic-Blurb", err)
+		if err != nil {
+			log.Printf("[Blurb] on-demand generation failed: %v", err)
+			return
+		}
+		if e := saveLLMUsage(); e != nil {
+			log.Printf("[Blurb] failed to save LLM usage: %v", e)
+		}
+	}()
+}
+
+// handleLakeBlurb serves the current blurb and opportunistically triggers a
+// background regeneration when it's stale. 204 (no content) if we've never
+// generated one yet (cold pod, or every attempt so far has failed); the
+// frontend hides the section in that case.
 func handleLakeBlurb(w http.ResponseWriter, r *http.Request) {
+	maybeTriggerGeneration()
+
 	currentBlurbMu.RLock()
 	b := currentBlurb
 	currentBlurbMu.RUnlock()
@@ -472,15 +504,17 @@ func handleLakeBlurb(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, b)
 }
 
-// InitBlurb is wired from main.go. Won't actually call the API until
-// ANTHROPIC_API_KEY is in the env — the SDK's NewClient() will surface the
-// missing-key as an error on first call, captured by TrackAPICall.
+// InitBlurb is wired from main.go. Generation is on-demand — the first visitor
+// to /lakedashboard/ after the pod starts (and outside the blackout window)
+// triggers the first generation. Won't actually call the API until
+// ANTHROPIC_API_KEY is in the env; missing-key surfaces as an error on the
+// first attempt, captured by TrackAPICall.
 func InitBlurb(mux *http.ServeMux) {
 	loadLLMUsage()
 	mux.HandleFunc(blurbBasePath, handleLakeBlurb)
 	if os.Getenv("ANTHROPIC_API_KEY") == "" {
-		log.Println("[Blurb] ANTHROPIC_API_KEY not set — generation loop will run but every call will fail until it's configured")
+		log.Println("[Blurb] ANTHROPIC_API_KEY not set — on-demand generation will fail until it's configured")
 	}
-	go blurbLoop()
-	log.Printf("[Blurb] registered at %s (refresh every %s, model %s)", blurbBasePath, blurbRefreshInterval, blurbModel)
+	log.Printf("[Blurb] registered at %s (on-demand, min %s between calls, 8pm–6am ET blackout, model %s)",
+		blurbBasePath, blurbMinInterval, blurbModel)
 }

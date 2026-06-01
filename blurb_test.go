@@ -3,6 +3,7 @@ package main
 import (
 	"math"
 	"testing"
+	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
@@ -107,6 +108,36 @@ func TestRecordLLMError_StoresMessage(t *testing.T) {
 
 	if e.LastError != "network down" {
 		t.Errorf("lastError = %q, want %q", e.LastError, "network down")
+	}
+}
+
+// TestInBlackout checks the overnight 8pm–6am ET no-generation window at
+// several hours, building the times in Eastern so the test is unambiguous
+// regardless of where it runs.
+func TestInBlackout(t *testing.T) {
+	loc, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		t.Fatalf("load ET: %v", err)
+	}
+	cases := []struct {
+		hour int
+		want bool
+	}{
+		{0, true},   // midnight — blackout
+		{3, true},   // 3am — blackout
+		{5, true},   // 5am — blackout
+		{6, false},  // 6am — generation resumes
+		{9, false},  // 9am — active
+		{14, false}, // 2pm — active
+		{19, false}, // 7pm — active
+		{20, true},  // 8pm — blackout begins
+		{23, true},  // 11pm — blackout
+	}
+	for _, c := range cases {
+		ts := time.Date(2026, 6, 1, c.hour, 30, 0, 0, loc)
+		if got := inBlackout(ts); got != c.want {
+			t.Errorf("inBlackout(%02d:30 ET) = %v, want %v", c.hour, got, c.want)
+		}
 	}
 }
 
