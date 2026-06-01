@@ -228,16 +228,19 @@ function renderLLMUsage(data) {
   const totalCacheRead = usage.reduce((s, u) => s + u.cacheReadTokens, 0);
   const totalCacheWrite = usage.reduce((s, u) => s + u.cacheCreationTokens, 0);
   const cacheableInput = totalCacheRead + totalCacheWrite;
-  const hitRate = cacheableInput > 0
-    ? ((totalCacheRead / cacheableInput) * 100).toFixed(1)
-    : "—";
+  // Caching is intentionally off for the blurb feature (calls are >30 min
+  // apart; the cache TTL is 5 min), so only show the hit-rate cell if some
+  // model actually used caching — otherwise it's a permanently-blank stat.
+  const hitRateCell = cacheableInput > 0
+    ? `<div class="llm-totals__cell"><span class="llm-totals__label">Cache hit rate</span><span class="llm-totals__value">${((totalCacheRead / cacheableInput) * 100).toFixed(1)}%</span></div>`
+    : "";
 
   container.innerHTML = `
     <div class="llm-totals">
       <div class="llm-totals__cell"><span class="llm-totals__label">Total spend</span><span class="llm-totals__value">$${totalCost.toFixed(4)}</span></div>
       <div class="llm-totals__cell"><span class="llm-totals__label">Calls</span><span class="llm-totals__value">${totalCalls.toLocaleString()}</span></div>
       <div class="llm-totals__cell"><span class="llm-totals__label">Avg / call</span><span class="llm-totals__value">$${(totalCost / Math.max(1, totalCalls)).toFixed(5)}</span></div>
-      <div class="llm-totals__cell"><span class="llm-totals__label">Cache hit rate</span><span class="llm-totals__value">${hitRate}${hitRate === "—" ? "" : "%"}</span></div>
+      ${hitRateCell}
     </div>
     <table class="llm-table">
       <thead>
