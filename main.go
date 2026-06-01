@@ -570,6 +570,9 @@ func main() {
 	// --- Analytics page ---
 	InitAnalytics(mux)
 
+	// --- AI-generated boating blurb for Jordan Lake ---
+	InitBlurb(mux)
+
 	// --- Generic Open Graph preview image at /og.png ---
 	mux.HandleFunc("/og.png", handleSiteOGImage)
 
