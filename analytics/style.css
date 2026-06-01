@@ -432,6 +432,77 @@ canvas {
   text-align: right;
 }
 
+/* ===== LLM Usage & Cost ===== */
+.llm-totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.llm-totals__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-pink);
+  border-radius: 8px;
+}
+
+.llm-totals__label {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.llm-totals__value {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent-pink);
+}
+
+.llm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.llm-table th,
+.llm-table td {
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.llm-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.llm-table td code {
+  background: var(--bg);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--accent-blue);
+  font-size: 0.8rem;
+}
+
+.llm-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.llm-hint {
+  margin-top: 0.75rem;
+}
+
 /* ===== Runtime ===== */
 .runtime {
   display: grid;
