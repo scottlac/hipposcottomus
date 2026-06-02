@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lake Minneola Dashboard</title>
+  <title>Lake Conway Dashboard</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦛</text></svg>">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0f172a">
@@ -13,17 +13,17 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="hipposcottomus">
-  <meta property="og:title" content="Lake Minneola Dashboard">
-  <meta property="og:description" content="Live water temperature, level history, weather forecast, UV, and wind for Lake Minneola in Clermont, FL.">
-  <meta property="og:url" content="https://hipposcottomus.com/minneola/">
+  <meta property="og:title" content="Lake Conway Dashboard">
+  <meta property="og:description" content="Live water level, estimated water temperature, weather forecast, UV, and wind for Lake Conway in south Orlando, FL.">
+  <meta property="og:url" content="https://hipposcottomus.com/conway/">
   <meta property="og:image" content="https://hipposcottomus.com/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Lake Minneola Dashboard">
-  <meta name="twitter:description" content="Live water conditions, weather, UV, and wind for Lake Minneola, FL.">
+  <meta name="twitter:title" content="Lake Conway Dashboard">
+  <meta name="twitter:description" content="Live water conditions, weather, UV, and wind for Lake Conway, FL.">
   <meta name="twitter:image" content="https://hipposcottomus.com/og.png">
-  <base href="/minneola/" />
+  <base href="/conway/" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
@@ -31,8 +31,8 @@
 </head>
 <body>
   <header>
-    <h1>🏝️ Lake Minneola Dashboard</h1>
-    <p class="subtitle">Live water conditions · Clermont Chain of Lakes, FL</p>
+    <h1>🛥️ Lake Conway Dashboard</h1>
+    <p class="subtitle">Live water conditions · south Orlando, FL</p>
   </header>
 
   <main>
@@ -116,7 +116,7 @@
         <canvas id="tempChart"></canvas>
       </div>
       <div class="chart-container">
-        <h2>Water Level History (relative to full pool: 95 ft)</h2>
+        <h2>Water Level History (relative to full pool: 85.46 ft NAVD-88)</h2>
         <div class="chart-controls">
           <div class="range-buttons" id="rangeButtons">
             <button data-range="7" class="range-btn">1W</button>
@@ -152,7 +152,7 @@
 
   <footer>
     <p>
-      Water level: <a href="https://waterdata.usgs.gov/monitoring-location/USGS-02236840/" target="_blank" rel="noopener">USGS station 02236840 (Lake Minnehaha at Clermont)</a> — canal-connected to Minneola, tracks within ~0.1 ft.
+      Water level: <a href="https://waterdata.usgs.gov/monitoring-location/USGS-02262800/" target="_blank" rel="noopener">USGS station 02262800 (Lake Conway at Pine Castle)</a>, weir-controlled at 85.46 ft NAVD-88.
       Water temperature: <em>estimated</em> from a 7-day trailing mean of NWS air temperature (<a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>); no nearby USGS station reports lake water temp, so this is a proxy good to ~±3 °F.
       <br>
       Weather: NWS Melbourne · UV: Open-Meteo · <a href="/metrics">Prometheus Metrics</a>
