@@ -142,7 +142,7 @@ func minneolaSnapshot() string {
 	sb.WriteString("Current Lake Minneola snapshot:\n\n")
 
 	if pt, ok := minneolaTempHistory.Latest(); ok {
-		fmt.Fprintf(&sb, "Water temperature: %.1f °F (as of %s)\n", pt.Value, pt.Date)
+		fmt.Fprintf(&sb, "Water temperature: %.1f °F (as of %s; source: Palatlakaha River near Mascotte, the chain's outflow)\n", pt.Value, pt.Date)
 	} else {
 		sb.WriteString("Water temperature: n/a\n")
 	}
