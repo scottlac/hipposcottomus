@@ -1,7 +1,7 @@
 // ===== Configuration =====
 const REFRESH_INTERVAL = 60_000;
 const BASE = document.querySelector("base")?.getAttribute("href")?.replace(/\/$/, "") || "";
-const FULL_POOL = 95.0;
+const FULL_POOL = 95.3;
 
 // ===== Shared chart defaults =====
 const tooltipStyle = {
