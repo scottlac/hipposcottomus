@@ -27,7 +27,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-  <link rel="stylesheet" href="style.css?v=1" />
+  <link rel="stylesheet" href="style.css?v=2" />
 </head>
 <body>
   <header>
@@ -50,7 +50,7 @@
       <div class="card card--temp">
         <div class="card__icon">🌡️</div>
         <div class="card__body">
-          <span class="card__label">Water Temperature</span>
+          <span class="card__label">Water Temperature (est.)</span>
           <span class="card__value" id="currentTemp">—</span>
           <span class="card__unit">°F</span>
         </div>
@@ -153,13 +153,13 @@
   <footer>
     <p>
       Water level: <a href="https://waterdata.usgs.gov/monitoring-location/USGS-02236840/" target="_blank" rel="noopener">USGS station 02236840 (Lake Minnehaha at Clermont)</a> — canal-connected to Minneola, tracks within ~0.1 ft.
-      Water temperature: <a href="https://waterdata.usgs.gov/monitoring-location/USGS-02237000/" target="_blank" rel="noopener">USGS station 02237000 (Palatlakaha River near Mascotte)</a> — on the chain's main outflow, carries the same water mass.
+      Water temperature: <em>estimated</em> from a 7-day trailing mean of NWS air temperature (<a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>); no nearby USGS station reports lake water temp, so this is a proxy good to ~±3 °F.
       <br>
       Weather: NWS Melbourne · UV: Open-Meteo · <a href="/metrics">Prometheus Metrics</a>
     </p>
   </footer>
 
-  <script src="app.js?v=1"></script>
+  <script src="app.js?v=2"></script>
   <script>
     try {
       navigator.sendBeacon(

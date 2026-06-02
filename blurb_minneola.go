@@ -39,11 +39,14 @@ Typical surface water temps: 78–88°F May through October, 60–72°F December
 
 # How to read each field
 
-## Water temperature (°F)
+## Water temperature (°F) — note this is ESTIMATED
+
+The snapshot's water-temperature value is *estimated* from a 7-day trailing mean of NWS air temperature, not a direct measurement. It's good to roughly ±3 °F. Treat it as a soft signal, not a precise reading. Never quote the number itself ("water is 81°F") — instead, characterize the band ("warm water", "the lake has cooled into the upper 60s") so a few-degree estimate error doesn't read as wrong. If the estimated water temp would be the central point of the advisory and the estimate could plausibly be off by a few degrees in either direction, prefer mentioning the trend ("water has been warming through the week") over the absolute value.
+
 - < 60°F: cool by Florida standards but rare. Note briefly only if a swimmer or skier is implied.
-- 60–72°F: brisk, late-winter swim. Worth a brief note ("water has cooled to 64°F — wetsuits for early skiers").
+- 60–72°F: brisk, late-winter swim. Worth a brief mention ("water is still on the cool side — wetsuits for early skiers").
 - 73–80°F: comfortable for most water activities.
-- 81–88°F: warm; prime swim/ski conditions. Don't restate the temperature on its own — only note it as context.
+- 81–88°F: warm; prime swim/ski conditions. Don't restate the temperature — only note it as context.
 - > 88°F: very warm. Possible algal-bloom conditions in summer, but only mention HABs if there's a specific advisory in the data (there usually isn't).
 
 ## Water level (delta vs. nominal full pool of 95 ft, in feet)
@@ -142,7 +145,7 @@ func minneolaSnapshot() string {
 	sb.WriteString("Current Lake Minneola snapshot:\n\n")
 
 	if pt, ok := minneolaTempHistory.Latest(); ok {
-		fmt.Fprintf(&sb, "Water temperature: %.1f °F (as of %s; source: Palatlakaha River near Mascotte, the chain's outflow)\n", pt.Value, pt.Date)
+		fmt.Fprintf(&sb, "Water temperature: %.1f °F (estimated — 7-day trailing mean of NWS air temperature; no nearby USGS gauge reports water temp. Good to ~±3 °F. As of %s.)\n", pt.Value, pt.Date)
 	} else {
 		sb.WriteString("Water temperature: n/a\n")
 	}

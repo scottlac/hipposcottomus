@@ -17,29 +17,22 @@ const (
 	minneolaBasePath  = "/minneola"
 	minneolaFullPool  = 95.0  // ft — Lake Minneola normal NGVD-29 elevation
 
-	// Lake Minneola itself has no real-time USGS gauge. We query two nearby
-	// stations in a single IV call and let the existing per-parameter-code
-	// bucketing in usgsMultiResp sort the values:
-	//
-	//   02236840 — Lake Minnehaha at Clermont, FL: lake-elevation only
-	//   (canal-connected to Minneola, tracks within ~0.1 ft).
-	//   02237000 — Palatlakaha River near Mascotte, FL: stream gauge on the
-	//   Clermont Chain's main outflow, downstream of Minneola → Minnehaha →
-	//   Louisa. Carries the same chain water mass, so water temperature here
-	//   tracks Minneola's within a few degrees year-round.
-	//
-	// The footer attributes both substitutions so users understand them.
-	minneolaUSGSSites = "02236840,02237000"
-	// Cover every reservoir-style elevation code USGS uses (the Minnehaha
-	// gauge reports under whichever its canonical one is) plus both water-temp
-	// units the Palatlakaha gauge might use:
+	// Lake Minneola itself has no real-time USGS gauge. We pull lake elevation
+	// from canal-connected Lake Minnehaha (station 02236840, tracks within
+	// ~0.1 ft) and estimate water temperature from a 7-day trailing mean of
+	// NWS air temperature via Open-Meteo's archive API — no nearby USGS
+	// station reports water temperature, and central FL inland lake-surface
+	// temp tracks the rolling air-temp mean within ~2–3 °F year-round.
+	// The footer attributes both data choices.
+	minneolaUSGSSite = "02236840"
+	// Lake-elevation codes USGS reports under for reservoir/lake sites; the
+	// station uses whichever one it considers canonical and the rest come
+	// back as empty time series.
 	//   62614 — lake elevation NGVD-29
 	//   62615 — lake elevation NAVD-88
 	//   62616 — reservoir water surface elevation (newer code)
 	//   00062 — elevation of reservoir water surface above datum
-	//   00010 — water temperature, °C
-	//   00011 — water temperature, °F
-	minneolaUSGSParams = "62614,62615,62616,00062,00010,00011"
+	minneolaUSGSParams = "62614,62615,62616,00062"
 
 	minneolaUSGSIVURL = "https://waterservices.usgs.gov/nwis/iv/"
 	minneolaUSGSDVURL = "https://waterservices.usgs.gov/nwis/dv/"
@@ -77,7 +70,7 @@ var (
 // of which datum code it was reported under.
 func minneolaFetchIV() error {
 	url := fmt.Sprintf("%s?format=json&sites=%s&parameterCd=%s&period=PT6H",
-		minneolaUSGSIVURL, minneolaUSGSSites, minneolaUSGSParams)
+		minneolaUSGSIVURL, minneolaUSGSSite, minneolaUSGSParams)
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Get(url)
 	if err != nil {
@@ -94,16 +87,14 @@ func minneolaFetchIV() error {
 	}
 
 	var (
-		gotLevel, gotTemp bool
-		level, temp       float64
-		observed          []string
+		gotLevel bool
+		level    float64
 	)
 	for _, ts := range data.Value.TimeSeries {
 		if len(ts.Variable.VariableCode) == 0 {
 			continue
 		}
 		code := ts.Variable.VariableCode[0].Value
-		// Walk to the most recent non-empty reading.
 		var latest string
 		for _, vals := range ts.Values {
 			for _, v := range vals.Value {
@@ -114,10 +105,8 @@ func minneolaFetchIV() error {
 			}
 		}
 		if latest == "" {
-			// Code was requested but the station has no data for it.
 			continue
 		}
-		observed = append(observed, code+" "+ts.Variable.VariableName)
 		x, err := strconv.ParseFloat(latest, 64)
 		if err != nil {
 			continue
@@ -126,21 +115,7 @@ func minneolaFetchIV() error {
 		case "62614", "62615", "62616", "00062":
 			level = x
 			gotLevel = true
-		case "00010":
-			temp = celsiusToFahrenheit(x)
-			gotTemp = true
-		case "00011":
-			temp = x
-			gotTemp = true
 		}
-	}
-
-	// Self-diagnostic: surface every parameter the station actually reports
-	// so we can extend the recognized list without guessing further.
-	if len(observed) > 0 {
-		log.Printf("[Minneola] USGS IV reported params: %v", observed)
-	} else {
-		log.Println("[Minneola] USGS IV returned 200 but no values for any requested param")
 	}
 
 	if gotLevel {
@@ -149,23 +124,18 @@ func minneolaFetchIV() error {
 	} else {
 		log.Println("[Minneola] No water level reading in IV response")
 	}
-	if gotTemp {
-		minneolaTempHistory.Add(temp)
-		log.Printf("[Minneola] Updated water temp: %.1f °F", temp)
-	}
 	return nil
 }
 
-// minneolaBackfillFromUSGS pulls up to 5 years of daily values for elevation
-// AND temperature, populating both histories at startup. Missing parameters
-// are silently ignored (the USGS response just contains no time series for
-// a code the station doesn't track).
+// minneolaBackfillFromUSGS pulls up to 5 years of daily elevation values
+// from the Minnehaha gauge. Water temperature is estimated separately via
+// Open-Meteo (see minneola_temp_estimate.go).
 func minneolaBackfillFromUSGS() {
 	end := time.Now().Format("2006-01-02")
 	start := time.Now().AddDate(-5, 0, 0).Format("2006-01-02")
 	url := fmt.Sprintf("%s?format=json&sites=%s&startDT=%s&endDT=%s&parameterCd=%s&siteStatus=all",
-		minneolaUSGSDVURL, minneolaUSGSSites, start, end, minneolaUSGSParams)
-	log.Printf("[Minneola] Backfilling history from USGS (%s to %s)...", start, end)
+		minneolaUSGSDVURL, minneolaUSGSSite, start, end, minneolaUSGSParams)
+	log.Printf("[Minneola] Backfilling level history from USGS (%s to %s)...", start, end)
 
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Get(url)
@@ -189,7 +159,7 @@ func minneolaBackfillFromUSGS() {
 		return
 	}
 
-	var levelCount, tempCount int
+	var levelCount int
 	for _, ts := range data.Value.TimeSeries {
 		if len(ts.Variable.VariableCode) == 0 {
 			continue
@@ -209,19 +179,13 @@ func minneolaBackfillFromUSGS() {
 				case "62614", "62615", "62616", "00062":
 					minneolaLevelHistory.AddWithDate(date, x)
 					levelCount++
-				case "00010":
-					minneolaTempHistory.AddWithDate(date, celsiusToFahrenheit(x))
-					tempCount++
-				case "00011":
-					minneolaTempHistory.AddWithDate(date, x)
-					tempCount++
 				}
 			}
 		}
 	}
 
 	TrackAPICall("USGS-Minneola-DV", nil)
-	log.Printf("[Minneola] Backfilled %d level points, %d temp points", levelCount, tempCount)
+	log.Printf("[Minneola] Backfilled %d level points", levelCount)
 }
 
 // ── NWS weather ─────────────────────────────────────────────────
@@ -415,12 +379,14 @@ func handleMinneolaWeather(w http.ResponseWriter, r *http.Request) {
 func InitMinneola(mux *http.ServeMux) {
 	loadMinneolaHistories()
 	minneolaBackfillFromUSGS()
+	minneolaBackfillTempEstimate()
 	minneolaLevelHistory.Sort()
 	minneolaTempHistory.Sort()
 	saveMinneolaHistories()
 
 	go minneolaScrapeLoop()
 	go minneolaWeatherLoop()
+	go minneolaTempEstimateLoop()
 	go func() {
 		ticker := time.NewTicker(1 * time.Hour)
 		defer ticker.Stop()
