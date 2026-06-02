@@ -17,44 +17,41 @@ import (
 )
 
 const (
-	blurbBasePath        = basePath + "/api/blurb" // /lakedashboard/api/blurb
 	blurbModel           = anthropic.ModelClaudeHaiku4_5_20251001
 	blurbModelLabel      = "claude-haiku-4-5"
 	blurbMinInterval     = 30 * time.Minute // min time between on-demand generations
-	blurbMaxOutputTokens = 280 // ~3 sentences, with a comfortable ceiling
+	blurbMaxOutputTokens = 280              // ~3 sentences, with a comfortable ceiling
 	blurbStateFile       = "llm_usage.json"
 )
 
 // Haiku 4.5 pricing per 1M tokens (USD), confirmed against shared/models.md via
-// the claude-api skill. If the model gets re-priced, only these three constants
+// the claude-api skill. If the model gets re-priced, only these constants
 // need to change.
 const (
-	haikuInputPricePer1M       = 1.00
-	haikuOutputPricePer1M      = 5.00
-	haikuCacheWritePricePer1M  = 1.25 // 1.25× input price for the default 5m TTL
-	haikuCacheReadPricePer1M   = 0.10 // 0.1× input price
+	haikuInputPricePer1M      = 1.00
+	haikuOutputPricePer1M     = 5.00
+	haikuCacheWritePricePer1M = 1.25 // 1.25× input price for the default 5m TTL
+	haikuCacheReadPricePer1M  = 0.10 // 0.1× input price
 )
 
-// LLMUsageEntry is the aggregate spend + token counts for one model. We track
-// per-model so adding a second feature later (Sonnet, Opus) just adds a new
-// map entry rather than touching this struct.
+// LLMUsageEntry is the aggregate spend + token counts for one model. Keyed by
+// model in the llmUsage map below — multiple lakes using the same model share
+// one entry, which is the right thing for cost tracking.
 type LLMUsageEntry struct {
-	Model                  string  `json:"model"`
-	Calls                  int64   `json:"calls"`
-	InputTokens            int64   `json:"inputTokens"`
-	OutputTokens           int64   `json:"outputTokens"`
-	CacheCreationTokens    int64   `json:"cacheCreationTokens"`
-	CacheReadTokens        int64   `json:"cacheReadTokens"`
-	TotalCostUSD           float64 `json:"totalCostUsd"`
-	LastSuccess            time.Time `json:"lastSuccess"`
-	LastError              string  `json:"lastError,omitempty"`
+	Model               string    `json:"model"`
+	Calls               int64     `json:"calls"`
+	InputTokens         int64     `json:"inputTokens"`
+	OutputTokens        int64     `json:"outputTokens"`
+	CacheCreationTokens int64     `json:"cacheCreationTokens"`
+	CacheReadTokens     int64     `json:"cacheReadTokens"`
+	TotalCostUSD        float64   `json:"totalCostUsd"`
+	LastSuccess         time.Time `json:"lastSuccess"`
+	LastError           string    `json:"lastError,omitempty"`
 }
 
-// llmUsage is the persisted aggregate spend across all LLM features. Keyed by
-// model ID. Lives on the existing /data PVC alongside the other state files.
 var (
-	llmUsage    = map[string]*LLMUsageEntry{}
-	llmUsageMu  sync.RWMutex
+	llmUsage   = map[string]*LLMUsageEntry{}
+	llmUsageMu sync.RWMutex
 )
 
 // LakeBlurb is what the frontend renders. A nil/empty blurb means the
@@ -65,224 +62,103 @@ type LakeBlurb struct {
 	GeneratedAt time.Time `json:"generatedAt"`
 }
 
-var (
-	currentBlurb   *LakeBlurb
-	currentBlurbMu sync.RWMutex
-)
+// lakeBlurbConfig bundles all the per-lake state for one blurb endpoint:
+// where it's served, what system prompt drives it, how to read the current
+// snapshot, and the in-memory state holding the last successful generation.
+// New lakes wanting a blurb just add a new instance and call RegisterBlurb.
+type lakeBlurbConfig struct {
+	// Key is the short lake identifier used in log prefixes and the
+	// TrackAPICall source label (e.g. "jordan", "minneola"). Lowercase
+	// by convention.
+	Key string
 
-// jordanBoatingSystemPrompt is the static persona + interpretation guide we
-// send on every generation.
-//
-// NOTE on caching: we deliberately do NOT set cache_control on this prompt.
-// Generations are on-demand and at least 30 minutes apart, but the default
-// ephemeral cache TTL is only 5 minutes — so a cached prefix would always
-// expire between calls. Every call would pay the 1.25× cache-WRITE premium
-// and never get a cache READ, making caching strictly more expensive at this
-// frequency. Plain uncached input ($1/M) is the cheapest option here.
-const jordanBoatingSystemPrompt = `You write 2–3 sentence boating advisories for the Jordan Lake dashboard at hipposcottomus.com/lakedashboard/. The dashboard already shows users every raw reading — your job is to synthesize them into one paragraph a human can act on without doing the mental math themselves.
+	// BasePath is the URL path the handler is mounted at.
+	BasePath string
 
-# Hard rules (non-negotiable)
+	// SystemPrompt is the static lake-specific persona + interpretation
+	// guide. Sent on every generation — see the per-lake constants below.
+	SystemPrompt string
 
-1. Use ONLY the numbers and conditions in the data snapshot at the end of the user message. Do not invent forecasts, temperatures, wind speeds, or events. If a field shows "n/a" or "—", treat it as unknown and silently omit it from your reasoning — do not say "data is unavailable for X".
+	// SnapshotFn returns a structured snapshot string for the user message,
+	// or "" if there isn't enough data yet to be worth a call.
+	SnapshotFn func() string
 
-2. Output exactly 2 or 3 sentences of running prose. No bullet points, no headers, no "Today on Jordan Lake:" preambles, no closing pleasantries like "Have a great day on the water!". Just the advisory.
-
-3. Length cap: ~50 words. If you find yourself reaching for a fourth sentence, you're padding — cut.
-
-4. Hedged language is fine and expected. "Forecast calls for…", "expect…", "conditions through midday should…", "based on the forecast…". Never claim certainty about future weather — you only know what the forecast says, not what will happen.
-
-5. Tone: practical and specific. You are advising a knowledgeable friend who already knows how to operate a boat. Don't explain what wind direction is, don't define UV index, don't suggest sunscreen as if it were a revelation.
-
-6. No exaggeration. A water temperature of 68°F is "still cool for swimming", not "dangerously cold". 12 mph winds are "manageable for most craft", not "treacherous". Reserve strong language ("hazardous", "stay off the water", "small-craft advisory conditions") for genuinely hazardous numbers — see the interpretation guide below.
-
-7. No safety boilerplate. Don't recommend life jackets, weather radios, float plans, etc. unless the data shows something specifically dangerous (e.g. thunderstorms with high wind).
-
-8. Never mention "the model", "AI", "Claude", or that this was generated. Speak as the dashboard.
-
-# About Jordan Lake (B. Everett Jordan Lake, NC)
-
-A USACE-managed reservoir in central North Carolina near Apex/Cary. Full pool is 216 ft elevation; the dashboard reports water level as a delta from full pool, so 0.0 ft means full pool, -1.5 ft means 1.5 feet below full pool. Drawdown is normal in late summer and winter. Power boating, sailing, kayaking, and fishing all happen here; swimming areas are at Ebenezer Church and Vista Point.
-
-Typical late-spring / early-summer surface water temps run 70–80°F. Late fall through early spring: 45–60°F.
-
-# How to read each field
-
-## Water temperature (°F)
-- < 60°F: too cold for casual swimming; serious risk of cold-water shock if someone goes in unexpectedly. "Cold-water risk if you go in unexpectedly" — only mention if water-contact activities are likely (swimming, paddleboarding without a wetsuit, etc.).
-- 60–68°F: brisk. Swimmers will notice. Not advice-worthy on its own.
-- 69–74°F: comfortable swimming for most people. Worth a brief positive note if it's recently warmed up.
-- 75–82°F: prime swimming weather.
-- > 82°F: warm; algae watch — but only mention HABs if there's a specific advisory in the data, which there usually isn't.
-
-## Water level (delta vs. full pool, in feet)
-- Within ±0.5 ft: essentially full pool. Don't mention unless launching matters (rare).
-- -0.5 to -2.0 ft: mild drawdown. Most ramps still fine. Mention only if relevant to a launching question.
-- -2.0 to -4.0 ft: noticeable drawdown. Some shallower ramps may have exposed concrete or mud; suggest scouting your usual ramp before towing.
-- < -4.0 ft: significant drawdown. Recommend checking the USACE level page before towing; some areas may not be navigable.
-- Above full pool (positive delta): high water. Note that floating debris and submerged hazards may be present at typical heights.
-
-## Air temperature (current and forecast highs)
-Translate into wearable terms. < 50°F: layers; 50–65°F: jacket; 65–75°F: light layers; 75–85°F: t-shirt; > 85°F: hydrate / shade.
-
-## Wind speed and direction (NWS forecast, mph)
-- 0–5 mph: glass / near-calm. Mention positively for sailing ("light air, expect drifters" — though don't use sailor-jargon unless the situation clearly warrants).
-- 5–10 mph: pleasant for most activities. No specific advisory.
-- 10–15 mph: moderate. Kayaks and small craft will work harder; mention if board sports or kayaking is plausible.
-- 15–20 mph: choppy. Discourage small-craft / first-timers / inflatables. Power boats fine; sailors will be happy.
-- 20–25 mph: small-craft advisory territory for inland lakes. Recommend most non-power craft stay off the open water. Sailors should reef.
-- > 25 mph: hazardous for most recreation. Strong wording is appropriate.
-
-Wind direction matters less on Jordan Lake than on coastal water; only mention if it's notable (e.g. due NW after a frontal passage).
-
-## UV index
-- 0–2: low — no special precautions.
-- 3–5: moderate — mention sunscreen only if the user will be out for hours.
-- 6–7: high — sunscreen + hat for anything > 1 hour.
-- 8–10: very high — sunscreen, hat, and shade during midday hours.
-- 11+: extreme — limit midday exposure where possible.
-
-Only mention UV if it's high or very high. Don't recite the tier label; translate ("UV will be very high midday — plan on sunscreen and a hat if you're out past noon").
-
-## Cloud cover, precipitation chance, weather descriptors
-- "Mostly sunny" / "sunny": say "clear" or "sunny" — don't translate, NWS phrases are familiar.
-- Rain chance < 30%: usually safe to ignore.
-- Rain chance 30–60%: "scattered showers possible" / "watch for showers in the afternoon" if forecast shows a clear time-of-day skew.
-- Rain chance > 60%: "expect rain through [period]" — recommend rescheduling if windows are tight.
-- Any mention of "thunderstorms" or "T-storms" in the forecast text: that's the headline. Recommend staying off the water during storms, especially for sailors and metal-railed boats. This IS a case where a specific safety mention is warranted.
-
-# Style examples
-
-These are reference examples — do not copy verbatim. Match the cadence and density.
-
-EXAMPLE — pleasant spring day, low wind, comfortable water:
-Surface temps are up to 72°F with the forecast holding light SW winds in the 5–8 mph range through the afternoon — comfortable conditions for most craft. Water level is essentially full pool, so all ramps should be fine. Bring a light jacket for the morning launch.
-
-EXAMPLE — choppy summer day, high UV:
-Light easterly wind early, building to a steady 14–18 mph SW out of the south by midafternoon — kayakers should plan a morning paddle and power boats will find some chop on the open water. UV will be very high through midday, so sunscreen and a hat are worth it for any extended trip. Water is a comfortable 78°F.
-
-EXAMPLE — cold morning, low risk but worth flagging:
-Air temp starts in the low 40s and only reaches the mid 50s, with light westerly wind around 6 mph — manageable for everyone but dress for it. Surface water is still 58°F, so cold-water risk if you go in unexpectedly. Lake is about 1.5 ft below full pool, which shouldn't affect most ramps.
-
-EXAMPLE — small-craft advisory weather:
-NWS forecasts sustained 22–28 mph SW winds with gusts into the 30s — most non-power craft should stay off the open water today, and sailors will want to reef early if they go at all. Showers are likely after noon. Conditions ease somewhat by evening per the forecast.
-
-EXAMPLE — thunderstorms forecast:
-Afternoon thunderstorms in the forecast with rain chance climbing through the day — plan any time on the water for the morning and be off it well before storms develop. Conditions before then should be mild, with surface temps around 75°F and winds light. Water level is essentially at full pool.
-
-EXAMPLE — significant drawdown:
-Water level is 4.8 ft below full pool, so check the USACE page or scout your usual ramp before towing — some of the shallower ramps may not be usable. Conditions are otherwise calm: 70°F water, light north wind, no rain in the forecast through evening. UV will be moderate, no special precautions needed.
-
-# What NOT to do
-
-DO NOT WRITE:
-- "It's a beautiful day to be on Jordan Lake!" — vague, no information.
-- "Water temperature is currently 72°F." — the dashboard already shows this; don't restate.
-- "Conditions are good." — meaningless without qualification.
-- "Please remember to wear a life jacket." — safety boilerplate.
-- "I would recommend…" — first person.
-- "The forecast indicates a high probability of precipitation events occurring during the afternoon hours." — bureaucratic.
-- "Wear sunscreen!" — no, "UV is very high midday, sunscreen for any extended trip" if it's actually high.
-
-DO WRITE:
-- A specific synthesis using the numbers that makes the dashboard easier to act on.
-- Hedged, forecast-aware language ("expect", "should", "the forecast calls for").
-- Activity-aware framing — kayakers and power boaters care about different things.
-
-Now generate the blurb for the snapshot in the user message.`
-
-// snapshotFromCurrentState reads the Jordan Lake live data (water temp, level,
-// weather, UV) from the existing globals and formats a compact snapshot the
-// model can consume. Returns "" if there's not enough data to be worth a call.
-func snapshotFromCurrentState() string {
-	var sb strings.Builder
-	sb.WriteString("Current Jordan Lake snapshot:\n\n")
-
-	if pt, ok := tempHistory.Latest(); ok {
-		fmt.Fprintf(&sb, "Water temperature: %.1f °F (as of %s)\n", pt.Value, pt.Date)
-	} else {
-		sb.WriteString("Water temperature: n/a\n")
-	}
-
-	if pt, ok := levelHistory.Latest(); ok {
-		delta := pt.Value - fullPoolLevel
-		fmt.Fprintf(&sb, "Water level: %.2f ft (delta from full pool of %g ft, absolute %.2f ft, as of %s)\n",
-			delta, fullPoolLevel, pt.Value, pt.Date)
-	} else {
-		sb.WriteString("Water level: n/a\n")
-	}
-
-	weather.mu.RLock()
-	defer weather.mu.RUnlock()
-
-	if len(weather.Hourly) > 0 {
-		now := weather.Hourly[0]
-		fmt.Fprintf(&sb, "Current air conditions (%s): %d °F, %s, wind %s %s\n",
-			now.Name, now.Temperature, now.ShortForecast, now.WindSpeed, now.WindDirection)
-	}
-
-	// Next 12 hours of hourly so the model can describe a trend.
-	if len(weather.Hourly) > 1 {
-		sb.WriteString("Hourly forecast (next ~12 hours):\n")
-		n := len(weather.Hourly)
-		if n > 12 {
-			n = 12
-		}
-		for _, p := range weather.Hourly[:n] {
-			fmt.Fprintf(&sb, "  %s: %d °F, %s, wind %s %s\n",
-				p.StartTime, p.Temperature, p.ShortForecast, p.WindSpeed, p.WindDirection)
-		}
-	}
-
-	// Day/night forecast for the rest of "today".
-	if len(weather.Forecast) > 0 {
-		sb.WriteString("Day/night forecast (next ~3 periods):\n")
-		n := len(weather.Forecast)
-		if n > 3 {
-			n = 3
-		}
-		for _, p := range weather.Forecast[:n] {
-			fmt.Fprintf(&sb, "  %s: high/low %d °F, %s, wind %s %s\n",
-				p.Name, p.Temperature, p.ShortForecast, p.WindSpeed, p.WindDirection)
-		}
-	}
-
-	if weather.UV != nil {
-		var peak float64 = -1
-		today := weather.UV.UpdatedAt
-		if len(today) >= 10 {
-			today = today[:10]
-		}
-		for _, h := range weather.UV.Hourly {
-			if today != "" && !strings.HasPrefix(h.Time, today) {
-				continue
-			}
-			if h.UVIndex > peak {
-				peak = h.UVIndex
-			}
-		}
-		if peak >= 0 {
-			fmt.Fprintf(&sb, "UV index: current %.1f, peak today %.1f\n", weather.UV.Current, peak)
-		} else {
-			fmt.Fprintf(&sb, "UV index: current %.1f\n", weather.UV.Current)
-		}
-	} else {
-		sb.WriteString("UV index: n/a\n")
-	}
-
-	// We need at least *some* data — if everything is n/a there's nothing useful
-	// to say and we shouldn't burn an API call.
-	body := sb.String()
-	if !strings.Contains(body, "°F") && !strings.Contains(body, "ft") {
-		return ""
-	}
-	return body
+	// In-memory state — initialized lazily by maybeTrigger / generate.
+	mu      sync.RWMutex
+	current *LakeBlurb
+	genMu   sync.Mutex
 }
 
-// generateLakeBlurb makes one Anthropic call and updates the in-memory blurb +
-// the cumulative LLM usage stats. Idempotent and safe to call concurrently;
-// only the latest result is stored.
-func generateLakeBlurb(ctx context.Context) error {
-	snapshot := snapshotFromCurrentState()
+// RegisterBlurb mounts cfg's HTTP handler and logs the registration. Call
+// loadLLMUsage() once before any registration if you want the persisted
+// running cost meter; InitBlurb below does that for you.
+func RegisterBlurb(mux *http.ServeMux, cfg *lakeBlurbConfig) {
+	mux.HandleFunc(cfg.BasePath, cfg.handle)
+	log.Printf("[Blurb-%s] registered at %s (on-demand, min %s between calls 6am–8pm ET, one refresh allowed per 8pm–6am ET blackout)",
+		cfg.Key, cfg.BasePath, blurbMinInterval)
+}
+
+// handle serves the cached blurb and opportunistically triggers a background
+// regeneration when shouldGenerate says so. 204 (no content) if we've never
+// generated one yet; the frontend hides the section in that case.
+func (cfg *lakeBlurbConfig) handle(w http.ResponseWriter, r *http.Request) {
+	cfg.maybeTrigger()
+
+	cfg.mu.RLock()
+	b := cfg.current
+	cfg.mu.RUnlock()
+	if b == nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	writeJSON(w, b)
+}
+
+// maybeTrigger kicks off a background regeneration when shouldGenerate says so
+// and no other generation for THIS lake is already running. Different lakes
+// don't block each other.
+func (cfg *lakeBlurbConfig) maybeTrigger() {
+	cfg.mu.RLock()
+	b := cfg.current
+	cfg.mu.RUnlock()
+
+	var lastGenAt time.Time
+	if b != nil {
+		lastGenAt = b.GeneratedAt
+	}
+	if !shouldGenerate(time.Now(), lastGenAt) {
+		return
+	}
+	if !cfg.genMu.TryLock() {
+		return // a generation for this lake is already in flight
+	}
+
+	go func() {
+		defer cfg.genMu.Unlock()
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		err := cfg.generate(ctx)
+		TrackAPICall("Anthropic-Blurb-"+cfg.Key, err)
+		if err != nil {
+			log.Printf("[Blurb-%s] on-demand generation failed: %v", cfg.Key, err)
+			return
+		}
+		if e := saveLLMUsage(); e != nil {
+			log.Printf("[Blurb-%s] failed to save LLM usage: %v", cfg.Key, e)
+		}
+	}()
+}
+
+// generate makes one Anthropic call and stores the result.
+//
+// NOTE on caching: we deliberately do NOT set cache_control on the system
+// prompt. Generations are at least 30 minutes apart, but the default
+// ephemeral cache TTL is 5 minutes — a cached prefix would always expire
+// between calls, so every call would pay the 1.25× cache-WRITE premium and
+// never get a READ. Plain uncached input ($1/M) is the cheapest option at
+// this frequency.
+func (cfg *lakeBlurbConfig) generate(ctx context.Context) error {
+	snapshot := cfg.SnapshotFn()
 	if snapshot == "" {
 		return fmt.Errorf("no usable snapshot data yet")
 	}
@@ -293,7 +169,7 @@ func generateLakeBlurb(ctx context.Context) error {
 		Model:     blurbModel,
 		MaxTokens: blurbMaxOutputTokens,
 		System: []anthropic.TextBlockParam{{
-			Text: jordanBoatingSystemPrompt,
+			Text: cfg.SystemPrompt,
 		}},
 		Messages: []anthropic.MessageParam{
 			anthropic.NewUserMessage(anthropic.NewTextBlock(snapshot)),
@@ -316,17 +192,17 @@ func generateLakeBlurb(ctx context.Context) error {
 		return fmt.Errorf("empty response from model")
 	}
 
-	currentBlurbMu.Lock()
-	currentBlurb = &LakeBlurb{Text: final, GeneratedAt: time.Now()}
-	currentBlurbMu.Unlock()
+	cfg.mu.Lock()
+	cfg.current = &LakeBlurb{Text: final, GeneratedAt: time.Now()}
+	cfg.mu.Unlock()
 
 	recordLLMUsage(blurbModelLabel, resp.Usage)
 	return nil
 }
 
 // recordLLMUsage updates the persisted aggregate using one call's reported
-// token counts. Pricing is constants above — if a model gets re-priced, only
-// those constants change.
+// token counts. Multiple lakes using the same model accumulate on one entry —
+// which is what we want for cost tracking.
 func recordLLMUsage(model string, u anthropic.Usage) {
 	in := u.InputTokens
 	out := u.OutputTokens
@@ -424,7 +300,7 @@ func loadLLMUsage() {
 	log.Printf("[Blurb] loaded LLM usage for %d model(s)", len(loaded))
 }
 
-// ── On-demand generation ────────────────────────────────────────
+// ── Generation-gate decision functions ──────────────────────────
 
 // etLocation is America/New_York, used for the overnight blackout window.
 // The time/tzdata blank import guarantees this resolves even on alpine.
@@ -440,38 +316,29 @@ func init() {
 }
 
 // inBlackout reports whether t falls in the overnight no-generation window
-// (8pm–6am Eastern). Nobody's checking lake conditions to go boating at 3am,
-// so we don't spend tokens refreshing the blurb then.
+// (8pm–6am Eastern). Nobody's checking lake conditions to go boating at 3am.
 func inBlackout(t time.Time) bool {
 	h := t.In(etLocation).Hour()
 	return h >= 20 || h < 6
 }
 
 // blackoutStartFor returns the start (8pm ET) of the blackout window
-// containing t. If t is between 8pm and midnight, that's 8pm tonight; if t
-// is between midnight and 6am, it's 8pm yesterday. Panics if t isn't in the
-// blackout (callers gate with inBlackout).
+// containing t. Pre-midnight → 8pm today; post-midnight → 8pm yesterday.
 func blackoutStartFor(t time.Time) time.Time {
 	et := t.In(etLocation)
 	day := et
 	if et.Hour() < 6 {
-		// post-midnight; the blackout started 8pm the previous calendar day
 		day = et.AddDate(0, 0, -1)
 	}
 	return time.Date(day.Year(), day.Month(), day.Day(), 20, 0, 0, 0, etLocation)
 }
 
-// shouldGenerate is the pure decision function behind maybeTriggerGeneration.
-// Kept side-effect-free and parameterized on now/lastGenAt so it's testable
-// without mocking time.
-//
-//   - During the 6am–8pm ET active window: regenerate if the last blurb is
-//     older than blurbMinInterval (30m), or if there's no blurb yet.
-//   - During the 8pm–6am ET blackout: allow exactly one regeneration per
-//     blackout period — when the last blurb predates the start of this
-//     blackout window (or there's no blurb yet). After that one refresh, the
-//     new blurb's timestamp sits inside the window, so this returns false
-//     until 6am.
+// shouldGenerate is the pure decision function behind maybeTrigger.
+//   - Daytime (6am–8pm ET): regen if last blurb older than blurbMinInterval (30m),
+//     or there's no blurb yet.
+//   - Blackout (8pm–6am ET): allow exactly one regen per blackout period —
+//     when the last blurb predates the start of THIS blackout window. After
+//     that one refresh, returns false until 6am.
 func shouldGenerate(now, lastGenAt time.Time) bool {
 	if !inBlackout(now) {
 		return lastGenAt.IsZero() || now.Sub(lastGenAt) >= blurbMinInterval
@@ -482,75 +349,16 @@ func shouldGenerate(now, lastGenAt time.Time) bool {
 	return lastGenAt.Before(blackoutStartFor(now))
 }
 
-// blurbGenMu is held only for the duration of an in-flight generation, so a
-// burst of page loads triggers at most one API call (single-flight).
-var blurbGenMu sync.Mutex
+// ── Init ────────────────────────────────────────────────────────
 
-// maybeTriggerGeneration kicks off a background regeneration when shouldGenerate
-// says so and no other generation is already running. It never blocks the
-// caller — the request that triggers it still gets served the current
-// (possibly stale) blurb, and the frontend's 60s auto-refresh picks up the
-// new one a couple seconds later.
-func maybeTriggerGeneration() {
-	currentBlurbMu.RLock()
-	b := currentBlurb
-	currentBlurbMu.RUnlock()
-
-	var lastGenAt time.Time
-	if b != nil {
-		lastGenAt = b.GeneratedAt
-	}
-	if !shouldGenerate(time.Now(), lastGenAt) {
-		return
-	}
-	if !blurbGenMu.TryLock() {
-		return // a generation is already in flight
-	}
-
-	go func() {
-		defer blurbGenMu.Unlock()
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-		err := generateLakeBlurb(ctx)
-		TrackAPICall("Anthropic-Blurb", err)
-		if err != nil {
-			log.Printf("[Blurb] on-demand generation failed: %v", err)
-			return
-		}
-		if e := saveLLMUsage(); e != nil {
-			log.Printf("[Blurb] failed to save LLM usage: %v", e)
-		}
-	}()
-}
-
-// handleLakeBlurb serves the current blurb and opportunistically triggers a
-// background regeneration when it's stale. 204 (no content) if we've never
-// generated one yet (cold pod, or every attempt so far has failed); the
-// frontend hides the section in that case.
-func handleLakeBlurb(w http.ResponseWriter, r *http.Request) {
-	maybeTriggerGeneration()
-
-	currentBlurbMu.RLock()
-	b := currentBlurb
-	currentBlurbMu.RUnlock()
-	if b == nil {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	writeJSON(w, b)
-}
-
-// InitBlurb is wired from main.go. Generation is on-demand — the first visitor
-// to /lakedashboard/ after the pod starts (and outside the blackout window)
-// triggers the first generation. Won't actually call the API until
-// ANTHROPIC_API_KEY is in the env; missing-key surfaces as an error on the
-// first attempt, captured by TrackAPICall.
+// InitBlurb is wired from main.go. Loads the persisted LLM-usage meter once,
+// then registers every per-lake blurb endpoint. Adding a new lake = one more
+// RegisterBlurb call here.
 func InitBlurb(mux *http.ServeMux) {
 	loadLLMUsage()
-	mux.HandleFunc(blurbBasePath, handleLakeBlurb)
 	if os.Getenv("ANTHROPIC_API_KEY") == "" {
 		log.Println("[Blurb] ANTHROPIC_API_KEY not set — on-demand generation will fail until it's configured")
 	}
-	log.Printf("[Blurb] registered at %s (on-demand, min %s between calls 6am–8pm ET, one refresh allowed per 8pm–6am ET blackout, model %s)",
-		blurbBasePath, blurbMinInterval, blurbModel)
+	RegisterBlurb(mux, jordanBlurbConfig)
+	RegisterBlurb(mux, minneolaBlurbConfig)
 }
