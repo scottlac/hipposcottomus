@@ -28,19 +28,26 @@ const (
 	// elevation only — water temperature is estimated from air-temp; see
 	// conway_temp_estimate.go.
 	conwayUSGSSite = "02262800"
-	// Cover every lake-elevation code USGS reports under so we work
-	// regardless of which datum the station's canonical series uses.
+	// Cover every lake-elevation code USGS reports under, plus 00065
+	// (gage height, feet) which some lake gauges use instead. Whichever
+	// the station's canonical series is gets used; the rest come back
+	// as empty time series and are silently ignored.
 	//   62614 — lake elevation NGVD-29
 	//   62615 — lake elevation NAVD-88
 	//   62616 — reservoir water surface elevation (newer code)
 	//   00062 — elevation of reservoir water surface above datum
-	conwayUSGSParams = "62614,62615,62616,00062"
+	//   00065 — gage height, feet (relative)
+	conwayUSGSParams = "62614,62615,62616,00062,00065"
 
 	conwayUSGSIVURL = "https://waterservices.usgs.gov/nwis/iv/"
 	conwayUSGSDVURL = "https://waterservices.usgs.gov/nwis/dv/"
 
-	conwayPollInterval   = 15 * time.Minute
-	conwayWeatherPollInt = 30 * time.Minute
+	// Lake Conway is updated monthly by the Orange County Lake Conway
+	// Water and Navigation Control District (manual readings, not a
+	// real-time sensor). The IV endpoint returns nothing; we poll DV
+	// on a slow cadence and use the latest dated value as "current".
+	conwayDVRefreshInterval = 6 * time.Hour
+	conwayWeatherPollInt    = 30 * time.Minute
 
 	// Persistence files (sit alongside the other lakes' history files
 	// on the same /data/ PVC).
@@ -68,106 +75,43 @@ var (
 
 // usgsMultiResp and celsiusToFahrenheit are shared with gaston.go.
 
-// conwayFetchIV pulls the most recent IV (instantaneous values) and updates
-// the in-memory histories. The last good elevation reading wins regardless
-// of which datum code it was reported under.
-func conwayFetchIV() error {
-	url := fmt.Sprintf("%s?format=json&sites=%s&parameterCd=%s&period=PT6H",
-		conwayUSGSIVURL, conwayUSGSSite, conwayUSGSParams)
+// conwayRefreshDV pulls daily-value water-level readings over [now-daysBack,
+// now] and folds new dates into the history. AddWithDate skips dates that
+// already exist, so calling this repeatedly is safe. Lake Conway 02262800
+// is a manual-read station updated monthly; we still need to walk back a
+// couple of months on each refresh because new monthly snapshots can show
+// up dated to days that were previously empty.
+func conwayRefreshDV(daysBack int) error {
+	end := time.Now().Format("2006-01-02")
+	start := time.Now().AddDate(0, 0, -daysBack).Format("2006-01-02")
+	url := fmt.Sprintf("%s?format=json&sites=%s&startDT=%s&endDT=%s&parameterCd=%s&siteStatus=all",
+		conwayUSGSDVURL, conwayUSGSSite, start, end, conwayUSGSParams)
+
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Get(url)
 	if err != nil {
-		return fmt.Errorf("fetching USGS IV: %w", err)
+		return fmt.Errorf("fetching USGS DV: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("USGS IV returned status %d", resp.StatusCode)
+		return fmt.Errorf("USGS DV returned status %d", resp.StatusCode)
 	}
 
 	var data usgsMultiResp
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return fmt.Errorf("decoding USGS IV: %w", err)
+		return fmt.Errorf("decoding USGS DV: %w", err)
 	}
 
 	var (
-		gotLevel bool
-		level    float64
+		levelCount int
+		observed   []string
 	)
 	for _, ts := range data.Value.TimeSeries {
 		if len(ts.Variable.VariableCode) == 0 {
 			continue
 		}
 		code := ts.Variable.VariableCode[0].Value
-		var latest string
-		for _, vals := range ts.Values {
-			for _, v := range vals.Value {
-				if v.Value == "" || v.Value == "-999999" {
-					continue
-				}
-				latest = v.Value
-			}
-		}
-		if latest == "" {
-			continue
-		}
-		x, err := strconv.ParseFloat(latest, 64)
-		if err != nil {
-			continue
-		}
-		switch code {
-		case "62614", "62615", "62616", "00062":
-			level = x
-			gotLevel = true
-		}
-	}
-
-	if gotLevel {
-		conwayLevelHistory.Add(level)
-		log.Printf("[Conway] Updated water level: %.2f ft", level)
-	} else {
-		log.Println("[Conway] No water level reading in IV response")
-	}
-	return nil
-}
-
-// conwayBackfillFromUSGS pulls up to 5 years of daily elevation values
-// from the Minnehaha gauge. Water temperature is estimated separately via
-// Open-Meteo (see conway_temp_estimate.go).
-func conwayBackfillFromUSGS() {
-	end := time.Now().Format("2006-01-02")
-	start := time.Now().AddDate(-5, 0, 0).Format("2006-01-02")
-	url := fmt.Sprintf("%s?format=json&sites=%s&startDT=%s&endDT=%s&parameterCd=%s&siteStatus=all",
-		conwayUSGSDVURL, conwayUSGSSite, start, end, conwayUSGSParams)
-	log.Printf("[Conway] Backfilling level history from USGS (%s to %s)...", start, end)
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Get(url)
-	if err != nil {
-		TrackAPICall("USGS-Conway-DV", err)
-		log.Printf("[Conway] Warning: USGS backfill failed (fetch): %v", err)
-		return
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		statusErr := fmt.Errorf("status %d", resp.StatusCode)
-		TrackAPICall("USGS-Conway-DV", statusErr)
-		log.Printf("[Conway] Warning: USGS backfill failed (%v)", statusErr)
-		return
-	}
-
-	var data usgsMultiResp
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		TrackAPICall("USGS-Conway-DV", err)
-		log.Printf("[Conway] Warning: USGS backfill failed (decode): %v", err)
-		return
-	}
-
-	var levelCount int
-	for _, ts := range data.Value.TimeSeries {
-		if len(ts.Variable.VariableCode) == 0 {
-			continue
-		}
-		code := ts.Variable.VariableCode[0].Value
+		observed = append(observed, code+" "+ts.Variable.VariableName)
 		for _, vals := range ts.Values {
 			for _, v := range vals.Value {
 				if len(v.DateTime) < 10 || v.Value == "" || v.Value == "-999999" {
@@ -179,7 +123,7 @@ func conwayBackfillFromUSGS() {
 					continue
 				}
 				switch code {
-				case "62614", "62615", "62616", "00062":
+				case "62614", "62615", "62616", "00062", "00065":
 					conwayLevelHistory.AddWithDate(date, x)
 					levelCount++
 				}
@@ -187,8 +131,22 @@ func conwayBackfillFromUSGS() {
 		}
 	}
 
-	TrackAPICall("USGS-Conway-DV", nil)
-	log.Printf("[Conway] Backfilled %d level points", levelCount)
+	conwayLevelHistory.Sort()
+	if len(observed) > 0 {
+		log.Printf("[Conway] USGS DV reported params: %v", observed)
+	}
+	log.Printf("[Conway] DV refresh added %d level points (last %d days)", levelCount, daysBack)
+	return nil
+}
+
+// conwayBackfillFromUSGS pulls 5 years of DV at startup.
+func conwayBackfillFromUSGS() {
+	log.Println("[Conway] Backfilling level history from USGS (5 years)...")
+	err := conwayRefreshDV(5 * 365)
+	TrackAPICall("USGS-Conway-DV", err)
+	if err != nil {
+		log.Printf("[Conway] Warning: USGS backfill failed: %v", err)
+	}
 }
 
 // ── NWS weather ─────────────────────────────────────────────────
@@ -299,23 +257,18 @@ func saveConwayHistories() {
 
 // ── Loops ───────────────────────────────────────────────────────
 
-func conwayScrapeLoop() {
-	log.Println("[Conway] Running initial USGS IV scrape...")
-	err := conwayFetchIV()
-	TrackAPICall("USGS-Conway-IV", err)
-	if err != nil {
-		log.Printf("[Conway] initial IV scrape error: %v", err)
-	} else {
-		saveConwayHistories()
-	}
-
-	ticker := time.NewTicker(conwayPollInterval)
+// conwayDVRefreshLoop polls the DV endpoint for recent readings every
+// conwayDVRefreshInterval. The Orange County monthly updates only need a
+// slow cadence; we look back 90 days so a late-arriving snapshot from
+// last month still gets picked up.
+func conwayDVRefreshLoop() {
+	ticker := time.NewTicker(conwayDVRefreshInterval)
 	defer ticker.Stop()
 	for range ticker.C {
-		err := conwayFetchIV()
-		TrackAPICall("USGS-Conway-IV", err)
+		err := conwayRefreshDV(90)
+		TrackAPICall("USGS-Conway-DV", err)
 		if err != nil {
-			log.Printf("[Conway] scheduled IV scrape error: %v", err)
+			log.Printf("[Conway] DV refresh error: %v", err)
 			continue
 		}
 		saveConwayHistories()
@@ -387,7 +340,7 @@ func InitConway(mux *http.ServeMux) {
 	conwayTempHistory.Sort()
 	saveConwayHistories()
 
-	go conwayScrapeLoop()
+	go conwayDVRefreshLoop()
 	go conwayWeatherLoop()
 	go conwayTempEstimateLoop()
 	go func() {
