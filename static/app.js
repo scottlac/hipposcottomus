@@ -783,31 +783,59 @@ async function refresh() {
   fetchBlurb();
 }
 
-// AI-generated boating blurb — 204 from the server means we haven't generated
-// one yet (just-restarted pod), in which case we keep the section hidden.
+// AI-generated boating blurb. A 204 from the server means we haven't
+// generated one yet (just-restarted pod) — show a placeholder and poll
+// every 5s up to 12 times (~1 min) until the blurb arrives. Hide the
+// section only if generation seems to have stalled out.
+const BLURB_RETRY_MS = 5_000;
+const BLURB_MAX_RETRIES = 12;
+let _blurbRetryTimer = null;
+let _blurbRetryCount = 0;
+
+function _scheduleBlurbRetry() {
+  if (_blurbRetryTimer || _blurbRetryCount >= BLURB_MAX_RETRIES) return;
+  _blurbRetryCount++;
+  _blurbRetryTimer = setTimeout(() => {
+    _blurbRetryTimer = null;
+    fetchBlurb();
+  }, BLURB_RETRY_MS);
+}
+
+function _clearBlurbRetry() {
+  if (_blurbRetryTimer) clearTimeout(_blurbRetryTimer);
+  _blurbRetryTimer = null;
+  _blurbRetryCount = 0;
+}
+
 async function fetchBlurb() {
+  const section = document.getElementById("blurbSection");
+  const textEl = document.getElementById("blurbText");
+  const metaEl = document.getElementById("blurbMeta");
   try {
     const res = await fetch(`${BASE}/api/blurb`);
     if (res.status === 204) {
-      document.getElementById("blurbSection").hidden = true;
+      textEl.textContent = "Generating boating advisory…";
+      metaEl.textContent = "";
+      section.hidden = false;
+      _scheduleBlurbRetry();
       return;
     }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    const section = document.getElementById("blurbSection");
-    document.getElementById("blurbText").textContent = data.text || "";
+    textEl.textContent = data.text || "";
     const ts = data.generatedAt ? new Date(data.generatedAt) : null;
     if (ts && !isNaN(ts)) {
       const mins = Math.max(0, Math.round((Date.now() - ts.getTime()) / 60000));
-      document.getElementById("blurbMeta").textContent =
-        mins === 0 ? "just now" : `${mins} min ago`;
+      metaEl.textContent = mins === 0 ? "just now" : `${mins} min ago`;
     } else {
-      document.getElementById("blurbMeta").textContent = "";
+      metaEl.textContent = "";
     }
     section.hidden = false;
+    _clearBlurbRetry();
   } catch (err) {
     console.warn("blurb fetch failed:", err);
-    document.getElementById("blurbSection").hidden = true;
+    section.hidden = true;
+    _clearBlurbRetry();
   }
 }
 
