@@ -27,7 +27,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-  <link rel="stylesheet" href="style.css?v=4" />
+  <link rel="stylesheet" href="style.css?v=5" />
 </head>
 <body>
   <header>
@@ -116,7 +116,7 @@
         <canvas id="tempChart"></canvas>
       </div>
       <div class="chart-container">
-        <h2>Water Level History (relative to full pool: 95 ft)</h2>
+        <h2>Water Level History (relative to SJRWMD Min Average: 95.3 ft NGVD-29)</h2>
         <div class="chart-controls">
           <div class="range-buttons" id="rangeButtons">
             <button data-range="7" class="range-btn">1W</button>
@@ -152,14 +152,14 @@
 
   <footer>
     <p>
-      Water level: <a href="https://waterdata.usgs.gov/monitoring-location/USGS-02236840/" target="_blank" rel="noopener">USGS station 02236840 (Lake Minnehaha at Clermont)</a> — canal-connected to Minneola, tracks within ~0.1 ft.
+      Water level: <a href="https://waterdata.usgs.gov/monitoring-location/USGS-02236840/" target="_blank" rel="noopener">USGS station 02236840 (Lake Minnehaha at Clermont)</a> — canal-connected proxy for Minneola. Delta is computed against SJRWMD's adopted Minimum Average of <strong>95.3 ft NGVD-29</strong> (<a href="https://aws.sjrwmd.com/SJRWMD/permitting/40C-8.pdf" target="_blank" rel="noopener">Ch. 40C-8, F.A.C.</a>), the lake's regulated target.
       Water temperature: <em>estimated</em> from a 7-day trailing mean of NWS air temperature (<a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>); no nearby USGS station reports lake water temp, so this is a proxy good to ~±3 °F.
       <br>
       Weather: NWS Melbourne · UV: Open-Meteo · <a href="/metrics">Prometheus Metrics</a>
     </p>
   </footer>
 
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
   <script>
     try {
       navigator.sendBeacon(
