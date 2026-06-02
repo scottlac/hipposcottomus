@@ -49,13 +49,21 @@ The snapshot's water-temperature value is *estimated* from a 7-day trailing mean
 - 81–88°F: warm; prime swim/ski conditions. Don't restate the temperature — only note it as context.
 - > 88°F: very warm. Possible algal-bloom conditions in summer, but only mention HABs if there's a specific advisory in the data (there usually isn't).
 
-## Water level (delta vs. nominal full pool of 95 ft, in feet)
-- Within ±0.5 ft: essentially nominal. Usually not worth mentioning — Minneola isn't a regulated reservoir.
-- -0.5 to -1.5 ft / +0.5 to +1.5 ft: normal seasonal swing. Don't mention unless asked.
-- > +1.5 ft above nominal: high water — floating debris from upland runoff, watch for submerged hazards (signs, docks), boat-wake concerns near shoreline structures.
-- < -2.0 ft: notably low. Some shallower ramps and shoals may be tricky; the slalom course markers may sit oddly. Worth a brief mention if launching matters.
+## Water level (delta vs. SJRWMD Minimum Average of 95.3 ft NGVD-29)
 
-Most days you should NOT mention water level at all.
+The SJRWMD-adopted bounds for Minneola (Ch. 40C-8 F.A.C.) are:
+- Minimum Frequent High: +0.7 ft (96.0 ft NGVD-29)
+- Minimum Average (the "target"): 0 ft (95.3 ft NGVD-29)
+- Minimum Frequent Low: −1.4 ft (93.9 ft NGVD-29)
+
+Use these bands when characterizing the delta:
+- Within ±0.3 ft of target: at normal. Don't mention unless asked.
+- −0.3 to −1.4 ft (between target and Min Frequent Low): below normal but in the historical operating range. Mention briefly if launching is implied ("water is running about a foot below normal").
+- < −1.4 ft (below MFL): notably low — exposed shoals along the south shoreline and around the slalom course markers, some shallower ramps tricky. Mention if launching matters.
+- +0.3 to +0.7 ft (above target, below MFH): slightly high. Often after summer rains. Don't mention unless asked.
+- > +0.7 ft (above MFH): high water — floating debris from upland runoff, watch for submerged hazards near shoreline structures, boat-wake care near docks.
+
+Most days the lake is within ±0.5 ft of one of those bounds — don't make it the headline unless it's clearly outside normal.
 
 ## Air temperature (current and forecast highs)
 Translate into wearable terms. < 50°F: layers (rare); 50–65°F: jacket; 65–78°F: pleasant; 79–88°F: t-shirt + sun; > 88°F + high humidity: heat-index concern, plan for shade and hydration during midday.
@@ -152,7 +160,7 @@ func minneolaSnapshot() string {
 
 	if pt, ok := minneolaLevelHistory.Latest(); ok {
 		delta := pt.Value - minneolaFullPool
-		fmt.Fprintf(&sb, "Water level: %.2f ft (delta from nominal full pool of %g ft, absolute %.2f ft, as of %s; source: adjacent Lake Minnehaha USGS gauge)\n",
+		fmt.Fprintf(&sb, "Water level: %.2f ft (delta from SJRWMD Min Average target of %g ft NGVD-29, absolute %.2f ft, as of %s; source: adjacent Lake Minnehaha USGS gauge as a proxy for Minneola, which may understate the true deficit by ~0.5–1.0 ft when the chain is drying)\n",
 			delta, minneolaFullPool, pt.Value, pt.Date)
 	} else {
 		sb.WriteString("Water level: n/a\n")

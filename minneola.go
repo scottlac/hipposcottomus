@@ -15,7 +15,7 @@ import (
 
 const (
 	minneolaBasePath  = "/minneola"
-	minneolaFullPool  = 95.0  // ft — Lake Minneola normal NGVD-29 elevation
+	minneolaFullPool = 95.3 // ft NGVD-29 — SJRWMD Minimum Average (Ch 40C-8, F.A.C.), the lake's regulated target. 95.0 ft is the rounded topo-map elevation and was the original placeholder.
 
 	// Lake Minneola itself has no real-time USGS gauge. We pull lake elevation
 	// from canal-connected Lake Minnehaha (station 02236840, tracks within
