@@ -447,25 +447,61 @@ func inBlackout(t time.Time) bool {
 	return h >= 20 || h < 6
 }
 
+// blackoutStartFor returns the start (8pm ET) of the blackout window
+// containing t. If t is between 8pm and midnight, that's 8pm tonight; if t
+// is between midnight and 6am, it's 8pm yesterday. Panics if t isn't in the
+// blackout (callers gate with inBlackout).
+func blackoutStartFor(t time.Time) time.Time {
+	et := t.In(etLocation)
+	day := et
+	if et.Hour() < 6 {
+		// post-midnight; the blackout started 8pm the previous calendar day
+		day = et.AddDate(0, 0, -1)
+	}
+	return time.Date(day.Year(), day.Month(), day.Day(), 20, 0, 0, 0, etLocation)
+}
+
+// shouldGenerate is the pure decision function behind maybeTriggerGeneration.
+// Kept side-effect-free and parameterized on now/lastGenAt so it's testable
+// without mocking time.
+//
+//   - During the 6am–8pm ET active window: regenerate if the last blurb is
+//     older than blurbMinInterval (30m), or if there's no blurb yet.
+//   - During the 8pm–6am ET blackout: allow exactly one regeneration per
+//     blackout period — when the last blurb predates the start of this
+//     blackout window (or there's no blurb yet). After that one refresh, the
+//     new blurb's timestamp sits inside the window, so this returns false
+//     until 6am.
+func shouldGenerate(now, lastGenAt time.Time) bool {
+	if !inBlackout(now) {
+		return lastGenAt.IsZero() || now.Sub(lastGenAt) >= blurbMinInterval
+	}
+	if lastGenAt.IsZero() {
+		return true
+	}
+	return lastGenAt.Before(blackoutStartFor(now))
+}
+
 // blurbGenMu is held only for the duration of an in-flight generation, so a
 // burst of page loads triggers at most one API call (single-flight).
 var blurbGenMu sync.Mutex
 
-// maybeTriggerGeneration kicks off a background regeneration iff the current
-// blurb is stale (or absent), we're outside the overnight blackout, and no
-// generation is already running. It never blocks the caller — the request
-// that triggers it still gets served the current (possibly stale) blurb, and
-// the frontend's 60s auto-refresh picks up the new one a couple seconds later.
+// maybeTriggerGeneration kicks off a background regeneration when shouldGenerate
+// says so and no other generation is already running. It never blocks the
+// caller — the request that triggers it still gets served the current
+// (possibly stale) blurb, and the frontend's 60s auto-refresh picks up the
+// new one a couple seconds later.
 func maybeTriggerGeneration() {
 	currentBlurbMu.RLock()
 	b := currentBlurb
 	currentBlurbMu.RUnlock()
 
-	if b != nil && time.Since(b.GeneratedAt) < blurbMinInterval {
-		return // still fresh
+	var lastGenAt time.Time
+	if b != nil {
+		lastGenAt = b.GeneratedAt
 	}
-	if inBlackout(time.Now()) {
-		return // overnight — leave the last blurb in place
+	if !shouldGenerate(time.Now(), lastGenAt) {
+		return
 	}
 	if !blurbGenMu.TryLock() {
 		return // a generation is already in flight
@@ -515,6 +551,6 @@ func InitBlurb(mux *http.ServeMux) {
 	if os.Getenv("ANTHROPIC_API_KEY") == "" {
 		log.Println("[Blurb] ANTHROPIC_API_KEY not set — on-demand generation will fail until it's configured")
 	}
-	log.Printf("[Blurb] registered at %s (on-demand, min %s between calls, 8pm–6am ET blackout, model %s)",
+	log.Printf("[Blurb] registered at %s (on-demand, min %s between calls 6am–8pm ET, one refresh allowed per 8pm–6am ET blackout, model %s)",
 		blurbBasePath, blurbMinInterval, blurbModel)
 }
