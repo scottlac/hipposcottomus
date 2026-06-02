@@ -24,6 +24,7 @@ const API_META = {
   "USGS-Minneola-IV":       { label: "USGS (Lake Minneola live)",           category: "minneola" },
   "USGS-Minneola-DV":       { label: "USGS (Lake Minneola DV backfill)",    category: "minneola" },
   "NWS-Minneola":           { label: "NWS Melbourne (Minneola forecast)",   category: "minneola" },
+  "OpenMeteo-Minneola-Air": { label: "Open-Meteo (Minneola air-temp proxy)",category: "minneola" },
   "Anthropic-Blurb-minneola": { label: "Anthropic (Lake Minneola blurb)",   category: "minneola" },
   "NOAA-Tides":             { label: "NOAA CO-OPS (tide predictions)",      category: "ftl" },
   "NOAA-WaterTemp":         { label: "NOAA CO-OPS (FTL water temp)",        category: "ftl" },
