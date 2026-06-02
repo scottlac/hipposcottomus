@@ -49,12 +49,12 @@ The snapshot's water-temperature value is *estimated* from a 7-day trailing mean
 - 81–88°F: warm; prime swim/ski conditions. Don't restate the temperature — only note it as context.
 - > 88°F: very warm. Possible algal-bloom conditions in summer, but only mention HABs if there's a specific advisory in the data (there usually isn't).
 
-## Water level (delta vs. SJRWMD Minimum Average of 95.3 ft NGVD-29)
+## Water level (delta vs. SJRWMD Minimum Average of 94.4 ft NAVD-88)
 
 The SJRWMD-adopted bounds for Minneola (Ch. 40C-8 F.A.C.) are:
-- Minimum Frequent High: +0.7 ft (96.0 ft NGVD-29)
-- Minimum Average (the "target"): 0 ft (95.3 ft NGVD-29)
-- Minimum Frequent Low: −1.4 ft (93.9 ft NGVD-29)
+- Minimum Frequent High: +0.7 ft (95.1 ft NAVD-88)
+- Minimum Average (the "target"): 0 ft (94.4 ft NAVD-88)
+- Minimum Frequent Low: −1.4 ft (93.0 ft NAVD-88)
 
 Use these bands when characterizing the delta:
 - Within ±0.3 ft of target: at normal. Don't mention unless asked.
@@ -160,7 +160,7 @@ func minneolaSnapshot() string {
 
 	if pt, ok := minneolaLevelHistory.Latest(); ok {
 		delta := pt.Value - minneolaFullPool
-		fmt.Fprintf(&sb, "Water level: %.2f ft (delta from SJRWMD Min Average target of %g ft NGVD-29, absolute %.2f ft, as of %s; source: adjacent Lake Minnehaha USGS gauge as a proxy for Minneola, which may understate the true deficit by ~0.5–1.0 ft when the chain is drying)\n",
+		fmt.Fprintf(&sb, "Water level: %.2f ft (delta from SJRWMD Min Average target of %g ft NAVD-88, absolute %.2f ft, as of %s; source: SJRWMD station 70400984 directly on Lake Minneola via the USF Water Atlas, daily but with a multi-week publication lag)\n",
 			delta, minneolaFullPool, pt.Value, pt.Date)
 	} else {
 		sb.WriteString("Water level: n/a\n")
