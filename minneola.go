@@ -9,41 +9,37 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
+	"strings"
 	"time"
 )
 
 const (
-	minneolaBasePath  = "/minneola"
-	minneolaFullPool = 95.3 // ft NGVD-29 — SJRWMD Minimum Average (Ch 40C-8, F.A.C.), the lake's regulated target. 95.0 ft is the rounded topo-map elevation and was the original placeholder.
+	minneolaBasePath = "/minneola"
+	// Full pool reference is SJRWMD's adopted Minimum Average (Ch 40C-8,
+	// F.A.C.) — the lake's regulated target — converted to NAVD-88 to
+	// match the datum the Water Atlas reports under.
+	//   NGVD-29: MFH 96.0 / Min Avg 95.3 / MFL 93.9
+	//   NAVD-88: MFH 95.1 / Min Avg 94.4 / MFL 93.0
+	minneolaFullPool = 94.4
 
-	// Lake Minneola itself has no real-time USGS gauge. We pull lake elevation
-	// from canal-connected Lake Minnehaha (station 02236840, tracks within
-	// ~0.1 ft) and estimate water temperature from a 7-day trailing mean of
-	// NWS air temperature via Open-Meteo's archive API — no nearby USGS
-	// station reports water temperature, and central FL inland lake-surface
-	// temp tracks the rolling air-temp mean within ~2–3 °F year-round.
-	// The footer attributes both data choices.
-	minneolaUSGSSite = "02236840"
-	// Lake-elevation codes USGS reports under for reservoir/lake sites; the
-	// station uses whichever one it considers canonical and the rest come
-	// back as empty time series.
-	//   62614 — lake elevation NGVD-29
-	//   62615 — lake elevation NAVD-88
-	//   62616 — reservoir water surface elevation (newer code)
-	//   00062 — elevation of reservoir water surface above datum
-	minneolaUSGSParams = "62614,62615,62616,00062"
+	// Water Atlas API exposes SJRWMD's direct Lake Minneola station
+	// (StationID 70400984, sitting in the lake itself at 28.558°N,
+	// -81.769°W). Daily readings since 1986 (n=13,638). Replaces the
+	// previous Lake Minnehaha proxy, which understated the deficit by
+	// ~0.5–1.1 ft when the chain was drying.
+	waterAtlasBaseURL          = "https://api.wateratlas.usf.edu"
+	minneolaSJRWMDDataSource   = "SJRWMD_HYDRO"
+	minneolaSJRWMDStation      = "70400984"
+	minneolaLevelRefreshPeriod = 6 * time.Hour
+	minneolaWeatherPollInt     = 30 * time.Minute
 
-	minneolaUSGSIVURL = "https://waterservices.usgs.gov/nwis/iv/"
-	minneolaUSGSDVURL = "https://waterservices.usgs.gov/nwis/dv/"
-
-	minneolaPollInterval   = 15 * time.Minute
-	minneolaWeatherPollInt = 30 * time.Minute
-
-	// Persistence files (sit alongside Jordan Lake's history files on the
-	// same /data/ PVC).
+	// Persistence files (sit alongside the other lakes' history files
+	// on the same /data/ PVC). The level file got a "_navd88" suffix at
+	// the SJRWMD switchover so the old USGS-proxy data (NGVD-29) doesn't
+	// mix into the new chart — the orphaned `minneola_level_history.json`
+	// on the PVC is safe to delete.
 	minneolaTempHistoryFile  = "minneola_temp_history.json"
-	minneolaLevelHistoryFile = "minneola_level_history.json"
+	minneolaLevelHistoryFile = "minneola_level_history_navd88.json"
 
 	// Lake Minneola centroid (28.59°N, -81.78°W) for NWS grid discovery — picks up
 	// whichever WFO covers it (likely MLB/Melbourne for central FL).
@@ -63,129 +59,69 @@ var (
 	minneolaHourlyURL   string
 )
 
-// usgsMultiResp and celsiusToFahrenheit are shared with gaston.go.
+// waterAtlasLevelPoint matches the JSON shape returned by the Water Atlas
+// DataMapper "Levels/GraphData" endpoint. The full LatestData endpoint also
+// reports parameterID/parameter/units alongside this, but GraphData is
+// already pre-filtered to the single levels parameter for the station.
+type waterAtlasLevelPoint struct {
+	SampleDate  string  `json:"sampleDate"`
+	ResultValue float64 `json:"resultValue"`
+}
 
-// minneolaFetchIV pulls the most recent IV (instantaneous values) and updates
-// the in-memory histories. The last good elevation reading wins regardless
-// of which datum code it was reported under.
-func minneolaFetchIV() error {
-	url := fmt.Sprintf("%s?format=json&sites=%s&parameterCd=%s&period=PT6H",
-		minneolaUSGSIVURL, minneolaUSGSSite, minneolaUSGSParams)
+// minneolaRefreshLevel pulls daysBack days of water-level data from the
+// Water Atlas API and folds new dates into history via AddWithDate (which
+// skips duplicates). Safe to call repeatedly; today's reading and any
+// late-published past dates get picked up. Out-of-range values are dropped
+// — the SJRWMD raw stream occasionally publishes garbage like 513 ft.
+func minneolaRefreshLevel(daysBack int) error {
+	url := fmt.Sprintf("%s/DataMapper/Agency/%s/Station/%s/Hydrology/Levels/GraphData?numberOfDays=%d",
+		waterAtlasBaseURL, minneolaSJRWMDDataSource, minneolaSJRWMDStation, daysBack)
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Get(url)
 	if err != nil {
-		return fmt.Errorf("fetching USGS IV: %w", err)
+		return fmt.Errorf("fetching Water Atlas levels: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("USGS IV returned status %d", resp.StatusCode)
+		return fmt.Errorf("Water Atlas returned status %d", resp.StatusCode)
 	}
 
-	var data usgsMultiResp
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return fmt.Errorf("decoding USGS IV: %w", err)
+	var points []waterAtlasLevelPoint
+	if err := json.NewDecoder(resp.Body).Decode(&points); err != nil {
+		return fmt.Errorf("decoding Water Atlas response: %w", err)
 	}
 
-	var (
-		gotLevel bool
-		level    float64
-	)
-	for _, ts := range data.Value.TimeSeries {
-		if len(ts.Variable.VariableCode) == 0 {
+	var added, dropped int
+	for _, p := range points {
+		if p.ResultValue < 80 || p.ResultValue > 100 {
+			dropped++
 			continue
 		}
-		code := ts.Variable.VariableCode[0].Value
-		var latest string
-		for _, vals := range ts.Values {
-			for _, v := range vals.Value {
-				if v.Value == "" || v.Value == "-999999" {
-					continue
-				}
-				latest = v.Value
-			}
+		date := p.SampleDate
+		if i := strings.Index(date, "T"); i > 0 {
+			date = date[:i]
 		}
-		if latest == "" {
+		if len(date) < 10 {
 			continue
 		}
-		x, err := strconv.ParseFloat(latest, 64)
-		if err != nil {
-			continue
-		}
-		switch code {
-		case "62614", "62615", "62616", "00062":
-			level = x
-			gotLevel = true
-		}
+		minneolaLevelHistory.AddWithDate(date, p.ResultValue)
+		added++
 	}
-
-	if gotLevel {
-		minneolaLevelHistory.Add(level)
-		log.Printf("[Minneola] Updated water level: %.2f ft", level)
-	} else {
-		log.Println("[Minneola] No water level reading in IV response")
-	}
+	minneolaLevelHistory.Sort()
+	log.Printf("[Minneola] Water Atlas level refresh: %d points added, %d dropped as outliers (window=%d days)",
+		added, dropped, daysBack)
 	return nil
 }
 
-// minneolaBackfillFromUSGS pulls up to 5 years of daily elevation values
-// from the Minnehaha gauge. Water temperature is estimated separately via
-// Open-Meteo (see minneola_temp_estimate.go).
-func minneolaBackfillFromUSGS() {
-	end := time.Now().Format("2006-01-02")
-	start := time.Now().AddDate(-5, 0, 0).Format("2006-01-02")
-	url := fmt.Sprintf("%s?format=json&sites=%s&startDT=%s&endDT=%s&parameterCd=%s&siteStatus=all",
-		minneolaUSGSDVURL, minneolaUSGSSite, start, end, minneolaUSGSParams)
-	log.Printf("[Minneola] Backfilling level history from USGS (%s to %s)...", start, end)
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Get(url)
+// minneolaBackfillLevel pulls 5 years at startup. The history files persist
+// across restarts; AddWithDate skips dates already loaded.
+func minneolaBackfillLevel() {
+	log.Println("[Minneola] Backfilling level history from SJRWMD via Water Atlas (5 years)...")
+	err := minneolaRefreshLevel(5 * 365)
+	TrackAPICall("WaterAtlas-Minneola", err)
 	if err != nil {
-		TrackAPICall("USGS-Minneola-DV", err)
-		log.Printf("[Minneola] Warning: USGS backfill failed (fetch): %v", err)
-		return
+		log.Printf("[Minneola] backfill failed: %v", err)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		statusErr := fmt.Errorf("status %d", resp.StatusCode)
-		TrackAPICall("USGS-Minneola-DV", statusErr)
-		log.Printf("[Minneola] Warning: USGS backfill failed (%v)", statusErr)
-		return
-	}
-
-	var data usgsMultiResp
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		TrackAPICall("USGS-Minneola-DV", err)
-		log.Printf("[Minneola] Warning: USGS backfill failed (decode): %v", err)
-		return
-	}
-
-	var levelCount int
-	for _, ts := range data.Value.TimeSeries {
-		if len(ts.Variable.VariableCode) == 0 {
-			continue
-		}
-		code := ts.Variable.VariableCode[0].Value
-		for _, vals := range ts.Values {
-			for _, v := range vals.Value {
-				if len(v.DateTime) < 10 || v.Value == "" || v.Value == "-999999" {
-					continue
-				}
-				date := v.DateTime[:10]
-				x, err := strconv.ParseFloat(v.Value, 64)
-				if err != nil {
-					continue
-				}
-				switch code {
-				case "62614", "62615", "62616", "00062":
-					minneolaLevelHistory.AddWithDate(date, x)
-					levelCount++
-				}
-			}
-		}
-	}
-
-	TrackAPICall("USGS-Minneola-DV", nil)
-	log.Printf("[Minneola] Backfilled %d level points", levelCount)
 }
 
 // ── NWS weather ─────────────────────────────────────────────────
@@ -296,23 +232,19 @@ func saveMinneolaHistories() {
 
 // ── Loops ───────────────────────────────────────────────────────
 
-func minneolaScrapeLoop() {
-	log.Println("[Minneola] Running initial USGS IV scrape...")
-	err := minneolaFetchIV()
-	TrackAPICall("USGS-Minneola-IV", err)
-	if err != nil {
-		log.Printf("[Minneola] initial IV scrape error: %v", err)
-	} else {
-		saveMinneolaHistories()
-	}
-
-	ticker := time.NewTicker(minneolaPollInterval)
+// minneolaLevelLoop polls the Water Atlas every 6 hours with a 120-day
+// look-back. SJRWMD publishes its hydrology data daily but with a multi-
+// week pipeline lag, so polling more often than that is wasted. The
+// 120-day window comfortably covers the publication lag plus any
+// retroactively-corrected past dates.
+func minneolaLevelLoop() {
+	ticker := time.NewTicker(minneolaLevelRefreshPeriod)
 	defer ticker.Stop()
 	for range ticker.C {
-		err := minneolaFetchIV()
-		TrackAPICall("USGS-Minneola-IV", err)
+		err := minneolaRefreshLevel(120)
+		TrackAPICall("WaterAtlas-Minneola", err)
 		if err != nil {
-			log.Printf("[Minneola] scheduled IV scrape error: %v", err)
+			log.Printf("[Minneola] level refresh error: %v", err)
 			continue
 		}
 		saveMinneolaHistories()
@@ -378,13 +310,13 @@ func handleMinneolaWeather(w http.ResponseWriter, r *http.Request) {
 // background scrapers, and HTTP routes.
 func InitMinneola(mux *http.ServeMux) {
 	loadMinneolaHistories()
-	minneolaBackfillFromUSGS()
+	minneolaBackfillLevel()
 	minneolaBackfillTempEstimate()
 	minneolaLevelHistory.Sort()
 	minneolaTempHistory.Sort()
 	saveMinneolaHistories()
 
-	go minneolaScrapeLoop()
+	go minneolaLevelLoop()
 	go minneolaWeatherLoop()
 	go minneolaTempEstimateLoop()
 	go func() {
