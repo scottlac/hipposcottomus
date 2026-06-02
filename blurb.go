@@ -361,4 +361,5 @@ func InitBlurb(mux *http.ServeMux) {
 	}
 	RegisterBlurb(mux, jordanBlurbConfig)
 	RegisterBlurb(mux, minneolaBlurbConfig)
+	RegisterBlurb(mux, conwayBlurbConfig)
 }

@@ -197,6 +197,13 @@ spec:
                 name: jordan-lake-scraper
                 port:
                   number: 8080
+          - path: /conway
+            pathType: Prefix
+            backend:
+              service:
+                name: jordan-lake-scraper
+                port:
+                  number: 8080
           - path: /ftlauderdale
             pathType: Prefix
             backend:
