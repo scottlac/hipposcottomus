@@ -10,21 +10,24 @@
 ## Dashboards
 1. **Jordan Lake Dashboard** (`/lakedashboard/`) — Water temp, water level, weather, wind for B. Everett Jordan Lake, NC. Live data via USACE bejrept.txt + USGS DV backfill.
 2. **Lake Gaston Dashboard** (`/gaston/`) — Water temp, water level, weather, wind for Lake Gaston, NC/VA. Live data via USGS IV (station 02079785 at Elams, NC) + USGS DV backfill. Full pool ~200 ft. NWS grid is dynamically discovered from the lake centroid (36.50, -77.90).
-3. **Ft. Lauderdale Boating** (`/ftlauderdale/`) — Tides, water temp, marine forecast, wind for Fort Lauderdale, FL
-4. **Hold'em Equity Calculator** (`/poker/`) — Pick hole cards + board, computes Texas Hold'em win probability
-5. **Night Sky** (`/astronomy/`) — Sun/twilight times, moon phase, ISS pass predictions for user location
-6. **Site Analytics** (`/analytics/`) — Page views per dashboard, external API health, Go runtime stats, traffic heatmap
-7. **Homepage** (`/`) — Landing page linking to all dashboards
+3. **Lake Minneola Dashboard** (`/minneola/`) — Water temp, water level, weather, wind, UV, AI blurb for Lake Minneola in Clermont, FL (Clermont Chain of Lakes). Lake Minneola itself has no real-time USGS gauge, so live data is sourced from the canal-connected Lake Minnehaha (station `02236840`) which tracks within ~0.1 ft; the footer attributes the substitution. Nominal full pool ~95 ft (NGVD-29). NWS grid is discovered from the lake centroid (28.59, -81.78).
+4. **Ft. Lauderdale Boating** (`/ftlauderdale/`) — Tides, water temp, marine forecast, wind for Fort Lauderdale, FL
+5. **Hold'em Equity Calculator** (`/poker/`) — Pick hole cards + board, computes Texas Hold'em win probability
+6. **Night Sky** (`/astronomy/`) — Sun/twilight times, moon phase, ISS pass predictions for user location
+7. **Site Analytics** (`/analytics/`) — Page views per dashboard, external API health, Go runtime stats, traffic heatmap
+8. **Homepage** (`/`) — Landing page linking to all dashboards
 
 ## File Structure
 - `main.go` — Jordan Lake backend: scraper, USGS backfill, NWS weather proxy, API handlers, history persistence, serves homepage + static files
 - `gaston.go` — Lake Gaston backend: USGS IV (live) + DV (5-year backfill), NWS weather proxy, API handlers, history persistence. Mirrors the Jordan Lake handlers/loops but driven entirely by USGS (no USACE source for this reservoir).
+- `minneola.go` — Lake Minneola backend: same USGS IV + DV shape as Gaston, but pointed at the canal-connected Lake Minnehaha gauge (`02236840`) since Minneola itself has no real-time gauge. Adds NWS forecast + Open-Meteo UV. The `usgsMultiResp` struct and `celsiusToFahrenheit` helper live in `gaston.go` and are reused here.
 - `ftl.go` — Ft. Lauderdale backend: NOAA CO-OPS tides, NWS weather, NDBC marine forecast, water temp
 - `poker.go` — Hold'em equity calculator backend (uses `github.com/paulhankin/poker/v2`)
 - `astro.go` — Night Sky backend: sun/moon/twilight computations, ISS TLE fetch + pass predictions (uses `github.com/joshuaferrara/go-satellite`)
 - `analytics.go` — Site analytics backend: page-view middleware, API health tracker (`TrackAPICall`), heatmap, runtime stats, persistence
 - `static/` — Jordan Lake frontend (index.html, app.js, style.css)
 - `gaston/` — Lake Gaston frontend; clone of `static/` with `FULL_POOL=200.0` and `<base href="/gaston/">` so the same app.js hits `/gaston/api/*`
+- `minneola/` — Lake Minneola frontend; clone of `gaston/` with `FULL_POOL=95.0`, `<base href="/minneola/">`, an AI blurb section, and a footer noting the Minnehaha → Minneola substitution
 - `ftl/` — Ft. Lauderdale frontend
 - `poker/` — Poker frontend
 - `astro/` — Night Sky frontend
@@ -37,6 +40,7 @@
 - **Jordan Lake live:** USACE `https://epec.saw.usace.army.mil/bejrept.txt` (regex extraction, 15-min poll)
 - **Jordan Lake history:** USGS API station `02098197`, parameter `62614` (water level, 5-year backfill)
 - **Lake Gaston live + history:** USGS station `02079785` ("Lake Gaston near Elams, NC"). Live readings via the IV endpoint every 15 min; 5-year DV backfill at startup. The same request queries elevation under both NGVD-29 (`62614`) and NAVD-88 (`62615`) plus water temp (`00010`, °C → °F conversion in `celsiusToFahrenheit`) — whichever codes the station actually reports get populated; the others come back empty and are silently ignored.
+- **Lake Minneola live + history:** USGS station `02236840` ("Lake Minnehaha at Clermont, FL"), used as a proxy because the canal-connected Minneola has no real-time gauge of its own. Same multi-parameter IV/DV pattern as Gaston (62614/62615/62616/00062 for elevation, 00010/00011 for water temp).
 - **NWS Weather:** `api.weather.gov` (air temp, wind, forecast)
 - **FTL Tides:** NOAA CO-OPS station `8722939` (hi-lo only — cosine-interpolated into smooth curve)
 - **FTL Water Temp:** NOAA CO-OPS Virginia Key station `8723214` (closest station with water temp)
@@ -52,18 +56,20 @@
 - "Now" line plugin (pink dashed vertical) on temp, wind, and tide charts
 - NWS forecast renderer handles night-first periods and strips "Night" suffix
 
-### AI boating blurb (`blurb.go`)
-- `/lakedashboard/api/blurb` returns a 2–3 sentence boating advisory generated by Claude Haiku 4.5 (`github.com/anthropics/anthropic-sdk-go`) from the live Jordan Lake snapshot (temp, level, weather, UV).
-- **On-demand generation**: there is no background ticker. `handleLakeBlurb` calls `maybeTriggerGeneration()`, which delegates the decision to the pure `shouldGenerate(now, lastGenAt)` function and uses `blurbGenMu.TryLock` for single-flight. Rules:
+### AI boating blurb (`blurb.go` + per-lake `blurb_<key>.go`)
+- `blurb.go` is the generic framework — `LakeBlurb` payload type, `LLMUsageEntry` cost meter, `lakeBlurbConfig` struct (`Key`, `BasePath`, `SystemPrompt`, `SnapshotFn` + internal mu/current/genMu), the `(cfg) handle / maybeTrigger / generate` methods, `RegisterBlurb`, persistence (`saveLLMUsage` / `loadLLMUsage`), and the `inBlackout` / `blackoutStartFor` / `shouldGenerate` decision functions. `InitBlurb(mux)` is the single wiring point called from `main.go`; it loads the cost meter once, then calls `RegisterBlurb` for each per-lake config.
+- Per-lake files (`blurb_jordan.go`, `blurb_minneola.go`) each own their system prompt (a long, lake-specific advisor written for the local geography and recreation patterns) and a `<lake>Snapshot()` function that reads the corresponding history + weather globals. The config var (`jordanBlurbConfig`, `minneolaBlurbConfig`) wires them together. **Adding a new lake = one new `blurb_<key>.go` file + one extra line in `InitBlurb`.**
+- Currently mounted: `/lakedashboard/api/blurb` (Jordan Lake) and `/minneola/api/blurb` (Lake Minneola).
+- **On-demand generation**: there is no background ticker. `(cfg).handle` calls `cfg.maybeTrigger`, which delegates the decision to the pure `shouldGenerate(now, lastGenAt)` function and uses `cfg.genMu.TryLock` for single-flight *per lake* (different lakes don't block each other). Rules:
   - **Daytime (6am–8pm ET)**: regenerate if the cached blurb is older than `blurbMinInterval` (30 min), or there's no blurb.
   - **Blackout (8pm–6am ET)**: one regeneration allowed per blackout period — when the cached blurb predates the start of *this* blackout window (`blackoutStartFor`), or there's no blurb. After that one refresh, further visits during the same overnight period return the cached blurb unchanged.
   - The triggering request always gets served the current (possibly stale) blurb immediately; the frontend's 60s auto-refresh picks up the new one ~2s later. Cold pod / no blurb yet → 204, frontend hides the section.
 - **No prompt caching**: deliberately omitted. Calls are ≥30 min apart but the ephemeral cache TTL is 5 min, so a cached prefix always expires between calls — caching would only ever pay the 1.25× write premium. Plain uncached input is cheapest at this frequency. (Don't add `cache_control` back without also raising call frequency above the TTL.)
-- **Cost tracking**: `recordLLMUsage` folds `resp.Usage` into a per-model `LLMUsageEntry` (tokens + USD, Haiku 4.5 pricing constants at the top of the file), persisted to `/data/llm_usage.json` so the meter survives restarts. Surfaced on `/analytics/` via the `llmUsage` field in the overview. `TrackAPICall("Anthropic-Blurb", err)` routes failures to the API-health panel.
+- **Cost tracking**: `recordLLMUsage` folds `resp.Usage` into a per-model `LLMUsageEntry` (tokens + USD, Haiku 4.5 pricing constants at the top of `blurb.go`). All lakes using the same model accumulate on one entry (correct for spend tracking). Persisted to `/data/llm_usage.json` so the meter survives restarts; surfaced on `/analytics/` via the `llmUsage` field in the overview. Per-lake failures are routed via `TrackAPICall("Anthropic-Blurb-"+cfg.Key, err)` so the API-health panel shows them per lake (`Anthropic-Blurb-jordan`, `Anthropic-Blurb-minneola`).
 - **Key**: `ANTHROPIC_API_KEY` from the `anthropic-api-key` Secret (`optional: true` in the manifest). Never in code/repo/logs. `time/tzdata` is blank-imported so `America/New_York` resolves on alpine.
 
 ### Analytics instrumentation
-- `analyticsMiddleware` wraps the top-level mux; it counts requests whose exact path matches an entry in `trackedPaths` (home, lake, ftl, poker, astro, analytics). Assets, API calls, `/metrics`, and `/healthz` are ignored.
+- `analyticsMiddleware` wraps the top-level mux; it counts requests whose exact path matches an entry in `trackedPaths` (home, lake, gaston, minneola, ftl, poker, astro, analytics). Assets, API calls, `/metrics`, and `/healthz` are ignored.
 - Heatmap is a `[7][24]int64` cumulative grid keyed by weekday × hour of request time.
 - External API health is tracked via `TrackAPICall(source string, err error)` — called at each fetch site (USACE, USGS, NWS-Raleigh, NOAA-Tides, NOAA-WaterTemp, NWS-Miami, NDBC-Marine, CelesTrak-TLE). When adding a new external fetch, call `TrackAPICall` with a stable source label and the error (nil = success).
 - **Screen resolutions** are reported by a tiny `navigator.sendBeacon` snippet on every tracked page that POSTs `{"size": "WxH"}` to `/analytics/api/screen`. The handler validates bounds (100–16384px each axis), caps unique-key cardinality at 5000, and bumps `Analytics.ScreenSizes`. Stored independently from page-view, country, and city counters — never linked.

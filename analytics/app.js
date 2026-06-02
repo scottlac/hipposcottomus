@@ -6,6 +6,7 @@ const DASHBOARD_META = {
   home:      { label: "Home",            color: "#38bdf8", emoji: "🦛" },
   lake:      { label: "Jordan Lake",     color: "#4ade80", emoji: "🌊" },
   gaston:    { label: "Lake Gaston",     color: "#818cf8", emoji: "🚤" },
+  minneola:  { label: "Lake Minneola",   color: "#22d3ee", emoji: "🏝️" },
   ftl:       { label: "Ft. Lauderdale",  color: "#fb923c", emoji: "⚓" },
   poker:     { label: "Poker Equity",    color: "#facc15", emoji: "🂡" },
   astro:     { label: "Night Sky",       color: "#c084fc", emoji: "🔭" },
@@ -13,18 +14,23 @@ const DASHBOARD_META = {
 };
 
 const API_META = {
-  "USACE":            { label: "USACE (Jordan Lake report)",      category: "lake" },
-  "USGS":             { label: "USGS (Jordan Lake DV backfill)",  category: "lake" },
-  "NWS-Raleigh":      { label: "NWS Raleigh (Jordan forecast)",   category: "lake" },
-  "USGS-Gaston-IV":   { label: "USGS (Lake Gaston live)",         category: "gaston" },
-  "USGS-Gaston-DV":   { label: "USGS (Lake Gaston DV backfill)",  category: "gaston" },
-  "NWS-Gaston":       { label: "NWS (Lake Gaston forecast)",      category: "gaston" },
-  "NOAA-Tides":       { label: "NOAA CO-OPS (tide predictions)",  category: "ftl" },
-  "NOAA-WaterTemp":   { label: "NOAA CO-OPS (FTL water temp)",    category: "ftl" },
-  "NWS-Miami":        { label: "NWS Miami (FTL forecast)",        category: "ftl" },
-  "NDBC-Marine":      { label: "NDBC (marine forecast)",          category: "ftl" },
-  "CelesTrak-TLE":    { label: "CelesTrak (ISS TLE)",             category: "astro" },
-  "OpenMeteo-UV":     { label: "Open-Meteo (UV index, all lakes)", category: "lake" },
+  "USACE":                  { label: "USACE (Jordan Lake report)",          category: "lake" },
+  "USGS":                   { label: "USGS (Jordan Lake DV backfill)",      category: "lake" },
+  "NWS-Raleigh":            { label: "NWS Raleigh (Jordan forecast)",       category: "lake" },
+  "Anthropic-Blurb-jordan": { label: "Anthropic (Jordan Lake blurb)",       category: "lake" },
+  "USGS-Gaston-IV":         { label: "USGS (Lake Gaston live)",             category: "gaston" },
+  "USGS-Gaston-DV":         { label: "USGS (Lake Gaston DV backfill)",      category: "gaston" },
+  "NWS-Gaston":             { label: "NWS (Lake Gaston forecast)",          category: "gaston" },
+  "USGS-Minneola-IV":       { label: "USGS (Lake Minneola live)",           category: "minneola" },
+  "USGS-Minneola-DV":       { label: "USGS (Lake Minneola DV backfill)",    category: "minneola" },
+  "NWS-Minneola":           { label: "NWS Melbourne (Minneola forecast)",   category: "minneola" },
+  "Anthropic-Blurb-minneola": { label: "Anthropic (Lake Minneola blurb)",   category: "minneola" },
+  "NOAA-Tides":             { label: "NOAA CO-OPS (tide predictions)",      category: "ftl" },
+  "NOAA-WaterTemp":         { label: "NOAA CO-OPS (FTL water temp)",        category: "ftl" },
+  "NWS-Miami":              { label: "NWS Miami (FTL forecast)",            category: "ftl" },
+  "NDBC-Marine":            { label: "NDBC (marine forecast)",              category: "ftl" },
+  "CelesTrak-TLE":          { label: "CelesTrak (ISS TLE)",                 category: "astro" },
+  "OpenMeteo-UV":           { label: "Open-Meteo (UV index, all lakes)",    category: "lake" },
 };
 
 // ===== Helpers =====

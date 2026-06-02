@@ -561,6 +561,9 @@ func main() {
 	// --- Lake Gaston dashboard ---
 	InitGaston(mux)
 
+	// --- Lake Minneola dashboard ---
+	InitMinneola(mux)
+
 	// --- Poker equity calculator ---
 	InitPoker(mux)
 
