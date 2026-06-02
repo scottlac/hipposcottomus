@@ -26,7 +26,7 @@ const API_META = {
   "NWS-Minneola":           { label: "NWS Melbourne (Minneola forecast)",   category: "minneola" },
   "OpenMeteo-Minneola-Air": { label: "Open-Meteo (Minneola air-temp proxy)",category: "minneola" },
   "Anthropic-Blurb-minneola": { label: "Anthropic (Lake Minneola blurb)",   category: "minneola" },
-  "USGS-Conway-DV":         { label: "USGS (Lake Conway monthly DV)",       category: "conway" },
+  "WaterAtlas-Conway":      { label: "USF Water Atlas (Conway data logger)", category: "conway" },
   "NWS-Conway":             { label: "NWS Melbourne (Conway forecast)",     category: "conway" },
   "OpenMeteo-Conway-Air":   { label: "Open-Meteo (Conway air-temp proxy)",  category: "conway" },
   "Anthropic-Blurb-conway": { label: "Anthropic (Lake Conway blurb)",       category: "conway" },
