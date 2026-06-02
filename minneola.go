@@ -17,14 +17,22 @@ const (
 	minneolaBasePath  = "/minneola"
 	minneolaFullPool  = 95.0  // ft — Lake Minneola normal NGVD-29 elevation
 
-	// USGS station: Lake Minnehaha at Clermont, FL — the closest real-time gauge
-	// to Lake Minneola. The two lakes share a canal in the Clermont Chain so
-	// their elevations track within ~0.1 ft. Footer on the frontend attributes
-	// the source so users understand the substitution.
-	minneolaUSGSSite = "02236840"
-	// Cover every reservoir-style code USGS uses so we don't have to know
-	// the canonical one for this station up front. Whichever the station
-	// actually reports gets used; the rest come back as empty time series.
+	// Lake Minneola itself has no real-time USGS gauge. We query two nearby
+	// stations in a single IV call and let the existing per-parameter-code
+	// bucketing in usgsMultiResp sort the values:
+	//
+	//   02236840 — Lake Minnehaha at Clermont, FL: lake-elevation only
+	//   (canal-connected to Minneola, tracks within ~0.1 ft).
+	//   02237000 — Palatlakaha River near Mascotte, FL: stream gauge on the
+	//   Clermont Chain's main outflow, downstream of Minneola → Minnehaha →
+	//   Louisa. Carries the same chain water mass, so water temperature here
+	//   tracks Minneola's within a few degrees year-round.
+	//
+	// The footer attributes both substitutions so users understand them.
+	minneolaUSGSSites = "02236840,02237000"
+	// Cover every reservoir-style elevation code USGS uses (the Minnehaha
+	// gauge reports under whichever its canonical one is) plus both water-temp
+	// units the Palatlakaha gauge might use:
 	//   62614 — lake elevation NGVD-29
 	//   62615 — lake elevation NAVD-88
 	//   62616 — reservoir water surface elevation (newer code)
@@ -69,7 +77,7 @@ var (
 // of which datum code it was reported under.
 func minneolaFetchIV() error {
 	url := fmt.Sprintf("%s?format=json&sites=%s&parameterCd=%s&period=PT6H",
-		minneolaUSGSIVURL, minneolaUSGSSite, minneolaUSGSParams)
+		minneolaUSGSIVURL, minneolaUSGSSites, minneolaUSGSParams)
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Get(url)
 	if err != nil {
@@ -156,7 +164,7 @@ func minneolaBackfillFromUSGS() {
 	end := time.Now().Format("2006-01-02")
 	start := time.Now().AddDate(-5, 0, 0).Format("2006-01-02")
 	url := fmt.Sprintf("%s?format=json&sites=%s&startDT=%s&endDT=%s&parameterCd=%s&siteStatus=all",
-		minneolaUSGSDVURL, minneolaUSGSSite, start, end, minneolaUSGSParams)
+		minneolaUSGSDVURL, minneolaUSGSSites, start, end, minneolaUSGSParams)
 	log.Printf("[Minneola] Backfilling history from USGS (%s to %s)...", start, end)
 
 	client := &http.Client{Timeout: 30 * time.Second}
