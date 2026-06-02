@@ -152,7 +152,7 @@ func conwaySnapshot() string {
 
 	if pt, ok := conwayLevelHistory.Latest(); ok {
 		delta := pt.Value - conwayFullPool
-		fmt.Fprintf(&sb, "Water level: %.2f ft (delta from full pool of %g ft NAVD-88, absolute %.2f ft, as of %s; source: USGS station 02262800, manual monthly readings by Orange County)\n",
+		fmt.Fprintf(&sb, "Water level: %.2f ft (delta from full pool of %g ft NAVD-88, absolute %.2f ft, as of %s; source: Orange County data logger \"Conway Station\" via the USF Water Atlas, hourly cadence)\n",
 			delta, conwayFullPool, pt.Value, pt.Date)
 	} else {
 		sb.WriteString("Water level: n/a\n")
