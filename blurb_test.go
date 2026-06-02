@@ -141,6 +141,79 @@ func TestInBlackout(t *testing.T) {
 	}
 }
 
+// TestBlackoutStartFor checks the start-of-blackout calculation for both
+// halves of the blackout window — pre-midnight (8pm–11:59pm ET starts today
+// at 8pm) and post-midnight (midnight–6am ET starts yesterday at 8pm).
+func TestBlackoutStartFor(t *testing.T) {
+	loc, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		t.Fatalf("load ET: %v", err)
+	}
+
+	// 22:55 ET on Jun 1: blackout started 20:00 ET on Jun 1.
+	t1 := time.Date(2026, 6, 1, 22, 55, 0, 0, loc)
+	want1 := time.Date(2026, 6, 1, 20, 0, 0, 0, loc)
+	if got := blackoutStartFor(t1); !got.Equal(want1) {
+		t.Errorf("blackoutStartFor(22:55 Jun 1) = %v, want %v", got, want1)
+	}
+
+	// 03:30 ET on Jun 2: blackout started 20:00 ET on Jun 1 (the day before).
+	t2 := time.Date(2026, 6, 2, 3, 30, 0, 0, loc)
+	want2 := time.Date(2026, 6, 1, 20, 0, 0, 0, loc)
+	if got := blackoutStartFor(t2); !got.Equal(want2) {
+		t.Errorf("blackoutStartFor(03:30 Jun 2) = %v, want %v", got, want2)
+	}
+}
+
+// TestShouldGenerate covers the decision matrix:
+//   - daytime, fresh blurb → no
+//   - daytime, stale blurb → yes
+//   - daytime, no blurb → yes
+//   - blackout, no blurb → yes (cold pod)
+//   - blackout, blurb from BEFORE this blackout window → yes (the user's case:
+//     a stale daytime blurb when someone visits at night)
+//   - blackout, blurb from DURING this blackout window → no (already used the
+//     one allowed refresh)
+//   - post-midnight portion of blackout: still treats yesterday-evening start
+//     as "this blackout window".
+func TestShouldGenerate(t *testing.T) {
+	loc, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		t.Fatalf("load ET: %v", err)
+	}
+
+	day := time.Date(2026, 6, 1, 14, 0, 0, 0, loc)        // 2pm ET
+	evening := time.Date(2026, 6, 1, 22, 55, 0, 0, loc)   // 10:55pm ET (user's report)
+	earlyAm := time.Date(2026, 6, 2, 3, 30, 0, 0, loc)    // 3:30am ET next day
+
+	cases := []struct {
+		name      string
+		now       time.Time
+		lastGenAt time.Time
+		want      bool
+	}{
+		{"daytime, no blurb", day, time.Time{}, true},
+		{"daytime, fresh blurb (5m ago)", day, day.Add(-5 * time.Minute), false},
+		{"daytime, stale blurb (45m ago)", day, day.Add(-45 * time.Minute), true},
+
+		{"blackout, no blurb (cold pod at 10:55pm)", evening, time.Time{}, true},
+		{"blackout, daytime blurb from 3:40pm — should regenerate", evening,
+			time.Date(2026, 6, 1, 15, 40, 0, 0, loc), true},
+		{"blackout, blurb already generated at 8:30pm — no further regen", evening,
+			time.Date(2026, 6, 1, 20, 30, 0, 0, loc), false},
+
+		{"post-midnight blackout, blurb from 9pm — no regen (same window)", earlyAm,
+			time.Date(2026, 6, 1, 21, 0, 0, 0, loc), false},
+		{"post-midnight blackout, blurb from 5pm — regen (window already used? no, predates 8pm)", earlyAm,
+			time.Date(2026, 6, 1, 17, 0, 0, 0, loc), true},
+	}
+	for _, c := range cases {
+		if got := shouldGenerate(c.now, c.lastGenAt); got != c.want {
+			t.Errorf("%s: shouldGenerate = %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
 // TestSnapshotLLMUsage_IsCopy verifies snapshotLLMUsage returns a value copy
 // so the analytics handler can release the lock cleanly.
 func TestSnapshotLLMUsage_IsCopy(t *testing.T) {
