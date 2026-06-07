@@ -465,8 +465,14 @@ canvas {
   color: var(--accent-pink);
 }
 
+.llm-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .llm-table {
   width: 100%;
+  min-width: 480px;
   border-collapse: collapse;
   font-size: 0.85rem;
 }
