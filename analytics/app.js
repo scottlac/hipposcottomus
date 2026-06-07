@@ -253,6 +253,7 @@ function renderLLMUsage(data) {
       <div class="llm-totals__cell"><span class="llm-totals__label">Avg / call</span><span class="llm-totals__value">$${(totalCost / Math.max(1, totalCalls)).toFixed(5)}</span></div>
       ${hitRateCell}
     </div>
+    <div class="llm-table-scroll">
     <table class="llm-table">
       <thead>
         <tr>
@@ -279,6 +280,7 @@ function renderLLMUsage(data) {
         `).join("")}
       </tbody>
     </table>
+    </div>
     <p class="muted llm-hint">
       Token counts are cumulative since the analytics state file was created.
       Cache read tokens are billed at 10% of the input rate; cache write at 125%.
