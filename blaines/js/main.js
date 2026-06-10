@@ -1,6 +1,16 @@
-// Mobile nav toggle. Smooth scrolling is handled in CSS (scroll-behavior).
+// Mobile nav toggle and header shrink-on-scroll.
+// Smooth scrolling is handled in CSS (scroll-behavior).
 (function () {
   "use strict";
+
+  var header = document.querySelector(".site-header");
+  if (header) {
+    var onScroll = function () {
+      header.classList.toggle("shrunk", window.scrollY > 64);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+  }
 
   var toggle = document.querySelector(".nav-toggle");
   var nav = document.getElementById("site-nav");
