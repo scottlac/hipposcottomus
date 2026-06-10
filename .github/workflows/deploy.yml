@@ -10,6 +10,8 @@ env:
   IMAGE: jordan-lake-scraper
   CLUSTER_ID: aba3181e-8e89-4b3b-9cfe-46acc7dc2f44
   DEPLOYMENT: jordan-lake-scraper
+  BLAINES_IMAGE: blaines-site
+  BLAINES_DEPLOYMENT: blaines-site
 
 jobs:
   deploy:
@@ -43,11 +45,27 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build and push blaines image
+        uses: docker/build-push-action@v5
+        with:
+          context: blaines
+          file: blaines/deploy/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.BLAINES_IMAGE }}:latest
+            ${{ env.REGISTRY }}/${{ env.BLAINES_IMAGE }}:${{ github.sha }}
+          cache-from: type=gha,scope=blaines
+          cache-to: type=gha,mode=max,scope=blaines
+
       - name: Save kubeconfig
         run: doctl kubernetes cluster kubeconfig save ${{ env.CLUSTER_ID }} --expiry-seconds 600
 
       - name: Apply manifests
         run: kubectl apply -f k8s/manifests.yaml
+
+      - name: Apply blaines manifests
+        run: kubectl apply -f blaines/deploy/k8s.yaml
 
       - name: Apply ServiceMonitor (if Prometheus Operator is installed)
         run: |
@@ -62,8 +80,16 @@ jobs:
           kubectl set image deployment/${{ env.DEPLOYMENT }} \
             scraper=${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }}
 
+      - name: Roll out new blaines image
+        run: |
+          kubectl set image deployment/${{ env.BLAINES_DEPLOYMENT }} \
+            web=${{ env.REGISTRY }}/${{ env.BLAINES_IMAGE }}:${{ github.sha }}
+
       - name: Wait for rollout
         run: kubectl rollout status deployment/${{ env.DEPLOYMENT }} --timeout=180s
+
+      - name: Wait for blaines rollout
+        run: kubectl rollout status deployment/${{ env.BLAINES_DEPLOYMENT }} --timeout=180s
 
       - name: Show pods
         if: always()

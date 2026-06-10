@@ -42,6 +42,12 @@ it in `index.html` (it appears in the header, hero, services, visit, and footer)
 
 ## Deploy
 
+Automatic: every push to `main` builds the image, applies `deploy/k8s.yaml`,
+and rolls out the new version (see `.github/workflows/deploy.yml`). Merging a
+content change is all it takes.
+
+Manual, if ever needed:
+
 ```sh
 # 1. Build and push the image (from this directory)
 docker build -f deploy/Dockerfile -t registry.digitalocean.com/jordan-lake-registry/blaines-site:latest .
