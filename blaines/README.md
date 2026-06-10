@@ -49,9 +49,11 @@ content change is all it takes.
 Manual, if ever needed:
 
 ```sh
-# 1. Build and push the image (from this directory)
-docker build -f deploy/Dockerfile -t registry.digitalocean.com/jordan-lake-registry/blaines-site:latest .
-docker push registry.digitalocean.com/jordan-lake-registry/blaines-site:latest
+# 1. Build and push the image (from this directory). The image lives in the
+#    jordan-lake-scraper repository under blaines-* tags because the DO
+#    registry Starter plan allows only one repository.
+docker build -f deploy/Dockerfile -t registry.digitalocean.com/jordan-lake-registry/jordan-lake-scraper:blaines-latest .
+docker push registry.digitalocean.com/jordan-lake-registry/jordan-lake-scraper:blaines-latest
 
 # 2. Apply the manifests (Deployment + Service + Ingress)
 kubectl apply -f deploy/k8s.yaml

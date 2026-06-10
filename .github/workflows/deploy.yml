@@ -10,7 +10,9 @@ env:
   IMAGE: jordan-lake-scraper
   CLUSTER_ID: aba3181e-8e89-4b3b-9cfe-46acc7dc2f44
   DEPLOYMENT: jordan-lake-scraper
-  BLAINES_IMAGE: blaines-site
+  # The DO registry Starter plan allows a single repository, so the blaines
+  # site image lives in the same repository under blaines-* tags instead of
+  # its own blaines-site repository.
   BLAINES_DEPLOYMENT: blaines-site
 
 jobs:
@@ -53,8 +55,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.BLAINES_IMAGE }}:latest
-            ${{ env.REGISTRY }}/${{ env.BLAINES_IMAGE }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE }}:blaines-latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE }}:blaines-${{ github.sha }}
           cache-from: type=gha,scope=blaines
           cache-to: type=gha,mode=max,scope=blaines
 
@@ -83,7 +85,7 @@ jobs:
       - name: Roll out new blaines image
         run: |
           kubectl set image deployment/${{ env.BLAINES_DEPLOYMENT }} \
-            web=${{ env.REGISTRY }}/${{ env.BLAINES_IMAGE }}:${{ github.sha }}
+            web=${{ env.REGISTRY }}/${{ env.IMAGE }}:blaines-${{ github.sha }}
 
       - name: Wait for rollout
         run: kubectl rollout status deployment/${{ env.DEPLOYMENT }} --timeout=180s
