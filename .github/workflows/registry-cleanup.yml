@@ -1,0 +1,80 @@
+# Frees space in the DO Container Registry (Starter plan: 500 MiB).
+#
+# Every deploy pushes new sha tags, and old ones accumulate until the
+# quota is hit and all pushes are denied. This prunes old sha tags
+# (keeping the newest few, so running pods can still re-pull their
+# pinned images) and runs garbage collection, which is what actually
+# reclaims the space. The registry is read-only while GC runs, so this
+# waits for completion rather than racing the next deploy.
+name: Registry Cleanup
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1" # weekly, Mondays 06:17 UTC
+
+env:
+  REPO: jordan-lake-scraper
+  KEEP_PER_FAMILY: 2 # newest sha tags to keep per image family
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Prune old sha tags
+        run: |
+          set -euo pipefail
+
+          # Tag families: bare 40-hex shas (scraper) and blaines-<sha>.
+          # latest / blaines-latest are never touched.
+          prune_family() {
+            local pattern=$1
+            doctl registry repository list-tags "$REPO" --format Tag,UpdatedAt --no-header \
+              | awk -v p="$pattern" '$1 ~ p { print $2 "T" $3, $1 }' \
+              | sort -r \
+              | awk -v k="$KEEP_PER_FAMILY" 'NR > k { print $2 }'
+          }
+
+          DOOMED=$(
+            prune_family '^[0-9a-f]{40}$'
+            prune_family '^blaines-[0-9a-f]{40}$'
+          )
+
+          if [ -z "$DOOMED" ]; then
+            echo "Nothing to prune."
+          else
+            echo "Deleting tags:"
+            echo "$DOOMED"
+            # shellcheck disable=SC2086
+            doctl registry repository delete-tag "$REPO" $DOOMED --force
+          fi
+
+      - name: Run garbage collection and wait
+        run: |
+          set -euo pipefail
+
+          doctl registry garbage-collection start --include-untagged-manifests --force
+
+          # Poll until no GC is active (get-active errors once GC finishes).
+          for i in $(seq 1 60); do
+            STATUS=$(doctl registry garbage-collection get-active --format Status --no-header 2>/dev/null || true)
+            if [ -z "$STATUS" ]; then
+              echo "Garbage collection complete."
+              exit 0
+            fi
+            echo "GC status: $STATUS — waiting..."
+            sleep 30
+          done
+          echo "GC still running after 30 minutes; check the DO console." >&2
+          exit 1
+
+      - name: Show registry usage
+        if: always()
+        run: doctl registry get --format Name,StorageUsageBytes
