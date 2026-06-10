@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="Gallery 2 placeholder image">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e9dcc3"/>
+      <stop offset="1" stop-color="#d9c6a4"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="600" fill="url(#bg)"/>
+  <rect x="14" y="14" width="572" height="572" fill="none" stroke="#b08d57" stroke-width="3" stroke-dasharray="10 8" rx="10"/>
+  <g transform="translate(276 220)" fill="#b08d57" opacity="0.65">
+    <ellipse cx="24" cy="30" rx="11" ry="9"/>
+    <ellipse cx="9" cy="17" rx="5" ry="6.5" transform="rotate(-18 9 17)"/>
+    <ellipse cx="19" cy="9" rx="5" ry="6.5" transform="rotate(-6 19 9)"/>
+    <ellipse cx="29" cy="9" rx="5" ry="6.5" transform="rotate(6 29 9)"/>
+    <ellipse cx="39" cy="17" rx="5" ry="6.5" transform="rotate(18 39 17)"/>
+  </g>
+  <text x="300" y="308" text-anchor="middle" font-family="Georgia, serif" font-size="34" font-weight="bold" fill="#5a4128">Gallery 2</text>
+  <text x="300" y="344" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="20" fill="#7a6044">Fresh cut photo</text>
+</svg>
