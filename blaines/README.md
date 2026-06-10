@@ -31,7 +31,8 @@ Real content status (synced from the Square booking page on 2026-06-10):
 | Services & prices | `index.html`, the block marked `EDIT SERVICES HERE` | **Real.** Mirrors the Square page — keep names matching so customers find the same service after clicking Book Now. Each service is one `<li class="service">` block. |
 | Hours / address / phone / email | `index.html` "Visit Us" + footer + JSON-LD in `<head>` | **Real.** If hours change, update the table, the footer line, and the `openingHoursSpecification` JSON-LD. |
 | Map | `index.html`, `.map-embed` div | **Real** keyless Google Maps embed pointed at 837 Perry Rd. |
-| Photos | `img/` | **Placeholders.** Drop real photos in `img/` and update the `src` (and `alt`!) on the matching `<img>` tags. Gallery shots look best square-ish; portraits of Blaine/Mack look best in 4:5. Any size works — CSS crops to fit. |
+| Logo & portraits | `img/logo.png`, `img/blaine.jpg`, `img/mack.jpg` | **Real.** Logo is in the hero (white background made transparent); portraits in About/Mack sections. |
+| Hero & gallery photos | `img/hero.svg`, `img/gallery-*.svg` | **Placeholders.** Drop real shop/cut photos in `img/` and update the `src` (and `alt`!) on the matching `<img>` tags. Gallery shots look best square-ish. Any size works — CSS crops to fit. |
 | Bios (Blaine & Mack) | `index.html` | **Draft copy** — edit in place and delete the `[Draft bio …]` placeholder notes. Kevin and Perry could use intros. |
 | Instagram | `index.html` footer | **Placeholder** `href` — swap for the real profile. |
 
