@@ -16,7 +16,11 @@ COPY js/  /usr/share/nginx/html/blaines/js/
 COPY img/ /usr/share/nginx/html/blaines/img/
 
 # Convenience: hitting the container root redirects to the site.
+# (The base image runs as the unprivileged nginx user, which can't write
+# to the root-owned html dir — switch to root just for this step.)
+USER root
 RUN printf '<meta http-equiv="refresh" content="0; url=blaines/">' \
       > /usr/share/nginx/html/index.html
+USER nginx
 
 EXPOSE 8080
