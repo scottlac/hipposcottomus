@@ -1,0 +1,118 @@
+# ════════════════════════════════════════════════════════════════════
+# Blaine's Barbershop — static site served at hipposcottomus.com/blaines
+#
+# Apply with:  kubectl apply -f deploy/k8s.yaml
+#
+# Adapt before applying:
+#   - image: points at the same DigitalOcean registry as the main site;
+#     change the repo/tag to wherever you push the blaines image.
+#   - The Ingress below ADDS a /blaines path on hipposcottomus.com. If you
+#     prefer, skip the Ingress resource here and instead add the
+#     /blaines path block to the existing jordan-lake-scraper Ingress in
+#     k8s/manifests.yaml (snippet at the bottom of this file).
+# ════════════════════════════════════════════════════════════════════
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blaines-site
+  labels:
+    app: blaines-site
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blaines-site
+  template:
+    metadata:
+      labels:
+        app: blaines-site
+    spec:
+      containers:
+        - name: web
+          # PLACEHOLDER registry path — push your built image here first:
+          #   docker build -f deploy/Dockerfile -t <image> . && docker push <image>
+          image: registry.digitalocean.com/jordan-lake-registry/blaines-site:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "16Mi"
+            limits:
+              cpu: "100m"
+              memory: "64Mi"
+          livenessProbe:
+            httpGet:
+              path: /blaines/index.html
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /blaines/index.html
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false  # nginx writes its pid/cache under /tmp in this image
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blaines-site
+  labels:
+    app: blaines-site
+spec:
+  selector:
+    app: blaines-site
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+# Option A: standalone Ingress (multiple Ingresses can share one host with
+# ingress-nginx; paths are merged). Matches the existing site's TLS setup.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: blaines-site
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx  # matches the existing ingress class on the cluster
+  tls:
+    - hosts:
+        - hipposcottomus.com
+      secretName: hipposcottomus-tls  # reuses the existing cert secret
+  rules:
+    - host: hipposcottomus.com
+      http:
+        paths:
+          - path: /blaines
+            pathType: Prefix
+            backend:
+              service:
+                name: blaines-site
+                port:
+                  number: 8080
+
+# ----------------------------------------------------------------------
+# Option B: instead of the Ingress above, add this path block to the
+# existing Ingress in k8s/manifests.yaml (under rules[0].http.paths):
+#
+#           - path: /blaines
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: blaines-site
+#                 port:
+#                   number: 8080
+#
+# ----------------------------------------------------------------------
+# Moving to its own domain later: point the new domain's DNS at the
+# cluster, then change `host:` above (and the tls block) to the new
+# domain — e.g. blainesbarbershop.com — and rebuild nothing. The site
+# uses only relative paths, so it works at / or under /blaines equally.

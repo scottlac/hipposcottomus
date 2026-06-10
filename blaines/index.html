@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blaine's Barbershop — Classic Cuts, Neighborhood Service</title>
+  <meta name="description" content="Blaine's Barbershop. Classic cuts, fades, beard trims, and straight-razor shaves. Whatever you need, we've got you. Book online today.">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#top">
+        <svg class="brand-pole" viewBox="0 0 24 48" aria-hidden="true" focusable="false">
+          <rect x="6" y="4" width="12" height="40" rx="6" fill="var(--cream)" stroke="var(--brown-dark)" stroke-width="2"/>
+          <path d="M6 12 L18 8 M6 20 L18 16 M6 28 L18 24 M6 36 L18 32" stroke="var(--barber-red)" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="12" cy="4" r="3.5" fill="var(--brass)"/>
+          <circle cx="12" cy="44" r="3.5" fill="var(--brass)"/>
+        </svg>
+        <span class="brand-name">Blaine's Barbershop</span>
+      </a>
+
+      <button class="nav-toggle" aria-expanded="false" aria-controls="site-nav">
+        <span class="nav-toggle-bar" aria-hidden="true"></span>
+        <span class="nav-toggle-label">Menu</span>
+      </button>
+
+      <nav id="site-nav" class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="#services">Services</a></li>
+          <li><a href="#gallery">Gallery</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#mack">Meet Mack</a></li>
+          <li><a href="#visit">Visit Us</a></li>
+          <li><a class="btn btn-book" href="https://nc-107285.square.site/" target="_blank" rel="noopener">Book Now</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ============ HERO ============ -->
+    <section id="top" class="hero">
+      <img class="hero-photo" src="img/hero.svg" alt="Placeholder for a photo of the shop — warm wood, leather chairs, and a barber pole out front." width="1600" height="900">
+      <div class="hero-content">
+        <p class="hero-kicker">Est. right here in the neighborhood</p>
+        <h1>Blaine's Barbershop</h1>
+        <p class="hero-tagline">Classic cuts. Honest service. The local place to go — and the only chair you'll need.</p>
+        <p class="hero-sub">Fades, tapers, beard work, straight-razor shaves, kids' cuts. Whatever you're after, we've got you.</p>
+        <a class="btn btn-book btn-lg" href="https://nc-107285.square.site/" target="_blank" rel="noopener">Book Now</a>
+      </div>
+    </section>
+
+    <!-- ============ SERVICES ============ -->
+    <section id="services" class="section">
+      <div class="section-inner">
+        <h2>Services &amp; Pricing</h2>
+        <p class="section-lede">One chair, every style. If you don't see it here, ask — odds are we do it.</p>
+
+        <!--
+          ════════════════════════════════════════════════════════════
+          EDIT SERVICES HERE.
+          Each service is one <li class="service"> block below.
+          Copy/paste a block to add one; delete a block to remove one.
+          Prices and durations are PLACEHOLDERS — swap in real values.
+          ════════════════════════════════════════════════════════════
+        -->
+        <ul class="services-list">
+          <li class="service">
+            <h3 class="service-name">Men's Cut</h3>
+            <p class="service-desc">A classic cut, shaped to you. Includes a consult, a clean finish, and a hot lather neck shave.</p>
+            <p class="service-meta"><span class="service-price">$XX</span> <span class="service-duration">30 min</span></p>
+          </li>
+          <li class="service">
+            <h3 class="service-name">Skin Fade</h3>
+            <p class="service-desc">Tight, blended, and sharp from every angle. Low, mid, or high — your call.</p>
+            <p class="service-meta"><span class="service-price">$XX</span> <span class="service-duration">45 min</span></p>
+          </li>
+          <li class="service">
+            <h3 class="service-name">Beard Trim &amp; Shape</h3>
+            <p class="service-desc">Lines cleaned up, length dialed in, finished with beard oil. Your beard, but better.</p>
+            <p class="service-meta"><span class="service-price">$XX</span> <span class="service-duration">20 min</span></p>
+          </li>
+          <li class="service">
+            <h3 class="service-name">Hot Towel Straight-Razor Shave</h3>
+            <p class="service-desc">The old-school treatment: hot towels, rich lather, and a straight razor. Worth slowing down for.</p>
+            <p class="service-meta"><span class="service-price">$XX</span> <span class="service-duration">45 min</span></p>
+          </li>
+          <li class="service">
+            <h3 class="service-name">Cut &amp; Beard Combo</h3>
+            <p class="service-desc">The full reset — haircut and beard work in one sitting. Walk out a new man.</p>
+            <p class="service-meta"><span class="service-price">$XX</span> <span class="service-duration">60 min</span></p>
+          </li>
+          <li class="service">
+            <h3 class="service-name">Kids' Cut <span class="service-note">(12 &amp; under)</span></h3>
+            <p class="service-desc">Patient, quick, and kid-approved. First haircuts get a little extra care (and a photo op).</p>
+            <p class="service-meta"><span class="service-price">$XX</span> <span class="service-duration">30 min</span></p>
+          </li>
+          <li class="service">
+            <h3 class="service-name">Buzz Cut</h3>
+            <p class="service-desc">One guard, all business. In and out, clean as a whistle.</p>
+            <p class="service-meta"><span class="service-price">$XX</span> <span class="service-duration">15 min</span></p>
+          </li>
+          <li class="service">
+            <h3 class="service-name">Senior Cut <span class="service-note">(65+)</span></h3>
+            <p class="service-desc">Same classic cut, neighborly price. Coffee's on while you wait.</p>
+            <p class="service-meta"><span class="service-price">$XX</span> <span class="service-duration">30 min</span></p>
+          </li>
+        </ul>
+        <!-- ════════════ END SERVICES ════════════ -->
+
+        <p class="services-cta">
+          <a class="btn btn-book" href="https://nc-107285.square.site/" target="_blank" rel="noopener">Book Now</a>
+        </p>
+      </div>
+    </section>
+
+    <div class="divider" aria-hidden="true">
+      <svg class="paw" viewBox="0 0 48 44" focusable="false">
+        <ellipse cx="24" cy="30" rx="11" ry="9"/>
+        <ellipse cx="9" cy="17" rx="5" ry="6.5" transform="rotate(-18 9 17)"/>
+        <ellipse cx="19" cy="9" rx="5" ry="6.5" transform="rotate(-6 19 9)"/>
+        <ellipse cx="29" cy="9" rx="5" ry="6.5" transform="rotate(6 29 9)"/>
+        <ellipse cx="39" cy="17" rx="5" ry="6.5" transform="rotate(18 39 17)"/>
+      </svg>
+    </div>
+
+    <!-- ============ GALLERY ============ -->
+    <section id="gallery" class="section section-alt">
+      <div class="section-inner">
+        <h2>The Work</h2>
+        <p class="section-lede">Fresh cuts from the chair. Real photos coming soon — these seats won't stay empty.</p>
+        <ul class="gallery-grid">
+          <li><img src="img/gallery-1.svg" alt="Placeholder for a photo of a classic taper haircut." width="600" height="600" loading="lazy"></li>
+          <li><img src="img/gallery-2.svg" alt="Placeholder for a photo of a skin fade." width="600" height="600" loading="lazy"></li>
+          <li><img src="img/gallery-3.svg" alt="Placeholder for a photo of a beard trim and shape-up." width="600" height="600" loading="lazy"></li>
+          <li><img src="img/gallery-4.svg" alt="Placeholder for a photo of a hot towel straight-razor shave." width="600" height="600" loading="lazy"></li>
+          <li><img src="img/gallery-5.svg" alt="Placeholder for a photo of a kid's first haircut." width="600" height="600" loading="lazy"></li>
+          <li><img src="img/gallery-6.svg" alt="Placeholder for a photo of the inside of the shop." width="600" height="600" loading="lazy"></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ ABOUT ============ -->
+    <section id="about" class="section">
+      <div class="section-inner split">
+        <img class="portrait" src="img/blaine.svg" alt="Placeholder for a portrait of Blaine at his chair." width="600" height="750" loading="lazy">
+        <div class="split-text">
+          <h2>Meet Blaine</h2>
+          <p>Blaine has been behind the chair for over a decade, and behind <em>this</em> chair for the part that matters. He learned the trade the old way — apprenticing under barbers who measured twice and cut once — and he runs the shop the same way: good conversation, no rush, and a cut you don't have to fix when you get home.</p>
+          <p>Classic taper or modern fade, full beard or first shave, Blaine's done it a few thousand times. Sit down, tell him what you're thinking, and he'll take it from there.</p>
+          <p class="placeholder-note">[Draft bio — Blaine, tweak this however you like. Years, hometown, story, all swappable.]</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider" aria-hidden="true">
+      <svg class="paw" viewBox="0 0 48 44" focusable="false">
+        <ellipse cx="24" cy="30" rx="11" ry="9"/>
+        <ellipse cx="9" cy="17" rx="5" ry="6.5" transform="rotate(-18 9 17)"/>
+        <ellipse cx="19" cy="9" rx="5" ry="6.5" transform="rotate(-6 19 9)"/>
+        <ellipse cx="29" cy="9" rx="5" ry="6.5" transform="rotate(6 29 9)"/>
+        <ellipse cx="39" cy="17" rx="5" ry="6.5" transform="rotate(18 39 17)"/>
+      </svg>
+    </div>
+
+    <!-- ============ MACK ============ -->
+    <section id="mack" class="section section-alt">
+      <div class="section-inner split split-reverse">
+        <img class="portrait" src="img/mack.svg" alt="Placeholder for a photo of Mack, the shop dog." width="600" height="750" loading="lazy">
+        <div class="split-text">
+          <h2>Meet Mack</h2>
+          <p class="mack-title">Shop Dog &middot; Chief Morale Officer</p>
+          <p>Mack has held down the front of the shop longer than some of the furniture. His duties include greeting every customer, supervising the sweep-up, and conducting quality inspections of any snack that enters the building.</p>
+          <p>He doesn't take appointments — he takes naps, usually in the one sunbeam by the window. Belly rubs are encouraged. Haircut opinions are offered freely and should be ignored.</p>
+          <p class="placeholder-note">[Draft bio — swap in Mack's real breed, age, and rap sheet when ready.]</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ VISIT ============ -->
+    <section id="visit" class="section">
+      <div class="section-inner">
+        <h2>Visit Us</h2>
+        <p class="section-lede">Walk-ins welcome when the chair's open — booking ahead guarantees your spot.</p>
+
+        <div class="visit-grid">
+          <div class="visit-card">
+            <h3>Hours</h3>
+            <!-- PLACEHOLDER HOURS — swap in real ones -->
+            <table class="hours">
+              <caption class="sr-only">Weekly opening hours (placeholder)</caption>
+              <tbody>
+                <tr><th scope="row">Monday</th><td>Closed</td></tr>
+                <tr><th scope="row">Tuesday</th><td>X:XX am – X:XX pm</td></tr>
+                <tr><th scope="row">Wednesday</th><td>X:XX am – X:XX pm</td></tr>
+                <tr><th scope="row">Thursday</th><td>X:XX am – X:XX pm</td></tr>
+                <tr><th scope="row">Friday</th><td>X:XX am – X:XX pm</td></tr>
+                <tr><th scope="row">Saturday</th><td>X:XX am – X:XX pm</td></tr>
+                <tr><th scope="row">Sunday</th><td>Closed</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="visit-card">
+            <h3>Find Us</h3>
+            <address>
+              <!-- PLACEHOLDER ADDRESS & PHONE — swap in real ones -->
+              <p>123 Placeholder Street<br>Your Town, ST 00000</p>
+              <p><a href="tel:+15555550123">(555) 555-0123</a></p>
+            </address>
+            <a class="btn btn-book" href="https://nc-107285.square.site/" target="_blank" rel="noopener">Book Now</a>
+          </div>
+        </div>
+
+        <!-- Static map placeholder — replace with a real embed or map image later -->
+        <div class="map-placeholder" role="img" aria-label="Map placeholder showing the shop's future location.">
+          <svg viewBox="0 0 48 44" class="paw paw-map" aria-hidden="true" focusable="false">
+            <ellipse cx="24" cy="30" rx="11" ry="9"/>
+            <ellipse cx="9" cy="17" rx="5" ry="6.5" transform="rotate(-18 9 17)"/>
+            <ellipse cx="19" cy="9" rx="5" ry="6.5" transform="rotate(-6 19 9)"/>
+            <ellipse cx="29" cy="9" rx="5" ry="6.5" transform="rotate(6 29 9)"/>
+            <ellipse cx="39" cy="17" rx="5" ry="6.5" transform="rotate(18 39 17)"/>
+          </svg>
+          <p>Map coming soon — you'll know the place by the barber pole (and probably Mack in the window).</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p class="footer-brand">Blaine's Barbershop</p>
+      <svg class="paw paw-footer" viewBox="0 0 48 44" aria-hidden="true" focusable="false">
+        <ellipse cx="24" cy="30" rx="11" ry="9"/>
+        <ellipse cx="9" cy="17" rx="5" ry="6.5" transform="rotate(-18 9 17)"/>
+        <ellipse cx="19" cy="9" rx="5" ry="6.5" transform="rotate(-6 19 9)"/>
+        <ellipse cx="29" cy="9" rx="5" ry="6.5" transform="rotate(6 29 9)"/>
+        <ellipse cx="39" cy="17" rx="5" ry="6.5" transform="rotate(18 39 17)"/>
+      </svg>
+      <nav aria-label="Footer">
+        <ul class="footer-links">
+          <!-- PLACEHOLDER — swap href for the real Instagram profile -->
+          <li><a href="https://instagram.com/" target="_blank" rel="noopener">Instagram</a></li>
+          <li><a class="btn btn-book" href="https://nc-107285.square.site/" target="_blank" rel="noopener">Book Now</a></li>
+        </ul>
+      </nav>
+      <p class="footer-fine">&copy; 2026 Blaine's Barbershop. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
