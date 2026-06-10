@@ -10,6 +10,10 @@
 
 FROM nginxinc/nginx-unprivileged:1.27-alpine
 
+# Replaces the stock server config — see comments in the conf for why
+# (directory redirects must not leak the internal 8080 port).
+COPY deploy/nginx-default.conf /etc/nginx/conf.d/default.conf
+
 COPY index.html /usr/share/nginx/html/blaines/
 COPY css/ /usr/share/nginx/html/blaines/css/
 COPY js/  /usr/share/nginx/html/blaines/js/
