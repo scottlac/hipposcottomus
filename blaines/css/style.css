@@ -132,6 +132,17 @@ button:focus-visible {
   box-shadow: var(--shadow);
 }
 
+/* Slimmer bar once the visitor scrolls past the hero (class set in main.js) */
+.site-header.shrunk .header-inner { min-height: 3rem; }
+.site-header.shrunk .brand-mark { width: 2rem; }
+.site-header.shrunk .brand-name { font-size: 1.05rem; }
+.header-inner { transition: min-height 0.2s ease; }
+.brand-mark { transition: width 0.2s ease; }
+.brand-name { transition: font-size 0.2s ease; }
+
+/* Anchored sections clear the (shrunk) sticky header */
+section[id] { scroll-margin-top: 4rem; }
+
 .header-inner {
   max-width: 72rem;
   margin: 0 auto;
@@ -234,7 +245,7 @@ button:focus-visible {
   width: 100%;
   height: 100%;
   min-height: 30rem;
-  max-height: min(80vh, 46rem);
+  max-height: min(85vh, 45rem);
   object-fit: cover;
 }
 
@@ -314,29 +325,57 @@ button:focus-visible {
 .paw { width: 1.75rem; height: auto; fill: var(--brass); }
 
 /* ── Services ── */
-.services-list {
-  list-style: none;
-  margin: 2rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 1.25rem;
-  grid-template-columns: 1fr;
-}
-
-@media (min-width: 40rem) { .services-list { grid-template-columns: 1fr 1fr; } }
-@media (min-width: 64rem) { .services-list { grid-template-columns: repeat(4, 1fr); } }
-
-.service {
+/* ── Services: compact vintage price lists, grouped by category ── */
+.service-group {
   background: var(--paper);
   border: 1px solid rgba(176, 141, 87, 0.5);
   border-top: 4px solid var(--brass);
   border-radius: var(--radius);
-  padding: 1.25rem;
-  display: flex;
-  flex-direction: column;
+  padding: 1rem 1.25rem 1.25rem;
+  margin-top: 1.5rem;
 }
 
-.service-name { margin-bottom: 0.4em; }
+.service-group-title {
+  font-size: 1.35rem;
+  margin: 0 0 0.25rem;
+  color: var(--brown);
+}
+
+.services-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 48rem) {
+  .services-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 2.5rem;
+  }
+}
+
+.service { padding: 0.6rem 0 0.5rem; }
+
+.service-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.service-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--brown-dark);
+}
+
+.service-leader {
+  flex: 1;
+  min-width: 1.5rem;
+  border-bottom: 2px dotted var(--brass);
+  transform: translateY(-0.25em);
+}
 
 .service-note {
   font-size: 0.8em;
@@ -346,31 +385,30 @@ button:focus-visible {
 }
 
 .service-desc {
-  margin: 0 0 1rem;
-  font-size: 0.95rem;
-  color: var(--brown);
-  flex: 1;
-}
-
-.service-meta {
-  margin: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  border-top: 1px dashed var(--brass);
-  padding-top: 0.6rem;
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--brown-soft);
 }
 
 .service-price {
   font-family: var(--font-display);
-  font-size: 1.3rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--barber-red);
 }
 
-.service-duration { font-size: 0.9rem; color: var(--brown-soft); }
+.service-duration {
+  white-space: nowrap;
+  color: var(--brass-dark);
+  font-size: 0.85rem;
+}
 
-.services-cta { text-align: center; margin-top: 2.5rem; }
+.service-duration::before { content: "· "; }
+
+.services-cta { text-align: center; margin: 1.5rem 0 0; }
+
+#services { padding-bottom: 2rem; }
 
 /* ── Gallery ── */
 .gallery-grid {
@@ -458,6 +496,24 @@ button:focus-visible {
 }
 
 .hours td { text-align: right; color: var(--brown); }
+
+.hours .open-late th,
+.hours .open-late td { font-weight: 700; color: var(--brown-dark); }
+
+.late-tag {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.45rem;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cream);
+  background: var(--barber-red);
+  border-radius: 999px;
+  vertical-align: middle;
+}
 
 address { font-style: normal; margin-bottom: 1.25rem; }
 
