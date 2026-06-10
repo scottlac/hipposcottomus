@@ -30,9 +30,10 @@ spec:
     spec:
       containers:
         - name: web
-          # PLACEHOLDER registry path — push your built image here first:
-          #   docker build -f deploy/Dockerfile -t <image> . && docker push <image>
-          image: registry.digitalocean.com/jordan-lake-registry/blaines-site:latest
+          # The blaines image shares the jordan-lake-scraper repository under
+          # blaines-* tags because the DO registry Starter plan allows only
+          # one repository. CI pins this to blaines-<sha> on each deploy.
+          image: registry.digitalocean.com/jordan-lake-registry/jordan-lake-scraper:blaines-latest
           ports:
             - containerPort: 8080
               name: http
