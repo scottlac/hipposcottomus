@@ -24,17 +24,16 @@ python3 -m http.server 8000
 
 ## Swapping in real content
 
-Everything that needs real data is marked in `index.html`:
+Real content status (synced from the Square booking page on 2026-06-10):
 
-| What | Where | How |
+| What | Where | Status |
 |---|---|---|
-| Shop name | `index.html` (title, header, hero, footer) | Search for "Blaine's Barbershop" and replace |
-| Services & prices | `index.html`, the block marked `EDIT SERVICES HERE` | Each service is one `<li class="service">` block — copy/paste to add, delete to remove. Replace `$XX` prices and durations. |
-| Photos | `img/` | Drop real photos in `img/` and update the `src` (and `alt`!) on the matching `<img>` tags. Gallery shots look best square-ish; portraits of Blaine/Mack look best in 4:5. Any size works — CSS crops to fit. |
-| Bios (Blaine & Mack) | `index.html` | Draft copy is already written; edit in place and delete the `[Draft bio …]` placeholder notes. |
-| Hours / address / phone | `index.html`, "Visit Us" section | Marked with `PLACEHOLDER` comments. Update the `tel:` link too. |
-| Instagram | `index.html` footer | Replace the placeholder `href`. |
-| Map | `index.html`, `.map-placeholder` div | Replace the whole div with a real embed or a static map image when ready. |
+| Services & prices | `index.html`, the block marked `EDIT SERVICES HERE` | **Real.** Mirrors the Square page — keep names matching so customers find the same service after clicking Book Now. Each service is one `<li class="service">` block. |
+| Hours / address / phone / email | `index.html` "Visit Us" + footer + JSON-LD in `<head>` | **Real.** If hours change, update the table, the footer line, and the `openingHoursSpecification` JSON-LD. |
+| Map | `index.html`, `.map-embed` div | **Real** keyless Google Maps embed pointed at 837 Perry Rd. |
+| Photos | `img/` | **Placeholders.** Drop real photos in `img/` and update the `src` (and `alt`!) on the matching `<img>` tags. Gallery shots look best square-ish; portraits of Blaine/Mack look best in 4:5. Any size works — CSS crops to fit. |
+| Bios (Blaine & Mack) | `index.html` | **Draft copy** — edit in place and delete the `[Draft bio …]` placeholder notes. Kevin and Perry could use intros. |
+| Instagram | `index.html` footer | **Placeholder** `href` — swap for the real profile. |
 
 Booking: every "Book Now" button points at the Square page
 (`https://nc-107285.square.site/`). If that URL ever changes, search-and-replace
