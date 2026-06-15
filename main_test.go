@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -242,5 +243,51 @@ func TestParseReportDate(t *testing.T) {
 				t.Errorf("date = %q, want %q", got, tt.wantDate)
 			}
 		})
+	}
+}
+
+func TestSnapshotPreScrub(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "history.json")
+	backup := filepath.Join(dir, "history.pre-scrub.json")
+
+	// 1. Source missing → returns nil, no backup created.
+	if err := snapshotPreScrub(src); err != nil {
+		t.Fatalf("snapshot on missing source: %v", err)
+	}
+	if _, err := os.Stat(backup); !os.IsNotExist(err) {
+		t.Errorf("backup should not exist when source is missing; got err=%v", err)
+	}
+
+	// 2. Source present, no backup → creates the backup.
+	original := []byte(`[{"date":"2026-06-12","value":81.0}]`)
+	if err := os.WriteFile(src, original, 0o644); err != nil {
+		t.Fatalf("write src: %v", err)
+	}
+	if err := snapshotPreScrub(src); err != nil {
+		t.Fatalf("snapshot on fresh source: %v", err)
+	}
+	got, err := os.ReadFile(backup)
+	if err != nil {
+		t.Fatalf("read backup: %v", err)
+	}
+	if !reflect.DeepEqual(got, original) {
+		t.Errorf("backup contents = %q, want %q", got, original)
+	}
+
+	// 3. Source mutated, backup already exists → backup left untouched.
+	mutated := []byte(`[]`)
+	if err := os.WriteFile(src, mutated, 0o644); err != nil {
+		t.Fatalf("rewrite src: %v", err)
+	}
+	if err := snapshotPreScrub(src); err != nil {
+		t.Fatalf("snapshot on existing-backup: %v", err)
+	}
+	got, err = os.ReadFile(backup)
+	if err != nil {
+		t.Fatalf("re-read backup: %v", err)
+	}
+	if !reflect.DeepEqual(got, original) {
+		t.Errorf("idempotency broken: backup = %q, want %q (original)", got, original)
 	}
 }
