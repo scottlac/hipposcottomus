@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -136,5 +137,157 @@ func TestLastMatch(t *testing.T) {
 				t.Errorf("val = %v, want %v", got, tt.wantVal)
 			}
 		})
+	}
+}
+
+// ── New history helpers + USACE date parsing ────────────────────
+
+func TestHistory_SetForDate(t *testing.T) {
+	h := &History{}
+
+	if !h.SetForDate("2026-06-12", 10.0) {
+		t.Error("SetForDate on new date should report change")
+	}
+	if h.SetForDate("2026-06-12", 10.0) {
+		t.Error("SetForDate with same value should NOT report change (lets caller skip disk write)")
+	}
+	if !h.SetForDate("2026-06-12", 11.0) {
+		t.Error("SetForDate with new value for same date should report change")
+	}
+	if !h.SetForDate("2026-06-13", 11.0) {
+		t.Error("SetForDate on new date should report change even if value matches a previous date")
+	}
+
+	got := h.All()
+	want := []DataPoint{
+		{Date: "2026-06-12", Value: 11.0},
+		{Date: "2026-06-13", Value: 11.0},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("after SetForDate sequence: got %+v, want %+v", got, want)
+	}
+}
+
+func TestHistory_RemoveConsecutiveDuplicates(t *testing.T) {
+	// Mirrors the real Jordan Lake weekend-phantom pattern: Friday's value
+	// got stamped onto Saturday and Sunday by the old scrapeLoop. Monday
+	// has a genuinely different reading.
+	h := &History{}
+	h.AddWithDate("2026-06-11", 81.5) // Thu
+	h.AddWithDate("2026-06-12", 81.0) // Fri (real)
+	h.AddWithDate("2026-06-13", 81.0) // Sat (phantom)
+	h.AddWithDate("2026-06-14", 81.0) // Sun (phantom)
+	h.AddWithDate("2026-06-15", 85.0) // Mon (real)
+	h.AddWithDate("2026-06-16", 85.0) // Tue (real but happens to match Mon — drops as collateral)
+
+	dropped := h.RemoveConsecutiveDuplicates()
+	if dropped != 3 {
+		t.Errorf("dropped = %d, want 3 (2 phantoms + 1 genuine collateral)", dropped)
+	}
+
+	got := h.All()
+	want := []DataPoint{
+		{Date: "2026-06-11", Value: 81.5},
+		{Date: "2026-06-12", Value: 81.0},
+		{Date: "2026-06-15", Value: 85.0},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("after scrub: got %+v, want %+v", got, want)
+	}
+
+	// Idempotent on a clean series.
+	if d := h.RemoveConsecutiveDuplicates(); d != 0 {
+		t.Errorf("second scrub dropped %d, want 0 (should be idempotent)", d)
+	}
+}
+
+func TestParseReportDate(t *testing.T) {
+	tests := []struct {
+		name     string
+		text     string
+		wantOK   bool
+		wantDate string
+	}{
+		{
+			name:     "abbreviated month",
+			text:     "FRIDAY 6 JUN 2026 report follows...",
+			wantOK:   true,
+			wantDate: "2026-06-06",
+		},
+		{
+			name:     "full month name",
+			text:     "MONDAY 9 JUNE 2026 report follows...",
+			wantOK:   true,
+			wantDate: "2026-06-09",
+		},
+		{
+			name:     "multiple dates returns LAST",
+			text:     "THURSDAY 5 JUN 2026\nFRIDAY 6 JUN 2026\nMONDAY 9 JUN 2026 most recent",
+			wantOK:   true,
+			wantDate: "2026-06-09",
+		},
+		{
+			name:     "no date present",
+			text:     "no headline here, just data",
+			wantOK:   false,
+			wantDate: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := parseReportDate(tt.text)
+			if ok != tt.wantOK {
+				t.Fatalf("ok = %v, want %v (got date=%q)", ok, tt.wantOK, got)
+			}
+			if got != tt.wantDate {
+				t.Errorf("date = %q, want %q", got, tt.wantDate)
+			}
+		})
+	}
+}
+
+func TestSnapshotPreScrub(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "history.json")
+	backup := filepath.Join(dir, "history.pre-scrub.json")
+
+	// 1. Source missing → returns nil, no backup created.
+	if err := snapshotPreScrub(src); err != nil {
+		t.Fatalf("snapshot on missing source: %v", err)
+	}
+	if _, err := os.Stat(backup); !os.IsNotExist(err) {
+		t.Errorf("backup should not exist when source is missing; got err=%v", err)
+	}
+
+	// 2. Source present, no backup → creates the backup.
+	original := []byte(`[{"date":"2026-06-12","value":81.0}]`)
+	if err := os.WriteFile(src, original, 0o644); err != nil {
+		t.Fatalf("write src: %v", err)
+	}
+	if err := snapshotPreScrub(src); err != nil {
+		t.Fatalf("snapshot on fresh source: %v", err)
+	}
+	got, err := os.ReadFile(backup)
+	if err != nil {
+		t.Fatalf("read backup: %v", err)
+	}
+	if !reflect.DeepEqual(got, original) {
+		t.Errorf("backup contents = %q, want %q", got, original)
+	}
+
+	// 3. Source mutated, backup already exists → backup left untouched.
+	mutated := []byte(`[]`)
+	if err := os.WriteFile(src, mutated, 0o644); err != nil {
+		t.Fatalf("rewrite src: %v", err)
+	}
+	if err := snapshotPreScrub(src); err != nil {
+		t.Fatalf("snapshot on existing-backup: %v", err)
+	}
+	got, err = os.ReadFile(backup)
+	if err != nil {
+		t.Fatalf("re-read backup: %v", err)
+	}
+	if !reflect.DeepEqual(got, original) {
+		t.Errorf("idempotency broken: backup = %q, want %q (original)", got, original)
 	}
 }
