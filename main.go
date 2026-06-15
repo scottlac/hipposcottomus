@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -115,6 +116,51 @@ func (h *History) AddWithDate(date string, val float64) {
 	h.points = append(h.points, DataPoint{Date: date, Value: val})
 }
 
+// SetForDate upserts a value for the given ISO date, returning true if
+// anything actually changed (new entry, or existing entry's value was
+// different). The boolean lets callers skip a disk write when the
+// reading is unchanged, which matters for data sources that re-publish
+// the same value across weekends and holidays (USACE Jordan Lake).
+func (h *History) SetForDate(date string, val float64) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for i := range h.points {
+		if h.points[i].Date == date {
+			if h.points[i].Value == val {
+				return false
+			}
+			h.points[i].Value = val
+			return true
+		}
+	}
+	h.points = append(h.points, DataPoint{Date: date, Value: val})
+	return true
+}
+
+// RemoveConsecutiveDuplicates drops entries whose value exactly matches
+// the preceding entry's value once history is sorted by date. Idempotent:
+// safe to run on every startup. Used to scrub phantom Saturday/Sunday
+// entries left over from before SetForDate was wired up. Returns the
+// number of points dropped.
+func (h *History) RemoveConsecutiveDuplicates() int {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if len(h.points) < 2 {
+		return 0
+	}
+	out := h.points[:1]
+	dropped := 0
+	for i := 1; i < len(h.points); i++ {
+		if h.points[i].Value == out[len(out)-1].Value {
+			dropped++
+			continue
+		}
+		out = append(out, h.points[i])
+	}
+	h.points = out
+	return dropped
+}
+
 // Sort sorts the data points by date ascending.
 func (h *History) Sort() {
 	h.mu.Lock()
@@ -181,6 +227,12 @@ var (
 
 	tempRegex  = regexp.MustCompile(`Lake temperature, degrees Fahrenheit=\s*([0-9.]+)`)
 	levelRegex = regexp.MustCompile(`Midnight\s+Elevation\s+Today\s*=\s*([0-9.]+)`)
+	// USACE reports headline each day as "MONDAY 9 JUN 2026" (or longer
+	// month names — JUNE etc). The LAST occurrence in the report text is
+	// the most recent measurement date; we tag readings with that so
+	// weekend re-publishes of Friday's data don't manufacture phantom
+	// Saturday/Sunday entries.
+	reportDateRegex = regexp.MustCompile(`(?i)(MON|TUE|WED|THU|FRI|SAT|SUN)[A-Z]*\s+(\d{1,2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\s+(\d{4})`)
 )
 
 func init() {
@@ -215,27 +267,67 @@ func fetchAndParse() error {
 
 	text := string(body)
 
+	// Parse the report's most-recent measurement date so weekend
+	// re-publishes of Friday's data don't get tagged as Sat/Sun "today".
+	// If we can't parse a date for some reason, fall back to today.
+	reportDate, dateOK := parseReportDate(text)
+	if !dateOK {
+		log.Println("Warning: no parseable report date in USACE text; falling back to today")
+		reportDate = time.Now().Format("2006-01-02")
+	}
+
 	// Find ALL matches and use the LAST one to get the most recent valid data,
 	// skipping any asterisk placeholders from partially-updated reports.
 	if temp, ok := lastMatch(tempRegex, text); ok {
 		waterTemp.Set(temp)
-		tempHistory.Add(temp)
-		saveTempHistory()
-		log.Printf("Updated water temperature: %.1f °F", temp)
+		if tempHistory.SetForDate(reportDate, temp) {
+			saveTempHistory()
+			log.Printf("Updated water temperature: %.1f °F (%s)", temp, reportDate)
+		}
 	} else {
 		log.Println("Warning: no valid water temperature found in report")
 	}
 
 	if level, ok := lastMatch(levelRegex, text); ok {
 		waterLevel.Set(level)
-		levelHistory.Add(level)
-		saveLevelHistory()
-		log.Printf("Updated water level: %.2f ft", level)
+		if levelHistory.SetForDate(reportDate, level) {
+			saveLevelHistory()
+			log.Printf("Updated water level: %.2f ft (%s)", level, reportDate)
+		}
 	} else {
 		log.Println("Warning: no valid water level found in report")
 	}
 
 	return nil
+}
+
+// parseReportDate finds the LAST date headline in the USACE report
+// (format e.g. "FRIDAY 6 JUN 2026") and returns it as ISO YYYY-MM-DD.
+// Returns ok=false when no recognisable headline is present.
+func parseReportDate(text string) (string, bool) {
+	matches := reportDateRegex.FindAllStringSubmatch(text, -1)
+	if len(matches) == 0 {
+		return "", false
+	}
+	last := matches[len(matches)-1]
+	// last[2]=day, last[3]=month abbrev, last[4]=year
+	monthByAbbrev := map[string]int{
+		"JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
+		"JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12,
+	}
+	m, ok := monthByAbbrev[strings.ToUpper(last[3])[:3]]
+	if !ok {
+		return "", false
+	}
+	day, err := strconv.Atoi(last[2])
+	if err != nil || day < 1 || day > 31 {
+		return "", false
+	}
+	year, err := strconv.Atoi(last[4])
+	if err != nil || year < 2000 || year > 2100 {
+		return "", false
+	}
+	return fmt.Sprintf("%04d-%02d-%02d", year, m, day), true
 }
 
 // lastMatch finds all regex matches in text and returns the parsed float
@@ -541,7 +633,18 @@ func main() {
 	loadLevelHistory()
 	backfillFromUSGS()
 	levelHistory.Sort()
+	tempHistory.Sort()
+	// Scrub leftover phantom entries from before SetForDate was wired up:
+	// USACE doesn't update on weekends/holidays, so the old scrapeLoop
+	// would stamp Friday's value as Saturday's and Sunday's. Idempotent.
+	if dropped := tempHistory.RemoveConsecutiveDuplicates(); dropped > 0 {
+		log.Printf("[Jordan] Dropped %d consecutive-duplicate temp points (weekend phantoms)", dropped)
+	}
+	if dropped := levelHistory.RemoveConsecutiveDuplicates(); dropped > 0 {
+		log.Printf("[Jordan] Dropped %d consecutive-duplicate level points (weekend phantoms)", dropped)
+	}
 	saveLevelHistory()
+	saveTempHistory()
 
 	// --- Start background loops ---
 	go scrapeLoop()
