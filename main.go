@@ -420,6 +420,38 @@ func tempHistoryPath() string {
 	return filepath.Join(getDataDir(), tempHistoryFile)
 }
 
+// snapshotPreScrub copies src to "<src-without-ext>.pre-scrub<ext>" if
+// (a) src exists and (b) the backup doesn't already exist. Used to
+// preserve the pre-dedup history exactly once. Idempotent on later
+// boots — once the backup is in place we never touch it again.
+func snapshotPreScrub(src string) error {
+	if _, err := os.Stat(src); err != nil {
+		// Nothing to back up (first boot before any persisted history)
+		// — quietly skip.
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	ext := filepath.Ext(src)
+	dst := src[:len(src)-len(ext)] + ".pre-scrub" + ext
+	if _, err := os.Stat(dst); err == nil {
+		// Backup already in place — nothing to do.
+		return nil
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(dst, data, 0o644); err != nil {
+		return err
+	}
+	log.Printf("Snapshotted pre-scrub history to %s", dst)
+	return nil
+}
+
 // loadTempHistory loads persisted temperature data from disk.
 func loadTempHistory() {
 	path := tempHistoryPath()
@@ -636,7 +668,18 @@ func main() {
 	tempHistory.Sort()
 	// Scrub leftover phantom entries from before SetForDate was wired up:
 	// USACE doesn't update on weekends/holidays, so the old scrapeLoop
-	// would stamp Friday's value as Saturday's and Sunday's. Idempotent.
+	// would stamp Friday's value as Saturday's and Sunday's. The scrub
+	// itself is idempotent. Before the FIRST scrub we copy each history
+	// file to a `.pre-scrub.json` companion so we can recover if the
+	// dedup decides to drop something we didn't expect. The backup is
+	// created at most once — once it exists, subsequent boots skip it
+	// (the scrub is a no-op anyway).
+	if err := snapshotPreScrub(tempHistoryPath()); err != nil {
+		log.Printf("[Jordan] could not snapshot temp history before scrub: %v", err)
+	}
+	if err := snapshotPreScrub(levelHistoryPath()); err != nil {
+		log.Printf("[Jordan] could not snapshot level history before scrub: %v", err)
+	}
 	if dropped := tempHistory.RemoveConsecutiveDuplicates(); dropped > 0 {
 		log.Printf("[Jordan] Dropped %d consecutive-duplicate temp points (weekend phantoms)", dropped)
 	}
