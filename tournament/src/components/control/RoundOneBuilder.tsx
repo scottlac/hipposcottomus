@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { actions } from '../../store'
 import type { Player, TournamentInput } from '../../types'
+import { SkillDot } from '../common/ui'
 
 function PlayerChip({ player, onDragStart }: { player: Player; onDragStart: (id: string) => void }) {
   return (
@@ -12,9 +13,9 @@ function PlayerChip({ player, onDragStart }: { player: Player; onDragStart: (id:
         onDragStart(player.id)
       }}
       className="chip cursor-grab select-none border border-curb bg-black/30 active:cursor-grabbing"
-      title="Drag to another race"
+      title={player.skill ? `${player.name} · ${player.skill}` : 'Drag to another race'}
     >
-      <span className="text-white/40">⠿</span> {player.name}
+      <SkillDot skill={player.skill} /> {player.name}
     </span>
   )
 }
@@ -38,6 +39,8 @@ export function RoundOneBuilder({ input }: { input: TournamentInput }) {
     setHover(key)
   }
 
+  const hasSkills = input.players.some((p) => p.skill)
+
   if (input.round0.length === 0) {
     return (
       <div className="card p-4">
@@ -45,14 +48,27 @@ export function RoundOneBuilder({ input }: { input: TournamentInput }) {
         <p className="mb-3 text-sm text-white/60">
           Auto-suggest groups of 4. Uneven counts split into smaller races (3 or 2) so nobody
           races alone — then drag racers around however you like before locking.
+          {hasSkills && ' Seed by skill spreads the strongest racers across different races so they meet in later rounds.'}
         </p>
-        <button
-          className="btn btn-primary"
-          onClick={() => actions.generateRound1()}
-          disabled={input.players.length < 2}
-        >
-          🏁 Generate Round 1 groups
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {hasSkills && (
+            <button
+              className="btn btn-go"
+              onClick={() => actions.seedRound1BySkill()}
+              disabled={input.players.length < 2}
+              title="Spread strong players across races"
+            >
+              🎯 Seed by skill
+            </button>
+          )}
+          <button
+            className={hasSkills ? 'btn' : 'btn btn-primary'}
+            onClick={() => actions.generateRound1()}
+            disabled={input.players.length < 2}
+          >
+            🏁 Generate {hasSkills ? 'in seed order' : 'Round 1 groups'}
+          </button>
+        </div>
         {input.players.length < 2 && (
           <p className="mt-2 text-sm text-white/40">Add at least 2 racers first.</p>
         )}
@@ -70,7 +86,16 @@ export function RoundOneBuilder({ input }: { input: TournamentInput }) {
           <button className="btn btn-sm" onClick={() => actions.addGroup()}>
             ＋ Add race
           </button>
-          <button className="btn btn-sm" onClick={() => actions.generateRound1()} title="Re-balance groups">
+          {hasSkills && (
+            <button
+              className="btn btn-go btn-sm"
+              onClick={() => actions.seedRound1BySkill()}
+              title="Spread strong players across races"
+            >
+              🎯 Seed by skill
+            </button>
+          )}
+          <button className="btn btn-sm" onClick={() => actions.generateRound1()} title="Re-balance in seed order">
             ↻ Re-suggest
           </button>
         </div>

@@ -56,12 +56,15 @@ players and degrades gracefully beyond that.
 
 ## Running the event
 
-1. **Roster** — paste names (one per line) or add them one at a time. Walk-ups can be
-   added any time before you lock. Reorder with ↑/↓, rename inline, or **🎲 Shuffle
-   seeds** for a random draw.
+1. **Roster** — **⬆ Import sign-up sheet** (the `.xlsx` or `.csv` you download from
+   Microsoft Forms), paste names (one per line), or add them one at a time. Walk-ups
+   can be added any time before you lock. Reorder with ↑/↓, rename inline, set each
+   racer's skill, or **🎲 Shuffle** for a random draw.
 2. **Generate Round 1** — auto-suggests races of 4. Uneven counts split into smaller
    races (3 or 2) so nobody races alone; a lone leftover becomes a **bye** that
-   advances directly. **Drag racers between races** to adjust freely.
+   advances directly. With skill levels present, **🎯 Seed by skill** spreads the
+   strongest racers across different races so they only meet in later rounds. **Drag
+   racers between races** to adjust freely.
 3. **Advancement** — set how many advance per race (default **2**); override per round
    if needed. A single-race round automatically crowns one champion.
 4. **🏁 Lock & start** — freezes the roster and Round 1 and starts the tournament.
@@ -80,6 +83,26 @@ players and degrades gracefully beyond that.
 
 A compact **live bracket preview** sits inside the control panel so you don't have to
 look up at the projector to track state.
+
+### Importing a sign-up sheet
+
+Click **⬆ Import sign-up sheet** and pick the Excel (`.xlsx`) or `.csv` export from your
+registration form (e.g. Microsoft Forms). The importer reads:
+
+- the **name** column (prefers the form's `Name:` field), and
+- the **experience / skill level** column, mapping answers onto **Beginner /
+  Intermediate / Expert** (Advanced, Pro, Novice, etc. are recognized too).
+
+Parsing happens entirely in your browser — nothing is uploaded anywhere. Importing into
+an empty roster just fills it; importing over an existing roster asks whether to replace
+or append. You can fix any name or skill by hand afterward (the skill dropdown next to
+each racer), and the colored dot shows their level.
+
+**Skill-aware seeding:** once racers have skill levels, **🎯 Seed by skill** deals them
+across the Round 1 races in a snake order — strongest first, one per race — so each
+opening heat gets a balanced mix and the top players are spread out, making them likely
+to meet only deeper in the bracket. It's just a starting suggestion; drag anyone
+wherever you like before locking.
 
 ### Keyboard shortcuts
 
@@ -128,5 +151,6 @@ finale mode can hang off that without reworking the engine.
 
 ## Tech
 
-React + Vite + TypeScript, Tailwind CSS v4, `BroadcastChannel` + `localStorage`. No
-backend, no accounts, no game integration — all results are entered by the operator.
+React + Vite + TypeScript, Tailwind CSS v4, `BroadcastChannel` + `localStorage`, and
+`fflate` for reading `.xlsx` files in-browser. No backend, no accounts, no game
+integration — all results are entered by the operator.
