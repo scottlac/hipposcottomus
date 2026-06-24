@@ -15,6 +15,7 @@ import type {
   Phase,
   Player,
   PlayerId,
+  SkillLevel,
   StationId,
   TournamentInput,
 } from './types'
@@ -81,6 +82,51 @@ export function buildRound1Groups(playerIds: PlayerId[], size = RACE_SIZE): Grou
     playerIds: ids,
     isBye: ids.length === 1,
   }))
+}
+
+/** Lower rank = stronger; used to spread strong players across Round 1 races. */
+export function skillRank(skill: SkillLevel | undefined): number {
+  switch (skill) {
+    case 'Expert':
+      return 0
+    case 'Intermediate':
+      return 1
+    case 'Beginner':
+      return 2
+    default:
+      return 3 // unknown skill seeds last
+  }
+}
+
+/**
+ * Seed Round 1 by skill so the strongest players are spread across different
+ * races (and therefore likely to meet only in later rounds). Players are ranked
+ * strongest → weakest, then dealt across `ceil(n/4)` races in a snake/serpentine
+ * order: the top players land one-per-race, the next tier snakes back, and so
+ * on — giving each race a balanced mix and avoiding two experts in the same
+ * opening heat.
+ */
+export function seedGroupsBySkill(players: Player[], size = RACE_SIZE): GroupStruct[] {
+  const n = players.length
+  if (n === 0) return []
+  if (n === 1) return [{ id: newId(), playerIds: [players[0].id], isBye: true }]
+
+  // Stable sort strongest first (ties keep roster order).
+  const ranked = players
+    .map((p, i) => ({ p, i }))
+    .sort((a, b) => skillRank(a.p.skill) - skillRank(b.p.skill) || a.i - b.i)
+    .map((x) => x.p)
+
+  const races = Math.ceil(n / size)
+  const buckets: PlayerId[][] = Array.from({ length: races }, () => [])
+  ranked.forEach((p, idx) => {
+    const cycle = Math.floor(idx / races)
+    const pos = idx % races
+    const raceIdx = cycle % 2 === 0 ? pos : races - 1 - pos // serpentine
+    buckets[raceIdx].push(p.id)
+  })
+
+  return buckets.map((ids) => ({ id: newId(), playerIds: ids, isBye: ids.length <= 1 }))
 }
 
 /** Effective number that advance from a given round. */

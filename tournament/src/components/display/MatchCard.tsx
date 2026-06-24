@@ -1,4 +1,5 @@
 import type { DerivedMatch } from '../../types'
+import { SkillDot } from '../common/ui'
 
 const medal = ['🥇', '🥈', '🥉']
 
@@ -50,7 +51,7 @@ export function MatchCard({ m }: { m: DerivedMatch }) {
               ) : rank ? (
                 <span className="w-6 text-center font-display text-white/50 tnum">{rank}</span>
               ) : (
-                <span className="h-2 w-2 rounded-full bg-white/30" />
+                <SkillDot skill={p.skill} />
               )}
               <span className="flex-1 truncate">{p.name}</span>
               {adv && <span className="font-display text-advance">▶</span>}
