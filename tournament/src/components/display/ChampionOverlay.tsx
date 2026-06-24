@@ -72,12 +72,14 @@ export function ChampionOverlay({
 
         {podium.length > 1 && (
           <div className="mt-8 flex items-end justify-center gap-4">
+            {/* Visual order: 2nd on the left, 1st (champion) raised in the center, 3rd
+                on the right. Styling arrays are indexed by finishing place (slot). */}
             {[1, 0, 2].map((slot) => {
               const p = podium[slot]
               if (!p) return null
-              const heights = ['h-28', 'h-40', 'h-20']
-              const tones = ['podium-2', 'podium-1', 'podium-3']
-              const medals = ['🥈', '🥇', '🥉']
+              const heights = ['h-40', 'h-28', 'h-20']
+              const tones = ['podium-1', 'podium-2', 'podium-3']
+              const medals = ['🥇', '🥈', '🥉']
               return (
                 <div key={p.id} className="flex w-40 flex-col items-center">
                   <div className="mb-1 text-3xl">{medals[slot]}</div>
