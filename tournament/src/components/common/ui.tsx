@@ -1,4 +1,31 @@
 import type { ReactNode } from 'react'
+import type { SkillLevel } from '../../types'
+
+export const SKILLS: SkillLevel[] = ['Beginner', 'Intermediate', 'Expert']
+
+/** Color treatment per skill bucket (Expert = hot, Intermediate = cyan, Beginner = green). */
+export function skillStyle(skill?: SkillLevel): { label: string; dot: string; chip: string } {
+  switch (skill) {
+    case 'Expert':
+      return { label: 'Expert', dot: 'bg-speed', chip: 'bg-speed/20 text-speed' }
+    case 'Intermediate':
+      return { label: 'Intermediate', dot: 'bg-turbo', chip: 'bg-turbo/20 text-turbo' }
+    case 'Beginner':
+      return { label: 'Beginner', dot: 'bg-advance', chip: 'bg-advance/20 text-advance' }
+    default:
+      return { label: 'Unrated', dot: 'bg-white/25', chip: 'bg-white/10 text-white/50' }
+  }
+}
+
+export function SkillDot({ skill, className = '' }: { skill?: SkillLevel; className?: string }) {
+  const s = skillStyle(skill)
+  return (
+    <span
+      className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${s.dot} ${className}`}
+      title={s.label}
+    />
+  )
+}
 
 export function ordinal(n: number): string {
   const s = ['th', 'st', 'nd', 'rd']

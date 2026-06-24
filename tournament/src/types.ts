@@ -9,9 +9,13 @@
 
 export type PlayerId = string
 
+/** Self-reported skill bucket, used for spread-seeding Round 1. */
+export type SkillLevel = 'Beginner' | 'Intermediate' | 'Expert'
+
 export interface Player {
   id: PlayerId
   name: string
+  skill?: SkillLevel
 }
 
 export type StationId = 'A' | 'B'

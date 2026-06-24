@@ -5,8 +5,9 @@
 // undo stack. All mutations go through the action functions exported here.
 // ---------------------------------------------------------------------------
 
-import { buildRound1Groups, newId, signature, STORE_VERSION } from './bracket'
-import type { GroupStruct, Player, PlayerId, StationId, TournamentInput } from './types'
+import { buildRound1Groups, newId, seedGroupsBySkill, signature, STORE_VERSION } from './bracket'
+import type { ImportedEntry } from './importRegistration'
+import type { GroupStruct, Player, PlayerId, SkillLevel, StationId, TournamentInput } from './types'
 
 const STORAGE_KEY = 'ci360-bracket-board'
 const CHANNEL_NAME = 'ci360-bracket-board'
@@ -177,6 +178,34 @@ export const actions = {
     })
   },
 
+  /** Bring in entries from an imported registration file (.xlsx / .csv). */
+  importRoster(entries: ImportedEntry[], mode: 'replace' | 'append') {
+    if (!entries.length) return
+    commit((d) => {
+      const incoming: Player[] = entries.map((e) => ({
+        id: newId('p'),
+        name: e.name,
+        skill: e.skill,
+      }))
+      if (mode === 'replace') {
+        d.players = incoming
+        // Roster changed wholesale — drop the draft bracket so it regenerates.
+        d.round0 = []
+        d.results = {}
+        d.stations = { A: null, B: null }
+      } else {
+        d.players.push(...incoming)
+      }
+    })
+  },
+
+  setPlayerSkill(id: PlayerId, skill: SkillLevel | undefined) {
+    commit((d) => {
+      const p = d.players.find((x) => x.id === id)
+      if (p) p.skill = skill
+    })
+  },
+
   renamePlayer(id: PlayerId, name: string) {
     commit((d) => {
       const p = d.players.find((x) => x.id === id)
@@ -229,6 +258,13 @@ export const actions = {
   generateRound1() {
     commit((d) => {
       d.round0 = buildRound1Groups(d.players.map((p) => p.id))
+    })
+  },
+
+  /** Generate Round 1 spreading strong players across races (seeded draw). */
+  seedRound1BySkill() {
+    commit((d) => {
+      d.round0 = seedGroupsBySkill(d.players)
     })
   },
 
