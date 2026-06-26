@@ -456,6 +456,50 @@ section[id] { scroll-margin-top: 4rem; }
   box-shadow: var(--shadow);
 }
 
+/* ── Meet the team ── */
+.team { margin-top: 2.5rem; }
+
+.team-title {
+  font-size: 1.5rem;
+  color: var(--brown);
+  text-align: center;
+  margin: 0 0 1.5rem;
+}
+
+.team-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 40rem) { .team-grid { grid-template-columns: 1fr 1fr; } }
+
+.team-member { text-align: center; }
+
+.team-photo {
+  width: 100%;
+  max-width: 20rem;
+  margin: 0 auto 0.75rem;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: 4px solid var(--paper);
+  outline: 1px solid var(--brass);
+  box-shadow: var(--shadow);
+}
+
+.team-name { margin: 0 0 0.4rem; }
+
+.team-member p {
+  margin: 0 auto;
+  max-width: 26rem;
+  font-size: 0.95rem;
+  color: var(--brown);
+}
+
 .mack-title {
   font-family: var(--font-display);
   font-style: italic;
