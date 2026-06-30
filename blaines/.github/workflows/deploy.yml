@@ -7,9 +7,9 @@ on:
 
 env:
   REGISTRY: registry.digitalocean.com/jordan-lake-registry
-  IMAGE: jordan-lake-scraper
+  IMAGE: blaines-site
   CLUSTER_ID: aba3181e-8e89-4b3b-9cfe-46acc7dc2f44
-  DEPLOYMENT: jordan-lake-scraper
+  DEPLOYMENT: blaines-site
 
 jobs:
   deploy:
@@ -35,6 +35,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: deploy/Dockerfile
           platforms: linux/amd64
           push: true
           tags: |
@@ -47,20 +48,12 @@ jobs:
         run: doctl kubernetes cluster kubeconfig save ${{ env.CLUSTER_ID }} --expiry-seconds 600
 
       - name: Apply manifests
-        run: kubectl apply -f k8s/manifests.yaml
-
-      - name: Apply ServiceMonitor (if Prometheus Operator is installed)
-        run: |
-          if kubectl get crd servicemonitors.monitoring.coreos.com >/dev/null 2>&1; then
-            kubectl apply -f k8s/service-monitor.yaml
-          else
-            echo "Prometheus Operator CRDs not installed; skipping ServiceMonitor."
-          fi
+        run: kubectl apply -f deploy/k8s.yaml
 
       - name: Roll out new image
         run: |
           kubectl set image deployment/${{ env.DEPLOYMENT }} \
-            scraper=${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }}
+            web=${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }}
 
       - name: Wait for rollout
         run: kubectl rollout status deployment/${{ env.DEPLOYMENT }} --timeout=180s
@@ -79,8 +72,6 @@ jobs:
           for POD in $(kubectl get pods -l app=${{ env.DEPLOYMENT }} -o jsonpath='{.items[*].metadata.name}'); do
             echo "=== describe $POD ==="
             kubectl describe pod "$POD" || true
-            echo "=== logs $POD (current) ==="
+            echo "=== logs $POD ==="
             kubectl logs "$POD" --all-containers --tail=200 || true
-            echo "=== logs $POD (previous) ==="
-            kubectl logs "$POD" --all-containers --previous --tail=200 || true
           done

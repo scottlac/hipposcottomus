@@ -1,15 +1,17 @@
 # ════════════════════════════════════════════════════════════════════
-# Blaine's Barbershop — static site served at hipposcottomus.com/blaines
+# Blaine's Barbershop — static site served at https://blaines.shop/
 #
 # Apply with:  kubectl apply -f deploy/k8s.yaml
 #
-# Adapt before applying:
-#   - image: points at the same DigitalOcean registry as the main site;
-#     change the repo/tag to wherever you push the blaines image.
-#   - The Ingress below ADDS a /blaines path on hipposcottomus.com. If you
-#     prefer, skip the Ingress resource here and instead add the
-#     /blaines path block to the existing jordan-lake-scraper Ingress in
-#     k8s/manifests.yaml (snippet at the bottom of this file).
+# Prerequisites on the cluster (already present from the main site):
+#   - ingress-nginx (ingressClassName: nginx)
+#   - cert-manager with a `letsencrypt-prod` ClusterIssuer
+#
+# Before this works end to end:
+#   - DNS: an A record for blaines.shop pointing at the ingress load
+#     balancer IP (same IP the other site's domain resolves to).
+#   - The DIGITALOCEAN_ACCESS_TOKEN secret must exist in the repo so CI
+#     can push the image and reach the cluster.
 # ════════════════════════════════════════════════════════════════════
 ---
 apiVersion: apps/v1
@@ -30,10 +32,9 @@ spec:
     spec:
       containers:
         - name: web
-          # The blaines image shares the jordan-lake-scraper repository under
-          # blaines-* tags because the DO registry Starter plan allows only
-          # one repository. CI pins this to blaines-<sha> on each deploy.
-          image: registry.digitalocean.com/jordan-lake-registry/jordan-lake-scraper:blaines-latest
+          # CI pins this to the :<sha> tag on each deploy. blaines-site is
+          # its own repository in the DO registry.
+          image: registry.digitalocean.com/jordan-lake-registry/blaines-site:latest
           ports:
             - containerPort: 8080
               name: http
@@ -46,13 +47,13 @@ spec:
               memory: "64Mi"
           livenessProbe:
             httpGet:
-              path: /blaines/index.html
+              path: /index.html
               port: 8080
             initialDelaySeconds: 3
             periodSeconds: 30
           readinessProbe:
             httpGet:
-              path: /blaines/index.html
+              path: /index.html
               port: 8080
             initialDelaySeconds: 2
             periodSeconds: 10
@@ -74,8 +75,6 @@ spec:
       port: 8080
       targetPort: 8080
 ---
-# Option A: standalone Ingress (multiple Ingresses can share one host with
-# ingress-nginx; paths are merged). Matches the existing site's TLS setup.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -83,16 +82,16 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
-  ingressClassName: nginx  # matches the existing ingress class on the cluster
+  ingressClassName: nginx
   tls:
     - hosts:
-        - hipposcottomus.com
-      secretName: hipposcottomus-tls  # reuses the existing cert secret
+        - blaines.shop
+      secretName: blaines-shop-tls  # cert-manager creates this from the cluster issuer
   rules:
-    - host: hipposcottomus.com
+    - host: blaines.shop
       http:
         paths:
-          - path: /blaines
+          - path: /
             pathType: Prefix
             backend:
               service:
@@ -101,19 +100,8 @@ spec:
                   number: 8080
 
 # ----------------------------------------------------------------------
-# Option B: instead of the Ingress above, add this path block to the
-# existing Ingress in k8s/manifests.yaml (under rules[0].http.paths):
-#
-#           - path: /blaines
-#             pathType: Prefix
-#             backend:
-#               service:
-#                 name: blaines-site
-#                 port:
-#                   number: 8080
-#
-# ----------------------------------------------------------------------
-# Moving to its own domain later: point the new domain's DNS at the
-# cluster, then change `host:` above (and the tls block) to the new
-# domain — e.g. blainesbarbershop.com — and rebuild nothing. The site
-# uses only relative paths, so it works at / or under /blaines equally.
+# Adding www: create an A record for www.blaines.shop pointing at the same
+# load balancer, then add `www.blaines.shop` to both the tls hosts list
+# and a second rule above. (Don't add it before the DNS record exists —
+# cert-manager's HTTP-01 challenge needs every host in the cert to
+# resolve, or issuance fails for all of them.)
