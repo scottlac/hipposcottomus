@@ -1,77 +1,72 @@
-# Blaine's Barbershop — v1 draft site
+# Blaine's Barbershop — blaines.shop
 
 A plain static site (HTML + CSS + a little vanilla JS, no build step) served at
-`https://hipposcottomus.com/blaines/`. All links and asset paths are relative,
-so the site works at any URL prefix — including its own domain later.
+`https://blaines.shop/` by nginx in a container on Kubernetes. All links and
+asset paths are relative, so the site is portable across hosts/prefixes.
 
 ## Local preview
-
-From this directory:
 
 ```sh
 python3 -m http.server 8000
 # open http://localhost:8000/
 ```
 
-To verify subpath behavior (how it'll look under `/blaines/`), serve the
-**repo root** instead and browse to the subdirectory:
-
-```sh
-cd ..   # repo root
-python3 -m http.server 8000
-# open http://localhost:8000/blaines/
-```
-
 ## Swapping in real content
 
-Real content status (synced from the Square booking page on 2026-06-10):
+Real content status (services synced from the Square booking page on 2026-06-10):
 
 | What | Where | Status |
 |---|---|---|
-| Services & prices | `index.html`, the block marked `EDIT SERVICES HERE` | **Real.** Mirrors the Square page — keep names matching so customers find the same service after clicking Book Now. Each service is one `<li class="service">` block. |
+| Services & prices | `index.html`, the block marked `EDIT SERVICES HERE` | **Real.** Grouped by category; each service is one `<li class="service">` row. Keep names matching the Square page so customers find the same service after clicking Book Now. |
 | Hours / address / phone / email | `index.html` "Visit Us" + footer + JSON-LD in `<head>` | **Real.** If hours change, update the table, the footer line, and the `openingHoursSpecification` JSON-LD. |
 | Map | `index.html`, `.map-embed` div | **Real** keyless Google Maps embed pointed at 837 Perry Rd. |
-| Logo & portraits | `img/logo.png`, `img/blaine.jpg`, `img/mack.jpg` | **Real.** Logo is in the hero (white background made transparent); portraits in About/Mack sections. |
-| Hero & gallery photos | `img/hero.svg`, `img/gallery-*.svg` | **Placeholders.** Drop real shop/cut photos in `img/` and update the `src` (and `alt`!) on the matching `<img>` tags. Gallery shots look best square-ish. Any size works — CSS crops to fit. |
-| Bios (Blaine & Mack) | `index.html` | **Draft copy** — edit in place and delete the `[Draft bio …]` placeholder notes. Kevin and Perry could use intros. |
+| Logo & portraits | `img/logo.png`, `img/blaine.jpg`, `img/kevin.jpg`, `img/perry.jpg`, `img/mack.jpg` | **Real.** Logo in the hero; barbers in About; Mack in his section. |
+| Hero & gallery photos | `img/hero.svg`, `img/gallery-*.svg` | **Placeholders.** Drop real shop/cut photos in `img/` and update the `src` (and `alt`!) on the matching `<img>` tags. Any size works — CSS crops to fit. |
+| Bios | `index.html` | Blaine's is **draft copy** (edit and delete the `[Draft bio …]` note). Kevin and Mack/Perry copy is in place. |
 | Instagram | `index.html` footer | **Placeholder** `href` — swap for the real profile. |
 
 Booking: every "Book Now" button points at the Square page
-(`https://nc-107285.square.site/`). If that URL ever changes, search-and-replace
-it in `index.html` (it appears in the header, hero, services, visit, and footer).
+(`https://nc-107285.square.site/`). If that URL changes, search-and-replace it in
+`index.html` (header, hero, services, visit, footer).
+
+Cache busting: `index.html` references `css/style.css?v=N` and `js/main.js?v=N`.
+Bump `N` whenever you change the CSS or JS so returning visitors skip their
+cached copy. (HTML itself is served `no-cache`, so content edits show up
+immediately.)
 
 ## Deploy
 
-Automatic: every push to `main` builds the image, applies `deploy/k8s.yaml`,
-and rolls out the new version (see `.github/workflows/deploy.yml`). Merging a
-content change is all it takes.
+Automatic: every push to `main` builds the image, applies `deploy/k8s.yaml`, and
+rolls out the new version (see `.github/workflows/deploy.yml`). Merging a content
+change is all it takes.
+
+Requires one repo secret: **`DIGITALOCEAN_ACCESS_TOKEN`** (a DO API token with
+registry + Kubernetes access).
 
 Manual, if ever needed:
 
 ```sh
-# 1. Build and push the image (from this directory). The image lives in the
-#    jordan-lake-scraper repository under blaines-* tags because the DO
-#    registry Starter plan allows only one repository.
-docker build -f deploy/Dockerfile -t registry.digitalocean.com/jordan-lake-registry/jordan-lake-scraper:blaines-latest .
-docker push registry.digitalocean.com/jordan-lake-registry/jordan-lake-scraper:blaines-latest
-
-# 2. Apply the manifests (Deployment + Service + Ingress)
+docker build -f deploy/Dockerfile -t registry.digitalocean.com/jordan-lake-registry/blaines-site:latest .
+docker push registry.digitalocean.com/jordan-lake-registry/blaines-site:latest
 kubectl apply -f deploy/k8s.yaml
 ```
 
-`deploy/k8s.yaml` includes two ingress options (standalone Ingress vs. adding a
-path to the existing one) plus notes for moving to a dedicated domain later —
-see the comments in that file. The container is nginx-unprivileged listening on
-8080, serving the site at `/blaines/`, matching the ingress path with no
-rewrites.
+The container is nginx-unprivileged listening on 8080, serving the site at `/`.
+`deploy/k8s.yaml` defines the Deployment, Service, and an Ingress for
+`blaines.shop` (TLS via cert-manager `letsencrypt-prod`). See the comments in
+that file for DNS prerequisites and how to add `www`.
+
+A weekly **Registry Cleanup** workflow prunes old image tags and runs garbage
+collection so the registry doesn't fill up.
 
 ## Structure
 
 ```
-blaines/
-├── index.html      # the whole site (single page, anchor nav)
-├── css/style.css   # all styles, design tokens at the top in :root
-├── js/main.js      # mobile nav toggle only
-├── img/            # SVG placeholders — replace with real photos
-└── deploy/         # Dockerfile + Kubernetes manifests
+.
+├── index.html          # the whole site (single page, anchor nav)
+├── css/style.css       # all styles, design tokens at the top in :root
+├── js/main.js          # mobile nav toggle + header shrink-on-scroll
+├── img/                # logo, real photos, and SVG placeholders
+├── deploy/             # Dockerfile, nginx config, Kubernetes manifests
+└── .github/workflows/  # build & deploy, registry cleanup
 ```
