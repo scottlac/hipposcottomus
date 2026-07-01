@@ -9,7 +9,7 @@
 //
 // Bump CACHE_VERSION on any frontend change you want to force-refresh.
 
-const CACHE_VERSION = "hippo-v6";
+const CACHE_VERSION = "hippo-v7";
 
 const SHELL = [
   "/",
@@ -24,6 +24,7 @@ const SHELL = [
   "/conway/",
   "/ftlauderdale/",
   "/poker/",
+  "/qr/",
   "/astronomy/",
   "/analytics/",
 ];
