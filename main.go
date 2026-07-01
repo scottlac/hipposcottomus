@@ -58,7 +58,7 @@ func getDataDir() string {
 	return defaultDataDir
 }
 
-//go:embed static home poker
+//go:embed static home poker qr
 var content embed.FS
 
 // DataPoint holds a single date-keyed reading (one per day).
@@ -715,6 +715,9 @@ func main() {
 
 	// --- Poker equity calculator ---
 	InitPoker(mux)
+
+	// --- QR code generator ---
+	InitQR(mux)
 
 	// --- Night Sky astronomy dashboard ---
 	InitAstro(mux)
