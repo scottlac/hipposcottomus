@@ -148,6 +148,18 @@ textarea.field__input {
   margin: 0.25rem 0;
 }
 
+.hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.hint strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
