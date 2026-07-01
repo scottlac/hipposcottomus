@@ -10,6 +10,7 @@ const DASHBOARD_META = {
   conway:    { label: "Lake Conway",     color: "#a78bfa", emoji: "🛥️" },
   ftl:       { label: "Ft. Lauderdale",  color: "#fb923c", emoji: "⚓" },
   poker:     { label: "Poker Equity",    color: "#facc15", emoji: "🂡" },
+  qr:        { label: "QR Generator",    color: "#4ade80", emoji: "🔳" },
   astro:     { label: "Night Sky",       color: "#c084fc", emoji: "🔭" },
   analytics: { label: "Analytics",       color: "#f472b6", emoji: "📊" },
 };

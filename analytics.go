@@ -50,6 +50,7 @@ var trackedPaths = map[string]string{
 	"/conway/":         "conway",
 	"/ftlauderdale/":   "ftl",
 	"/poker/":          "poker",
+	"/qr/":             "qr",
 	"/astronomy/":      "astro",
 	"/analytics/":      "analytics",
 }
