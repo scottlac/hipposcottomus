@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Code Generator</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦛</text></svg>">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="hippo">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <base href="/qr/" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="style.css?v=1" />
+</head>
+<body>
+  <header>
+    <h1>🔳 QR Code Generator</h1>
+    <p class="subtitle">Turn any link or text into a QR code — everything runs in your browser</p>
+  </header>
+
+  <main>
+    <div class="layout">
+      <section class="panel">
+        <label class="field">
+          <span class="field__label">Content</span>
+          <textarea id="text" class="field__input" rows="3"
+            placeholder="https://hipposcottomus.com" autofocus>https://hipposcottomus.com</textarea>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span class="field__label">Error correction</span>
+            <select id="ecLevel" class="field__input">
+              <option value="L">Low · 7%</option>
+              <option value="M" selected>Medium · 15%</option>
+              <option value="Q">Quartile · 25%</option>
+              <option value="H">High · 30%</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Size <span id="sizeVal" class="field__hint">320px</span></span>
+            <input type="range" id="size" class="field__range" min="128" max="1024" step="32" value="320" />
+          </label>
+        </div>
+
+        <div class="field-row">
+          <label class="field field--color">
+            <span class="field__label">Foreground</span>
+            <input type="color" id="fgColor" value="#0f172a" />
+          </label>
+          <label class="field field--color">
+            <span class="field__label">Background</span>
+            <input type="color" id="bgColor" value="#ffffff" />
+          </label>
+          <label class="field field--check">
+            <input type="checkbox" id="transparent" />
+            <span class="field__label">Transparent background</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="preview">
+        <div class="preview__frame" id="preview">
+          <div class="preview__empty">Type something to generate a code</div>
+        </div>
+        <p class="preview__error" id="error" hidden></p>
+        <div class="preview__actions">
+          <button type="button" id="downloadPng" class="btn" disabled>Download PNG</button>
+          <button type="button" id="downloadSvg" class="btn" disabled>Download SVG</button>
+          <button type="button" id="copyImg" class="btn btn--ghost" disabled>Copy image</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <p>
+      Generated locally with
+      <a href="https://github.com/kazuhikoarase/qrcode-generator" target="_blank" rel="noopener">qrcode-generator</a>
+      · <a href="/">Home</a>
+    </p>
+  </footer>
+
+  <script src="qrcode.js?v=1"></script>
+  <script src="app.js?v=1"></script>
+  <script>
+    try {
+      navigator.sendBeacon(
+        "/analytics/api/screen",
+        JSON.stringify({ size: screen.width + "x" + screen.height })
+      );
+    } catch (e) {}
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch((e) => console.warn("SW registration failed:", e));
+      });
+    }
+  </script>
+</body>
+</html>
