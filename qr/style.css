@@ -160,6 +160,34 @@ textarea.field__input {
   font-weight: 600;
 }
 
+/* Ring-text group */
+.ring-text {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem 0.85rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ring-text > legend {
+  padding: 0 0.4rem;
+  margin-left: -0.4rem;
+}
+
+.ring-text.is-disabled {
+  opacity: 0.45;
+}
+
+input:disabled {
+  cursor: not-allowed;
+}
+
+.field--check input:disabled + .field__label {
+  opacity: 0.5;
+}
+
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
