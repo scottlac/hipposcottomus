@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <base href="/qr/" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-  <link rel="stylesheet" href="style.css?v=1" />
+  <link rel="stylesheet" href="style.css?v=2" />
 </head>
 <body>
   <header>
@@ -61,6 +61,37 @@
             <span class="field__label">Transparent background</span>
           </label>
         </div>
+
+        <div class="field-row">
+          <label class="field">
+            <span class="field__label">Plate shape</span>
+            <select id="shape" class="field__input">
+              <option value="square" selected>Square</option>
+              <option value="rounded">Rounded square</option>
+              <option value="circle">Circle</option>
+              <option value="hexagon">Hexagon</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Module style</span>
+            <select id="moduleStyle" class="field__input">
+              <option value="square" selected>Square</option>
+              <option value="dots">Rounded dots</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field" id="borderField">
+          <span class="field__label">Border / ring <span id="borderVal" class="field__hint">4 modules</span></span>
+          <input type="range" id="border" class="field__range" min="4" max="16" step="1" value="4" />
+        </label>
+
+        <p class="hint">
+          The scannable code stays square — plate shapes frame it and the
+          border becomes the quiet zone. Download the <strong>SVG</strong> to
+          extrude a coaster in your slicer or CAD tool.
+        </p>
       </section>
 
       <section class="preview">
@@ -86,7 +117,7 @@
   </footer>
 
   <script src="qrcode.js?v=1"></script>
-  <script src="app.js?v=1"></script>
+  <script src="app.js?v=2"></script>
   <script>
     try {
       navigator.sendBeacon(
