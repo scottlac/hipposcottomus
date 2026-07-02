@@ -160,8 +160,8 @@ textarea.field__input {
   font-weight: 600;
 }
 
-/* Ring-text group */
-.ring-text {
+/* Grouped sub-sections (logo, ring text, 3D print) */
+.sub-group {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.75rem 0.85rem 0.85rem;
@@ -171,13 +171,48 @@ textarea.field__input {
   gap: 0.75rem;
 }
 
-.ring-text > legend {
+.sub-group > legend {
   padding: 0 0.4rem;
   margin-left: -0.4rem;
 }
 
-.ring-text.is-disabled {
+.sub-group.is-disabled {
   opacity: 0.45;
+}
+
+.field-row--three {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.field__input--file {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.field__input--file::file-selector-button {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  margin-right: 0.6rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.btn--inline {
+  align-self: end;
+}
+
+.hint--tight {
+  font-size: 0.75rem;
+}
+
+.preview__warn {
+  color: var(--accent-orange);
+  font-size: 0.85rem;
+  text-align: center;
+  margin: 0;
 }
 
 input:disabled {
