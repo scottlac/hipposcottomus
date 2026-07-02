@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <base href="/qr/" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-  <link rel="stylesheet" href="style.css?v=2" />
+  <link rel="stylesheet" href="style.css?v=3" />
 </head>
 <body>
   <header>
@@ -87,10 +87,40 @@
           <input type="range" id="border" class="field__range" min="4" max="16" step="1" value="4" />
         </label>
 
+        <div class="field-row">
+          <label class="field field--check">
+            <input type="checkbox" id="ringEnabled" />
+            <span class="field__label">Colored ring</span>
+          </label>
+          <label class="field field--color">
+            <span class="field__label">Ring color</span>
+            <input type="color" id="ringColor" value="#38bdf8" disabled />
+          </label>
+        </div>
+
+        <fieldset class="ring-text" id="ringTextGroup">
+          <legend class="field__label">Ring text <span class="field__hint">circle plate</span></legend>
+          <div class="field-row">
+            <label class="field">
+              <span class="field__label">Top</span>
+              <input type="text" id="ringTextTop" class="field__input" maxlength="40" placeholder="SCOTT'S BAR" />
+            </label>
+            <label class="field">
+              <span class="field__label">Bottom</span>
+              <input type="text" id="ringTextBottom" class="field__input" maxlength="40" placeholder="hipposcottomus.com" />
+            </label>
+          </div>
+          <label class="field field--color">
+            <span class="field__label">Text color</span>
+            <input type="color" id="ringTextColor" value="#0f172a" />
+          </label>
+        </fieldset>
+
         <p class="hint">
           The scannable code stays square — plate shapes frame it and the
-          border becomes the quiet zone. Download the <strong>SVG</strong> to
-          extrude a coaster in your slicer or CAD tool.
+          light border is the quiet zone. Add a colored ring and curved text
+          for a finished coaster look. Download the <strong>SVG</strong> to
+          extrude it in your slicer or CAD tool.
         </p>
       </section>
 
@@ -117,7 +147,7 @@
   </footer>
 
   <script src="qrcode.js?v=1"></script>
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=4"></script>
   <script>
     try {
       navigator.sendBeacon(
