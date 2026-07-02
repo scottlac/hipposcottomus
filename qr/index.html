@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <base href="/qr/" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
 <body>
   <header>
@@ -25,10 +25,75 @@
     <div class="layout">
       <section class="panel">
         <label class="field">
-          <span class="field__label">Content</span>
-          <textarea id="text" class="field__input" rows="3"
-            placeholder="https://hipposcottomus.com" autofocus>https://hipposcottomus.com</textarea>
+          <span class="field__label">Type</span>
+          <select id="payloadType" class="field__input">
+            <option value="text" selected>Link / text</option>
+            <option value="wifi">Wi-Fi network</option>
+            <option value="contact">Contact card</option>
+          </select>
         </label>
+
+        <div id="textFields" class="payload-group">
+          <label class="field">
+            <span class="field__label">Content</span>
+            <textarea id="text" class="field__input" rows="3"
+              placeholder="https://hipposcottomus.com" autofocus>https://hipposcottomus.com</textarea>
+          </label>
+        </div>
+
+        <div id="wifiFields" class="payload-group" hidden>
+          <div class="field-row">
+            <label class="field">
+              <span class="field__label">Network name (SSID)</span>
+              <input type="text" id="wifiSsid" class="field__input" maxlength="64" placeholder="MyNetwork" />
+            </label>
+            <label class="field">
+              <span class="field__label">Password</span>
+              <input type="text" id="wifiPass" class="field__input" maxlength="128" placeholder="hunter2" />
+            </label>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span class="field__label">Security</span>
+              <select id="wifiSec" class="field__input">
+                <option value="WPA" selected>WPA / WPA2 / WPA3</option>
+                <option value="WEP">WEP</option>
+                <option value="nopass">None (open)</option>
+              </select>
+            </label>
+            <label class="field field--check">
+              <input type="checkbox" id="wifiHidden" />
+              <span class="field__label">Hidden network</span>
+            </label>
+          </div>
+        </div>
+
+        <div id="contactFields" class="payload-group" hidden>
+          <div class="field-row">
+            <label class="field">
+              <span class="field__label">Name</span>
+              <input type="text" id="ctName" class="field__input" maxlength="80" placeholder="Blaine Barber" />
+            </label>
+            <label class="field">
+              <span class="field__label">Organization</span>
+              <input type="text" id="ctOrg" class="field__input" maxlength="80" placeholder="Blaine's Barbershop" />
+            </label>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span class="field__label">Phone</span>
+              <input type="text" id="ctPhone" class="field__input" maxlength="32" placeholder="+1 555 555 5555" />
+            </label>
+            <label class="field">
+              <span class="field__label">Email</span>
+              <input type="text" id="ctEmail" class="field__input" maxlength="80" placeholder="blaine@example.com" />
+            </label>
+          </div>
+          <label class="field">
+            <span class="field__label">Website</span>
+            <input type="text" id="ctUrl" class="field__input" maxlength="120" placeholder="https://blaines.shop" />
+          </label>
+        </div>
 
         <div class="field-row">
           <label class="field">
@@ -98,7 +163,31 @@
           </label>
         </div>
 
-        <fieldset class="ring-text" id="ringTextGroup">
+        <fieldset class="sub-group" id="logoGroup">
+          <legend class="field__label">Center logo</legend>
+          <div class="field-row">
+            <label class="field">
+              <span class="field__label">Image</span>
+              <input type="file" id="logoFile" class="field__input field__input--file" accept="image/*" />
+            </label>
+            <label class="field">
+              <span class="field__label">…or emoji</span>
+              <input type="text" id="logoEmoji" class="field__input" maxlength="4" placeholder="🦛" />
+            </label>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span class="field__label">Logo size <span id="logoSizeVal" class="field__hint">22%</span></span>
+              <input type="range" id="logoSize" class="field__range" min="12" max="30" step="1" value="22" />
+            </label>
+            <button type="button" id="logoClear" class="btn btn--ghost btn--inline" disabled>Remove logo</button>
+          </div>
+          <p class="hint hint--tight" id="logoNote" hidden>
+            Error correction switched to High so the code survives the logo.
+          </p>
+        </fieldset>
+
+        <fieldset class="sub-group" id="ringTextGroup">
           <legend class="field__label">Ring text <span class="field__hint">circle plate</span></legend>
           <div class="field-row">
             <label class="field">
@@ -116,11 +205,40 @@
           </label>
         </fieldset>
 
+        <fieldset class="sub-group" id="printGroup">
+          <legend class="field__label">3D print (STL)</legend>
+          <div class="field-row field-row--three">
+            <label class="field">
+              <span class="field__label">Diameter mm</span>
+              <input type="number" id="stlDiameter" class="field__input" min="30" max="200" step="1" value="90" />
+            </label>
+            <label class="field">
+              <span class="field__label">Base mm</span>
+              <input type="number" id="stlBase" class="field__input" min="0.4" max="6" step="0.2" value="2.4" />
+            </label>
+            <label class="field">
+              <span class="field__label">Relief mm</span>
+              <input type="number" id="stlRelief" class="field__input" min="0.2" max="3" step="0.2" value="0.8" />
+            </label>
+          </div>
+          <div class="field-row">
+            <button type="button" id="downloadStlBase" class="btn btn--inline" disabled>STL · base</button>
+            <button type="button" id="downloadStlTop" class="btn btn--inline" disabled>STL · top layer</button>
+          </div>
+          <p class="hint hint--tight">
+            Two aligned solids sharing one origin: print the base in your plate
+            color and the top layer (code + ring text) in your code color, or
+            merge both in the slicer for a single-color embossed coaster. The
+            center logo image isn't included in the STL — place it in the
+            slicer if you want it in the print.
+          </p>
+        </fieldset>
+
         <p class="hint">
           The scannable code stays square — plate shapes frame it and the
-          light border is the quiet zone. Add a colored ring and curved text
-          for a finished coaster look. Download the <strong>SVG</strong> to
-          extrude it in your slicer or CAD tool.
+          light border is the quiet zone. Download the <strong>SVG</strong>
+          (ring text ships as real outlines, so slicers and CAD tools keep it)
+          or export <strong>STL</strong> directly for printing.
         </p>
       </section>
 
@@ -129,10 +247,12 @@
           <div class="preview__empty">Type something to generate a code</div>
         </div>
         <p class="preview__error" id="error" hidden></p>
+        <p class="preview__warn" id="contrastWarn" hidden></p>
         <div class="preview__actions">
           <button type="button" id="downloadPng" class="btn" disabled>Download PNG</button>
           <button type="button" id="downloadSvg" class="btn" disabled>Download SVG</button>
           <button type="button" id="copyImg" class="btn btn--ghost" disabled>Copy image</button>
+          <button type="button" id="copyLink" class="btn btn--ghost" disabled>Copy link</button>
         </div>
       </section>
     </div>
@@ -142,12 +262,16 @@
     <p>
       Generated locally with
       <a href="https://github.com/kazuhikoarase/qrcode-generator" target="_blank" rel="noopener">qrcode-generator</a>
+      · text via <a href="https://dejavu-fonts.github.io/" target="_blank" rel="noopener">DejaVu Sans</a>
       · <a href="/">Home</a>
     </p>
   </footer>
 
   <script src="qrcode.js?v=1"></script>
-  <script src="app.js?v=4"></script>
+  <script src="earcut.js?v=1"></script>
+  <script src="opentype.min.js?v=1"></script>
+  <script src="stl.js?v=1"></script>
+  <script src="app.js?v=5"></script>
   <script>
     try {
       navigator.sendBeacon(
