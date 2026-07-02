@@ -96,8 +96,10 @@ function computeLayout() {
     const outer = rounded
       ? { type: "rounded", x: 0, y: 0, w: dim, h: dim, r: Math.max(2, border * 0.8) }
       : { type: "rect", x: 0, y: 0, w: dim, h: dim };
+    // The inner light plate is drawn whenever the ring is on — even at zero
+    // ring width — so the quiet zone can never be painted in the ring color.
     let inner = null;
-    if (ringOn && userExtra > 0.001) {
+    if (ringOn) {
       const io = border - QUIET;
       const is = count + QUIET * 2;
       inner = rounded
@@ -124,7 +126,7 @@ function computeLayout() {
     const dim = 2 * Math.ceil(R);
     const cx = dim / 2;
     const outer = { type: "circle", cx, cy: cx, r: R };
-    const inner = ringOn && ringBand > 0.001 ? { type: "circle", cx, cy: cx, r: Ri } : null;
+    const inner = ringOn ? { type: "circle", cx, cy: cx, r: Ri } : null;
     let textArc = null;
     if (wantText) {
       // Shrink the font if a label is too long for its semicircle.
@@ -143,10 +145,9 @@ function computeLayout() {
   const dim = 2 * Math.ceil(rHex);
   const cx = dim / 2;
   const outer = { type: "hexagon", points: hexPoints(cx, cx, rHex) };
-  const inner =
-    ringOn && ringBand > 0.001
-      ? { type: "hexagon", points: hexPoints(cx, cx, Ri * HEX_K) }
-      : null;
+  const inner = ringOn
+    ? { type: "hexagon", points: hexPoints(cx, cx, Ri * HEX_K) }
+    : null;
   return { dim, ox: cx - half, oy: cx - half, outer, inner, textArc: null };
 }
 
@@ -179,7 +180,8 @@ function textArcSvg(t) {
   const label = (id, str) =>
     `<text font-family="-apple-system, Segoe UI, Roboto, sans-serif" font-weight="700" ` +
     `font-size="${fs}" letter-spacing="${ls}" fill="${color}">` +
-    `<textPath href="#${id}" startOffset="50%" text-anchor="middle">${escapeXml(str)}</textPath></text>`;
+    // xlink:href duplicates href for pre-SVG2 renderers (older Inkscape etc.).
+    `<textPath href="#${id}" xlink:href="#${id}" startOffset="50%" text-anchor="middle">${escapeXml(str)}</textPath></text>`;
   if (t.top) {
     // Upper semicircle, left -> right (upright across the top).
     defs.push(`<path id="qrArcTop" fill="none" d="M ${t.cx - t.r},${t.cy} A ${t.r},${t.r} 0 0 1 ${t.cx + t.r},${t.cy}"/>`);
@@ -207,24 +209,29 @@ function buildSvg(px) {
 
   const textEls = textArc ? textArcSvg(textArc) : "";
 
-  const parts = [];
+  // Rects render crisp (no hairline seams between adjacent squares); circles
+  // and plates keep smooth anti-aliased curves.
+  const rects = [];
+  const circles = [];
   for (let r = 0; r < count; r++) {
     for (let c = 0; c < count; c++) {
       if (!isDark(r, c)) continue;
       if (dots && !isFinder(r, c, count)) {
-        parts.push(`<circle cx="${ox + c + 0.5}" cy="${oy + r + 0.5}" r="0.5"/>`);
+        circles.push(`<circle cx="${ox + c + 0.5}" cy="${oy + r + 0.5}" r="0.5"/>`);
       } else {
-        parts.push(`<rect x="${ox + c}" y="${oy + r}" width="1" height="1"/>`);
+        rects.push(`<rect x="${ox + c}" y="${oy + r}" width="1" height="1"/>`);
       }
     }
   }
 
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" ` +
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ` +
+    `width="${px}" height="${px}" ` +
     `viewBox="0 0 ${dim} ${dim}" shape-rendering="geometricPrecision">` +
     plateEls +
     textEls +
-    `<g fill="${fg}">${parts.join("")}</g></svg>`
+    `<g fill="${fg}" shape-rendering="crispEdges">${rects.join("")}</g>` +
+    `<g fill="${fg}">${circles.join("")}</g></svg>`
   );
 }
 
