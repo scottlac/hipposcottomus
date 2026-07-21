@@ -1,82 +1,55 @@
-# Jordan Lake Scraper
+# 🦛 hipposcottomus
 
-Background scraper that fetches water conditions for [Jordan Lake](https://en.wikipedia.org/wiki/Jordan_Lake_(North_Carolina)) from the US Army Corps of Engineers and exposes them as Prometheus metrics with a live dashboard.
+**Live at [hipposcottomus.com](https://hipposcottomus.com)** — a multi-app Go web platform built as a hands-on exercise in Go and cloud-native engineering: a single static binary serving six live-data dashboards, interactive tools, and self-hosted analytics, deployed to DigitalOcean Kubernetes through a GitHub Actions CI/CD pipeline. Installable as a PWA.
 
-## Dashboard
+## Dashboards
 
-Open `http://localhost:8080` to see:
-- **Current-value cards** for temperature and water level
-- **Time-series charts** with full scrape history (up to 7 days)
-- Auto-refreshes every 60 seconds
+| Dashboard | Route | Data sources |
+|---|---|---|
+| 🌊 **Jordan Lake** (NC) | [`/lakedashboard/`](https://hipposcottomus.com/lakedashboard/) | Live temp & level scraped from a USACE plain-text report every 15 min, 5-year USGS backfill, NWS weather & wind |
+| 🚤 **Lake Gaston** (NC/VA) | [`/gaston/`](https://hipposcottomus.com/gaston/) | USGS instantaneous-value live readings + daily-value backfill, NWS weather |
+| 🏝️ **Lake Minneola** (FL) | [`/minneola/`](https://hipposcottomus.com/minneola/) | SJRWMD in-lake station via the USF Water Atlas API, estimated water temp from an air-temp trailing mean, UV index |
+| 🛥️ **Lake Conway** (FL) | [`/conway/`](https://hipposcottomus.com/conway/) | Orange County data-logger station via the USF Water Atlas API, estimated water temp |
+| ⚓ **Ft. Lauderdale Boating** | [`/ftlauderdale/`](https://hipposcottomus.com/ftlauderdale/) | NOAA CO-OPS tides (hi/lo points cosine-interpolated into a smooth curve), water temp, NDBC marine forecast |
+| 🔭 **Night Sky** | [`/astronomy/`](https://hipposcottomus.com/astronomy/) | Sun & twilight times, moon phase and rise/set, and visible ISS passes computed from live TLEs |
 
-## Metrics
+## Tools & Analytics
 
-| Metric | Description |
-|---|---|
-| `jordan_lake_water_temperature_fahrenheit` | Water temperature in °F |
-| `jordan_lake_water_level_feet` | Midnight elevation in feet |
+- 🂡 **Hold'em Equity Calculator** ([`/poker/`](https://hipposcottomus.com/poker/)) — pick hole cards and a board, see your win probability against random opponents.
+- 🔳 **QR Code Generator** ([`/qr/`](https://hipposcottomus.com/qr/)) — payload builders, logo overlay, shaped plates and module styles, curved ring text, SVG and 3D-printable STL export.
+- 📊 **Site Analytics** ([`/analytics/`](https://hipposcottomus.com/analytics/)) — self-hosted: page views per app, external-API health tracking, Go runtime stats, and a traffic heatmap.
 
-Data source: `https://epec.saw.usace.army.mil/bejrept.txt`
+## Architecture
 
-## API
+- **One Go binary, zero frameworks.** Each app is its own Go file (`main.go`, `gaston.go`, `minneola.go`, `conway.go`, `ftl.go`, `poker.go`, `astro.go`, `qr.go`, `analytics.go`) registering its handlers on a shared server; every frontend is embedded with `embed.FS`, so the deployable artifact is a single static binary (`CGO_ENABLED=0`).
+- **Vanilla JS + Chart.js frontends**, Pico.css baseline with CSS custom properties for theming — no build step.
+- **Integrations with 8+ public data APIs** (USACE, USGS, NOAA CO-OPS, NDBC, NWS, Open-Meteo, USF Water Atlas, ISS TLEs), each wrapped with health tracking that surfaces on the analytics dashboard.
+- **Observability:** Prometheus gauges exposed at `/metrics`, with a `ServiceMonitor` for Prometheus Operator auto-discovery and plain scrape annotations as a fallback.
+- **Persistence:** scrape history is kept in memory and checkpointed to JSON on a Kubernetes PersistentVolumeClaim, restored on startup.
+- **PWA:** web app manifest, service worker, and install prompts for phone home screens.
+- **Tests:** table-driven unit tests plus benchmarks for the poker equity engine (`go test ./...`).
 
-| Endpoint | Description |
-|---|---|
-| `GET /` | Dashboard UI |
-| `GET /api/current` | Latest temperature & water level as JSON |
-| `GET /api/history` | Full time-series history as JSON |
-| `GET /metrics` | Prometheus metrics |
+## Infrastructure
 
-## Quick Start
+- **Docker:** multi-stage build (`golang` builder → minimal `alpine` runtime).
+- **Kubernetes** ([`k8s/manifests.yaml`](k8s/manifests.yaml)): Deployment with liveness/readiness probes and resource limits, ClusterIP Service, nginx Ingress, and TLS via cert-manager + Let's Encrypt. `Recreate` strategy because the RWO block-storage PVC can't attach to two pods at once.
+- **CI/CD** ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)): every push to `main` builds the image with Buildx (GitHub Actions cache), pushes it to the DigitalOcean container registry tagged with the commit SHA, applies the manifests, rolls the Deployment to the new image, and dumps pod logs if the rollout fails.
 
-### Run Locally
+## Run It Locally
 
 ```bash
-go build -o scraper .
-./scraper
+go build -o hipposcottomus .
+./hipposcottomus
 # → http://localhost:8080
 ```
 
-### Docker
+Or with Docker:
 
 ```bash
-docker build -t jordan-lake-scraper .
-docker run -p 8080:8080 jordan-lake-scraper
+docker build -t hipposcottomus .
+docker run -p 8080:8080 hipposcottomus
 ```
 
-### Kubernetes
+## Built With AI Assistance
 
-```bash
-kubectl apply -f k8s/manifests.yaml
-```
-
-The manifests include:
-- **Deployment** — 1 replica with health probes and resource limits
-- **ClusterIP Service** — exposes port 8080 internally
-- **ServiceMonitor** — for Prometheus Operator auto-discovery
-
-Standard Prometheus scrape annotations are also added to the pod template for clusters without the Prometheus Operator.
-
-## How It Works
-
-1. On startup, fetches the plain-text report from USACE.
-2. Uses regex to find **all** matches for temperature and water level.
-3. Takes the **last** numerical match to get the most recent valid reading (skipping `******` placeholders from partially-updated reports).
-4. Updates Prometheus gauges and stores timestamped readings in memory (ring buffer, up to 7 days).
-5. Repeats every **15 minutes**.
-
-## Project Structure
-
-```
-.
-├── main.go              # Go application (scraper, API, server)
-├── static/
-│   ├── index.html       # Dashboard HTML
-│   ├── style.css        # Dashboard styles
-│   └── app.js           # Dashboard client-side logic (Chart.js)
-├── go.mod               # Go module definition
-├── go.sum               # Dependency checksums
-├── Dockerfile           # Multi-stage Docker build
-└── k8s/
-    └── manifests.yaml   # Kubernetes Deployment, Service & ServiceMonitor
-```
+This project was built in collaboration with [Claude Code](https://claude.com/claude-code) as a deliberate exercise in AI-assisted cloud engineering — you'll see Claude as a co-author throughout the commit history. The architecture, infrastructure decisions, data-source research, and code review are mine; treating an AI agent as a pair programmer (and knowing when to overrule it) is part of the skill set this repo demonstrates.

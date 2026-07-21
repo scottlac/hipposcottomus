@@ -92,7 +92,7 @@
 ## Infrastructure
 - **Hosting:** DigitalOcean Kubernetes (`jordan-lake-cluster`, nyc3 region)
 - **Registry:** `registry.digitalocean.com/jordan-lake-registry/jordan-lake-scraper:latest`
-- **Domain:** `hipposcottomus.com` (Squarespace DNS, A record → 159.89.243.107)
+- **Domain:** `hipposcottomus.com` (Squarespace DNS, A record → DigitalOcean load balancer IP)
 - **TLS:** cert-manager with Let's Encrypt (ClusterIssuer `letsencrypt-prod`)
 - **Ingress:** nginx ingress controller
 - **Storage:** 1Gi PVC (`do-block-storage`) mounted at `/data/` for history persistence
