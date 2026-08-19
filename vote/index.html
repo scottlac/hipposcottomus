@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ranked Choice Voting</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦛</text></svg>">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="hippo">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <base href="/vote/" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="style.css?v=1" />
+</head>
+<body>
+  <header>
+    <h1>🗳️ Ranked Choice Voting</h1>
+    <p class="subtitle">One link, everyone ranks, honest counting — no accounts, no mystery tie-breakers</p>
+  </header>
+
+  <main id="app">
+    <noscript><article>This tool needs JavaScript to rank and count votes.</article></noscript>
+  </main>
+
+  <footer>
+    <p><a href="/">← hipposcottomus.com</a> · polls expire after 90 days</p>
+  </footer>
+
+  <script src="app.js?v=1"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch((e) => console.warn("SW registration failed:", e));
+      });
+    }
+  </script>
+</body>
+</html>
