@@ -17,6 +17,7 @@
 
 - 🂡 **Hold'em Equity Calculator** ([`/poker/`](https://hipposcottomus.com/poker/)) — pick hole cards and a board, see your win probability against random opponents.
 - 🔳 **QR Code Generator** ([`/qr/`](https://hipposcottomus.com/qr/)) — payload builders, logo overlay, shaped plates and module styles, curved ring text, SVG and 3D-printable STL export.
+- 🗳️ **Ranked Choice Voting** ([`/vote/`](https://hipposcottomus.com/vote/)) — create a poll, share one link, everyone ranks the options. Instant-runoff counting with a visible exhausted-ballot bucket, deterministic tie-breaks (flagged when a different tie-break choice would have changed the winner), and a Condorcet head-to-head cross-check. No accounts; polls expire after 90 days.
 - 📊 **Site Analytics** ([`/analytics/`](https://hipposcottomus.com/analytics/)) — self-hosted: page views per app, external-API health tracking, Go runtime stats, and a traffic heatmap.
 
 ## Architecture
