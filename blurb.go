@@ -17,23 +17,35 @@ import (
 )
 
 const (
-	blurbModel           = anthropic.ModelClaudeHaiku4_5_20251001
-	blurbModelLabel      = "claude-haiku-4-5"
-	blurbModelDisplay    = "Claude Haiku 4.5" // shown in the dashboards' attribution line
-	blurbMinInterval     = 30 * time.Minute // min time between on-demand generations
-	blurbMaxOutputTokens = 280              // ~3 sentences, with a comfortable ceiling
-	blurbStateFile       = "llm_usage.json"
+	blurbModel        = "claude-haiku-5-5"
+	blurbModelLabel   = "claude-haiku-5-5"
+	blurbModelDisplay = "Claude Haiku 5.5" // shown in the dashboards' attribution line
+	blurbMinInterval  = 30 * time.Minute   // min time between on-demand generations
+	blurbStateFile    = "llm_usage.json"
+
+	// Haiku 5.5 thinks by default and its thinking counts toward max_tokens,
+	// so the cap has to leave room for that on top of the ~3-sentence answer.
+	// Effort "low" keeps the thinking (and the bill) small; the cap is a
+	// ceiling, not a target.
+	blurbMaxOutputTokens = 2000
+	blurbEffort          = anthropic.OutputConfigEffortLow
 )
 
-// Haiku 4.5 pricing per 1M tokens (USD), confirmed against shared/models.md via
-// the claude-api skill. If the model gets re-priced, only these constants
-// need to change.
-const (
-	haikuInputPricePer1M      = 1.00
-	haikuOutputPricePer1M     = 5.00
-	haikuCacheWritePricePer1M = 1.25 // 1.25× input price for the default 5m TTL
-	haikuCacheReadPricePer1M  = 0.10 // 0.1× input price
-)
+// llmPrice is one model's rate card in USD per 1M tokens.
+type llmPrice struct {
+	Input, Output, CacheWrite, CacheRead float64
+}
+
+// llmPrices is keyed by the model label used in llmUsage. Prices are from the
+// claude-api skill's model table. Cache writes are 1.25× input (5m TTL) and
+// cache reads 0.1× input. The Haiku 5.5 figures are its rate card for prompts
+// of 100K tokens or fewer, which is all a blurb prompt (a few thousand tokens)
+// can ever be. Haiku 4.5 stays listed so the meter's history under that
+// label keeps its meaning.
+var llmPrices = map[string]llmPrice{
+	"claude-haiku-5-5": {Input: 0.10, Output: 0.50, CacheWrite: 0.125, CacheRead: 0.01},
+	"claude-haiku-4-5": {Input: 1.00, Output: 5.00, CacheWrite: 1.25, CacheRead: 0.10},
+}
 
 // LLMUsageEntry is the aggregate spend + token counts for one model. Keyed by
 // model in the llmUsage map below — multiple lakes using the same model share
@@ -156,8 +168,8 @@ func (cfg *lakeBlurbConfig) maybeTrigger() {
 // prompt. Generations are at least 30 minutes apart, but the default
 // ephemeral cache TTL is 5 minutes — a cached prefix would always expire
 // between calls, so every call would pay the 1.25× cache-WRITE premium and
-// never get a READ. Plain uncached input ($1/M) is the cheapest option at
-// this frequency.
+// never get a READ. Plain uncached input is the cheapest option at this
+// frequency.
 func (cfg *lakeBlurbConfig) generate(ctx context.Context) error {
 	snapshot := cfg.SnapshotFn()
 	if snapshot == "" {
@@ -169,6 +181,9 @@ func (cfg *lakeBlurbConfig) generate(ctx context.Context) error {
 	resp, err := client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     blurbModel,
 		MaxTokens: blurbMaxOutputTokens,
+		OutputConfig: anthropic.OutputConfigParam{
+			Effort: blurbEffort,
+		},
 		System: []anthropic.TextBlockParam{{
 			Text: cfg.SystemPrompt,
 		}},
@@ -181,6 +196,20 @@ func (cfg *lakeBlurbConfig) generate(ctx context.Context) error {
 		return err
 	}
 
+	// Usage is billed whatever the outcome, so meter it before judging the
+	// response.
+	recordLLMUsage(blurbModelLabel, resp.Usage)
+
+	// A safety-classifier decline arrives as a normal 200 with this stop
+	// reason; keep the previous blurb rather than publishing a refusal.
+	if resp.StopReason == anthropic.StopReasonRefusal {
+		err := fmt.Errorf("model declined the request (category %q)", resp.StopDetails.Category)
+		recordLLMError(blurbModelLabel, err)
+		return err
+	}
+
+	// The response can open with thinking blocks; only text blocks are the
+	// advisory.
 	var text strings.Builder
 	for _, block := range resp.Content {
 		if tb, ok := block.AsAny().(anthropic.TextBlock); ok {
@@ -189,15 +218,19 @@ func (cfg *lakeBlurbConfig) generate(ctx context.Context) error {
 	}
 	final := strings.TrimSpace(text.String())
 	if final == "" {
-		recordLLMError(blurbModelLabel, fmt.Errorf("empty response"))
-		return fmt.Errorf("empty response from model")
+		err := fmt.Errorf("no text in response (stop reason %q)", resp.StopReason)
+		recordLLMError(blurbModelLabel, err)
+		return err
+	}
+	if resp.StopReason == anthropic.StopReasonMaxTokens {
+		err := fmt.Errorf("response hit the %d-token cap mid-answer", blurbMaxOutputTokens)
+		recordLLMError(blurbModelLabel, err)
+		return err
 	}
 
 	cfg.mu.Lock()
 	cfg.current = &LakeBlurb{Text: final, GeneratedAt: time.Now()}
 	cfg.mu.Unlock()
-
-	recordLLMUsage(blurbModelLabel, resp.Usage)
 	return nil
 }
 
@@ -210,10 +243,14 @@ func recordLLMUsage(model string, u anthropic.Usage) {
 	cw := u.CacheCreationInputTokens
 	cr := u.CacheReadInputTokens
 
-	cost := float64(in)*haikuInputPricePer1M/1e6 +
-		float64(out)*haikuOutputPricePer1M/1e6 +
-		float64(cw)*haikuCacheWritePricePer1M/1e6 +
-		float64(cr)*haikuCacheReadPricePer1M/1e6
+	price, ok := llmPrices[model]
+	if !ok {
+		log.Printf("[Blurb] no price listed for model %q; its calls are counted at $0", model)
+	}
+	cost := (float64(in)*price.Input +
+		float64(out)*price.Output +
+		float64(cw)*price.CacheWrite +
+		float64(cr)*price.CacheRead) / 1e6
 
 	llmUsageMu.Lock()
 	defer llmUsageMu.Unlock()

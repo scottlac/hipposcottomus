@@ -1,0 +1,224 @@
+
+000
+FZUS52 KMFL 190741
+CWFMFL
+
+Coastal Waters Forecast for Florida
+National Weather Service Miami FL
+241 AM EST Thu Nov 19 2026
+
+Atlantic coastal waters from Jupiter Inlet to Ocean Reef out to
+60 nm and Gulf coastal waters from East Cape Sable to Chokoloskee
+out 20 nm and Chokoloskee to Bonita Beach out 60 nm...including the
+waters of Biscayne Bay and Lake Okeechobee.
+
+Seas are provided as a range of the average height of the highest
+1/3 of the waves...along with the occasional height of the average
+highest 10 percent of the waves. 
+
+AMZ600-GMZ606-192000-
+241 AM EST Thu Nov 19 2026
+
+.Synopsis for Jupiter Inlet to Ocean Reef FL out to 60 nm and for
+East Cape Sable to Bonita Beach FL out to 60 nm...
+
+Gusty east-northeasterly winds will continue across Atlantic waters
+today, while winds across Gulf waters should drop below Small Craft
+Advisory criteria by this afternoon. A Small Craft Advisory remains
+in effect for Gulf waters through early this afternoon, and Atlantic
+waters through Friday evening. Wave heights are expected to reach
+the 8-10 foot range for Atlantic waters and 2-3 feet for Gulf waters
+through this evening. Winds and waves could become locally higher in
+any shower or thunderstorm activity. 
+
+Gulf Stream Hazards: Sustained winds of 20-30 knots with higher
+gusts, and wave heights of 8-10 feet.
+
+The approximate location of the west wall of the Gulf Stream as of
+Nov 18, 2026.
+
+ 22 nautical miles north northeast of Fowey Rocks.
+  7 nautical miles east of Port Everglades.
+  6 nautical miles south southeast of Lake Worth.
+  6 nautical miles east northeast of Jupiter Inlet.
+
+This data courtesy of the Naval Oceanographic Office.
+
+$$
+
+AMZ650-670-192000-
+Coastal waters from Jupiter Inlet to Deerfield Beach FL out 20 NM-
+Waters from Jupiter Inlet to Deerfield Beach FL from 20 to 60 NM-
+241 AM EST Thu Nov 19 2026
+
+...SMALL CRAFT ADVISORY IN EFFECT THROUGH FRIDAY AFTERNOON...
+
+.TODAY...E winds 20 to 25 kt with gusts up to 30 kt. Seas 6 to 9 ft,
+occasionally to 11 ft. Wave Detail: E 8 ft at 7 seconds and NW 2 ft
+at 9 seconds. Intracoastal waters rough in exposed areas. A chance
+of tstms. Showers.
+.TONIGHT...E winds 20 to 25 kt, diminishing to 15 to 20 kt after
+midnight. Seas 6 to 9 ft, occasionally to 11 ft, subsiding to 5 to
+7 ft, occasionally to 9 ft after midnight. Wave Detail: E 8 ft at
+7 seconds and NW 2 ft at 8 seconds. Intracoastal waters rough in
+exposed areas. A chance of tstms early in the evening. Showers
+likely in the evening. A chance of showers after midnight. 
+.FRI...NE winds 15 to 20 kt with gusts up to 25 kt. Seas 4 to 6 ft,
+occasionally to 8 ft. Wave Detail: N 5 ft at 7 seconds. Intracoastal
+waters choppy in exposed areas. A chance of showers early in the
+morning, then showers in the late morning and afternoon. 
+.FRI NIGHT...N winds 15 to 20 kt with gusts up to 25 kt. Seas 5 to
+7 ft, occasionally to 9 ft, building to 6 to 9 ft, occasionally to
+11 ft after midnight. Wave Detail: N 6 ft at 8 seconds and NE 6 ft
+at 9 seconds. Intracoastal waters a moderate chop. A chance of
+showers. 
+.SAT...NW winds 10 to 15 kt with gusts up to 20 kt. Seas 6 to 9 ft,
+occasionally to 11 ft. Wave Detail: NE 7 ft at 9 seconds and N 6 ft
+at 9 seconds. Intracoastal waters light chop. A chance of showers. 
+.SAT NIGHT...NW winds 10 to 15 kt, becoming W 5 to 10 kt after
+midnight. Seas 5 to 8 ft, occasionally to 10 ft. Wave Detail: N 8 ft
+at 9 seconds. Intracoastal waters light chop. A chance of showers
+until early morning. 
+.SUN...W winds 5 to 10 kt. Seas 5 to 8 ft, occasionally to 10 ft.
+Intracoastal waters light chop. 
+.SUN NIGHT...NW winds 5 to 10 kt. Seas 4 to 6 ft, occasionally to
+8 ft. Intracoastal waters light chop. 
+.MON...NW winds around 5 kt. Seas 2 to 4 ft, occasionally to 5 ft.
+Intracoastal waters smooth. 
+.MON NIGHT...E winds around 5 kt. Seas 2 to 3 ft. Intracoastal
+waters smooth. A chance of showers.  
+
+Winds and seas higher in and near tstms.
+
+$$
+
+AMZ651-671-192000-
+Coastal waters from Deerfield Beach to Ocean Reef FL out 20 NM-
+Waters from Deerfield Beach to Ocean Reef FL from 20 to 60 NM
+excluding the territorial waters of Bahamas-
+241 AM EST Thu Nov 19 2026
+
+...SMALL CRAFT ADVISORY IN EFFECT THROUGH FRIDAY AFTERNOON...
+
+.TODAY...E winds 20 to 25 kt, diminishing to 15 to 20 kt this
+afternoon. Seas 5 to 7 ft, occasionally to 9 ft. Wave Detail: E 6 ft
+at 6 seconds and N 2 ft at 9 seconds. Intracoastal waters rough in
+exposed areas. Showers likely with a chance of tstms this morning,
+then a chance of showers with a slight chance of tstms this
+afternoon. 
+.TONIGHT...NE winds 15 to 20 kt, becoming N 10 to 15 kt after
+midnight. Seas 4 to 6 ft, occasionally to 8 ft. Wave Detail: NE 4 ft
+at 6 seconds and N 3 ft at 9 seconds. Intracoastal waters a moderate
+chop. A chance of showers until early morning. 
+.FRI...NW winds 10 to 15 kt. Seas 3 to 5 ft, occasionally to 6 ft.
+Wave Detail: NW 4 ft at 8 seconds and NE 3 ft at 4 seconds.
+Intracoastal waters light chop. A chance of showers in the late
+morning and afternoon. 
+.FRI NIGHT...NW winds 15 to 20 kt, becoming W 10 to 15 kt after
+midnight. Seas 3 to 5 ft, occasionally to 6 ft. Wave Detail: NW 4 ft
+at 7 seconds and NE 1 foot at 3 seconds. Intracoastal waters a
+moderate chop. A chance of showers in the evening. 
+.SAT...W winds 10 to 15 kt. Seas 4 to 6 ft, occasionally to 8 ft.
+Wave Detail: N 6 ft at 9 seconds and NW 4 ft at 7 seconds.
+Intracoastal waters light chop. A chance of showers late. 
+.SAT NIGHT...W winds 10 to 15 kt, diminishing to 5 to 10 kt after
+midnight. Seas 5 to 7 ft, occasionally to 9 ft. Wave Detail: N 6 ft
+at 10 seconds. Intracoastal waters light chop. 
+.SUN...W winds 5 to 10 kt. Seas 5 to 7 ft, occasionally to 9 ft.
+Intracoastal waters light chop. 
+.SUN NIGHT...W winds around 5 kt. Seas 4 to 6 ft, occasionally to
+8 ft. Intracoastal waters smooth. 
+.MON...N winds around 5 kt. Seas 2 to 4 ft, occasionally to 5 ft.
+Intracoastal waters smooth. 
+.MON NIGHT...E winds around 5 kt. Seas 2 to 3 ft. Intracoastal
+waters smooth.  
+
+Winds and seas higher in and near tstms.
+
+$$
+
+GMZ656-657-676-192000-
+Coastal waters from Chokoloskee to Bonita Beach FL out 20 NM-
+Coastal waters from East Cape Sable to Chokoloskee FL out 20 NM-
+Waters from Chokoloskee to Bonita Beach FL from 20 to 60 NM-
+241 AM EST Thu Nov 19 2026
+
+...SMALL CRAFT ADVISORY IN EFFECT UNTIL 11 AM EST THIS MORNING...
+
+.TODAY...E winds 10 to 15 kt. Seas 2 to 3 ft. Wave Detail: E 3 ft at
+4 seconds. Bay and inland waters light chop. 
+.TONIGHT...NE winds 10 to 15 kt, becoming N 5 to 10 kt after
+midnight. Seas around 2 ft. Wave Detail: N 2 ft at 3 seconds. Bay
+and inland waters light chop. 
+.FRI...N winds 5 to 10 kt. Seas around 2 ft. Wave Detail: N 1 foot
+at 3 seconds. Bay and inland waters light chop.
+.FRI NIGHT...N winds 5 to 10 kt. Seas around 2 ft. Wave Detail: N
+2 ft at 4 seconds. Bay and inland waters light chop.
+.SAT...N winds 5 to 10 kt. Seas around 2 ft. Wave Detail: N 1 foot
+at 4 seconds. Bay and inland waters light chop.
+.SAT NIGHT...NW winds 5 to 10 kt, diminishing to around 5 kt after
+midnight. Seas less than 2 ft or less. Wave Detail: NW 1 foot at
+5 seconds. Bay and inland waters light chop. 
+.SUN...NW winds around 5 kt, becoming W in the afternoon. Seas less
+than 2 ft or less. Bay and inland waters light chop. 
+.SUN NIGHT...NW winds 5 to 10 kt, becoming N after midnight. Seas
+less than 2 ft or less. Bay and inland waters light chop. 
+.MON...E winds 5 to 10 kt, diminishing to around 5 kt in the
+afternoon. Seas less than 2 ft or less. Bay and inland waters light
+chop. 
+.MON NIGHT...NE winds around 5 kt, becoming E after midnight. Seas
+less than 2 ft or less. Bay and inland waters light chop.  
+
+$$
+
+AMZ610-192000-
+Lake Okeechobee-
+241 AM EST Thu Nov 19 2026
+
+.TODAY...E winds 10 to 15 kt. Lake waters a moderate chop. A slight
+chance of tstms this morning. Showers likely. A chance of tstms this
+afternoon. 
+.TONIGHT...NE winds 10 to 15 kt with gusts up to 20 kt, becoming N
+5 to 10 kt after midnight. Lake waters a moderate chop. A chance of
+showers and tstms early in the evening. 
+.FRI...N winds 5 to 10 kt, increasing to 10 to 15 kt with gusts up
+to 20 kt in the afternoon. Lake waters a moderate chop. A chance of
+showers late in the morning. Showers likely early in the afternoon. 
+.FRI NIGHT...N winds 10 to 15 kt with gusts up to 20 kt, diminishing
+to 5 to 10 kt after midnight. Lake waters a moderate chop. 
+.SAT...NW winds 5 to 10 kt. Lake waters light chop. A chance of
+showers in the afternoon. 
+.SAT NIGHT...NW winds 5 to 10 kt. Lake waters light chop. A chance
+of showers early in the evening. 
+.SUN...W winds around 5 kt. Lake waters smooth. 
+.SUN NIGHT...NW winds around 5 kt. Lake waters smooth. 
+.MON...NW winds around 5 kt. Lake waters smooth. 
+.MON NIGHT...NE winds around 5 kt. Lake waters smooth.  
+
+Winds and waves higher in and near tstms.
+
+$$
+
+AMZ630-192000-
+Biscayne Bay-
+241 AM EST Thu Nov 19 2026
+
+...SMALL CRAFT ADVISORY IN EFFECT THROUGH THIS AFTERNOON...
+
+.TODAY...E winds 10 to 15 kt. A moderate chop. Showers likely with a
+chance of tstms early this morning, then a chance of showers late
+this morning and afternoon. A slight chance of tstms this afternoon.
+.TONIGHT...N winds 5 to 10 kt. Light chop. 
+.FRI...NW winds 5 to 10 kt. Light chop. 
+.FRI NIGHT...NW winds 5 to 10 kt. Light chop. 
+.SAT...W winds 5 to 10 kt. Light chop. 
+.SAT NIGHT...W winds 5 to 10 kt. Light chop. 
+.SUN...W winds around 5 kt. Smooth.
+.SUN NIGHT...W winds around 5 kt. Smooth.
+.MON...N winds around 5 kt, becoming E in the afternoon. Smooth.
+.MON NIGHT...E winds around 5 kt. Smooth. 
+
+Winds and waves higher in and near tstms.
+
+$$
+

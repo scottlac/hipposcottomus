@@ -10,9 +10,9 @@
 | 🚤 **Lake Gaston** (NC/VA) | [`/gaston/`](https://hipposcottomus.com/gaston/) | USGS instantaneous-value live readings + daily-value backfill, NWS weather |
 | 🏝️ **Lake Minneola** (FL) | [`/minneola/`](https://hipposcottomus.com/minneola/) | SJRWMD in-lake station via the USF Water Atlas API, estimated water temp from an air-temp trailing mean, UV index |
 | 🛥️ **Lake Conway** (FL) | [`/conway/`](https://hipposcottomus.com/conway/) | Orange County data-logger station via the USF Water Atlas API, estimated water temp |
-| ⚓ **Ft. Lauderdale Boating** | [`/ftlauderdale/`](https://hipposcottomus.com/ftlauderdale/) | NOAA CO-OPS tides (hi/lo points cosine-interpolated into a smooth curve), live water temp and wind from South Port Everglades, NWS marine zone forecast with advisory banner, AI summary |
+| ⚓ **Ft. Lauderdale Boating** | [`/ftlauderdale/`](https://hipposcottomus.com/ftlauderdale/) | NOAA CO-OPS tides (hi/lo points cosine-interpolated into a smooth curve), live water temp, wind and observed-vs-predicted water level from South Port Everglades, NWS marine zone forecast with advisory banner, AI summary |
 | 🏖️ **Key Biscayne Boating** | [`/keybiscayne/`](https://hipposcottomus.com/keybiscayne/) | Same stack: Biscayne Channel tides, live water temp and wind from Virginia Key, Biscayne Bay and Atlantic marine zones |
-| 🤿 **Key Largo Boating** | [`/keylargo/`](https://hipposcottomus.com/keylargo/) | Same stack: Largo Sound tides, Blackwater Sound water temp (NDBC), Hawk Channel and Straits of Florida marine zones |
+| 🤿 **Key Largo Boating** | [`/keylargo/`](https://hipposcottomus.com/keylargo/) | Same stack: Largo Sound tides, Blackwater Sound water temp (NDBC), Hawk Channel, Straits of Florida and Florida Bay marine zones |
 | 🔭 **Night Sky** | [`/astronomy/`](https://hipposcottomus.com/astronomy/) | Sun & twilight times, moon phase and rise/set, and visible ISS passes computed from live TLEs |
 
 ## Tools & Analytics

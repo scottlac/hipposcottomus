@@ -16,32 +16,40 @@ func resetLLMUsage() {
 
 func almostEqual(a, b, tol float64) bool { return math.Abs(a-b) <= tol }
 
-// TestRecordLLMUsage_CostMath verifies the per-call cost formula against the
-// constants documented in shared/models.md for Haiku 4.5: $1/M input,
-// $5/M output, $1.25/M cache write (5m TTL), $0.10/M cache read.
+// TestRecordLLMUsage_CostMath verifies the per-call cost formula against each
+// model's rate card in llmPrices.
 func TestRecordLLMUsage_CostMath(t *testing.T) {
-	resetLLMUsage()
-	t.Cleanup(resetLLMUsage)
-
-	recordLLMUsage(blurbModelLabel, anthropic.Usage{
+	usage := anthropic.Usage{
 		InputTokens:              200,
 		OutputTokens:             150,
-		CacheCreationInputTokens: 0,
+		CacheCreationInputTokens: 1000,
 		CacheReadInputTokens:     5000,
-	})
+	}
+	tests := []struct {
+		model string
+		want  float64
+	}{
+		// Haiku 5.5: 200×$0.10 + 150×$0.50 + 1000×$0.125 + 5000×$0.01, per 1M
+		{"claude-haiku-5-5", (20 + 75 + 125 + 50) / 1e6},
+		// Haiku 4.5: 200×$1 + 150×$5 + 1000×$1.25 + 5000×$0.10, per 1M
+		{"claude-haiku-4-5", (200 + 750 + 1250 + 500) / 1e6},
+		// A model with no listed price is counted but costs nothing.
+		{"claude-unknown", 0},
+	}
+	for _, tt := range tests {
+		resetLLMUsage()
+		recordLLMUsage(tt.model, usage)
+		llmUsageMu.RLock()
+		got, calls := llmUsage[tt.model].TotalCostUSD, llmUsage[tt.model].Calls
+		llmUsageMu.RUnlock()
+		if !almostEqual(got, tt.want, 1e-12) || calls != 1 {
+			t.Errorf("%s: cost = %.9f (calls %d), want %.9f", tt.model, got, calls, tt.want)
+		}
+	}
+	resetLLMUsage()
 
-	// Expected:
-	//   200    * $1.00 / 1e6 = $0.000200
-	//   150    * $5.00 / 1e6 = $0.000750
-	//   5000   * $0.10 / 1e6 = $0.000500
-	// total                 = $0.001450
-	want := 0.001450
-
-	llmUsageMu.RLock()
-	got := llmUsage[blurbModelLabel].TotalCostUSD
-	llmUsageMu.RUnlock()
-	if !almostEqual(got, want, 1e-9) {
-		t.Errorf("cost = %.9f, want %.9f", got, want)
+	if _, ok := llmPrices[blurbModelLabel]; !ok {
+		t.Errorf("no price listed for the model in use (%s)", blurbModelLabel)
 	}
 }
 
@@ -87,8 +95,9 @@ func TestRecordLLMUsage_Accumulates(t *testing.T) {
 	}
 
 	// Cumulative cost = sum of both calls
-	wantWrite := 200*1.00/1e6 + 150*5.00/1e6 + 5000*1.25/1e6
-	wantRead := 200*1.00/1e6 + 150*5.00/1e6 + 5000*0.10/1e6
+	pr := llmPrices[blurbModelLabel]
+	wantWrite := (200*pr.Input + 150*pr.Output + 5000*pr.CacheWrite) / 1e6
+	wantRead := (200*pr.Input + 150*pr.Output + 5000*pr.CacheRead) / 1e6
 	want := wantWrite + wantRead
 	if !almostEqual(e.TotalCostUSD, want, 1e-9) {
 		t.Errorf("total cost = %.9f, want %.9f", e.TotalCostUSD, want)

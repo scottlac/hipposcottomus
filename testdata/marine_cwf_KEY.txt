@@ -1,0 +1,255 @@
+
+000
+FZUS52 KKEY 191515
+CWFKEY
+
+Coastal Waters Forecast for the Florida Keys
+National Weather Service Key West FL
+1015 AM EST Thu Nov 19 2026
+
+Florida Bay, Hawk Channel and Straits of Florida from Ocean Reef
+to south of Dry Tortugas, and the extreme southeastern Gulf of
+America, including The Florida Keys National Marine Sanctuary
+
+Seas are given as significant wave height, which is the average
+height of the highest 1/3 of the waves. Individual waves may be
+more than twice the significant wave height.
+
+The Wave Detail section highlights the period and direction of
+origin for the highest-energy waves, as well as any long-period
+swells moving in a different direction than the wind.
+
+GMZ005-200315-
+Synopsis for Keys coastal waters from Ocean Reef to Dry Tortugas
+1015 AM EST Thu Nov 19 2026
+
+.SYNOPSIS...
+A developing area of low pressure off the East Coast of Florida 
+will move northward this afternoon. While this low strengthens, 
+it may tighten the gradient just enough for Friday through 
+Saturday to result in another brief wind surge, especially off the
+Upper Keys. Winds will also clock around to the west to 
+northwest. The Keys will remain in overall weak flow with mainly 
+light to potentially gentle breezes as we head into early next 
+week.
+
+The Approximate Shoreward Edge of the Gulf Stream as of November 
+16, 2026...
+
+12 NM south of Dry Tortugas Light, on Loggerhead Key
+24 NM south of Cosgrove Shoal Light, off the Marquesas Keys
+16 NM south of Sand Key Light, off Key West
+ 6 NM south of Looe Key, off Big Pine Key
+ 3 NM southeast of Sombrero Key Light, off Marathon
+ 1 NM southeast of Alligator Reef Light, off Islamorada 
+ 1 NM southeast of Molasses Reef Light, off Key Largo 
+ 1 NM southeast of Carysfort Reef Light, off Ocean Reef
+
+Gulf Stream Information Courtesy of the Naval Oceanographic Office
+and the National Weather Service in Key West, using data from 
+RTOFS and NASA SPoRT sea surface temperatures.
+
+$$
+
+GMZ031-200315-
+Florida Bay including Barnes Sound, Blackwater Sound, and
+Buttonwood Sound-
+1015 AM EST Thu Nov 19 2026
+
+.THIS AFTERNOON...Northeast to east winds near 10 knots, 
+decreasing to near 5 knots. Bay waters a light chop, becoming 
+smooth. A slight chance of showers and thunderstorms. 
+.TONIGHT...Northwest to north winds 5 to 10 knots, becoming
+northwest and increasing to near 10 knots. Bay waters smooth to a
+light chop, becoming a light chop.
+.FRIDAY...Northwest winds near 10 knots, becoming west and
+increasing to near 15 knots. Bay waters a light chop, becoming a 
+moderate chop. A slight chance of showers. 
+.FRIDAY NIGHT...West winds near 15 knots, becoming west to
+northwest and decreasing to near 10 knots. Bay waters a moderate 
+chop, becoming a light chop. A slight chance of showers.
+.SATURDAY...West to northwest winds near 10 knots. Bay waters a
+light chop. A slight chance of showers. 
+.SATURDAY NIGHT...West winds near 10 knots, decreasing to 5 to 10
+knots. Bay waters a light chop, becoming smooth to a light chop. 
+A slight chance of showers. 
+.SUNDAY...West winds 5 to 10 knots. Bay waters smooth to a light
+chop. A slight chance of showers. 
+.SUNDAY NIGHT...Northwest winds near 5 knots. Bay waters smooth. 
+.MONDAY...North to northeast winds near 5 knots, becoming east to
+southeast around 5 knots in the afternoon. Bay waters smooth. 
+.MONDAY NIGHT...Northeast winds near 5 knots. Bay waters smooth.
+A slight chance of showers. 
+
+$$
+
+GMZ032-035-200315-
+Bayside and Gulfside from Craig Key to west end of Seven Mile
+Bridge-
+Gulf of America from west end of Seven Mile Bridge to Halfmoon
+Shoal out to 5 Fathoms-
+1015 AM EST Thu Nov 19 2026
+
+.THIS AFTERNOON...Northeast to east winds near 10 knots, becoming
+northeast and decreasing to 5 to 10 knots. Seas 1 to 2 feet, 
+except 2 to 3 feet, subsiding to around 2 feet west of the 
+Marquesas Keys. Nearshore waters a light chop, becoming smooth to 
+a light chop. A slight chance of showers and thunderstorms. 
+.TONIGHT...Northwest to north winds 5 to 10 knots. Seas around 1
+foot. Nearshore waters smooth to a light chop. 
+.FRIDAY...West to northwest winds near 10 knots, increasing to 10
+to 15 knots. Seas around 1 foot, building to 1 to 2 feet. 
+Nearshore waters a light chop, becoming a light to moderate chop. 
+A slight chance of showers. 
+.FRIDAY NIGHT...West to northwest winds 10 to 15 knots, decreasing
+to 5 to 10 knots after midnight. Seas 1 to 2 feet, subsiding to 
+around 1 foot. Nearshore waters a light to moderate chop, becoming
+smooth to a light chop. A slight chance of showers. 
+.SATURDAY...West to northwest winds 5 to 10 knots. Seas around 1
+foot. Nearshore waters smooth to a light chop. A slight chance of
+showers. 
+.SATURDAY NIGHT...West winds 5 to 10 knots. Seas around 1 foot. 
+Nearshore waters smooth to a light chop. A slight chance of 
+showers. 
+.SUNDAY...West winds near 5 knots. Seas 1 foot or less. Nearshore
+waters smooth. A slight chance of showers. 
+.SUNDAY NIGHT...Northwest to north winds near 5 knots. Seas
+1 foot or less. Nearshore waters smooth. 
+.MONDAY...Northeast to east winds near 5 knots. Seas 1 foot or
+less. Nearshore waters smooth. 
+.MONDAY NIGHT...Northeast winds near 5 knots. Seas 1 foot or
+less. Nearshore waters smooth. A slight chance of showers. 
+
+$$
+
+GMZ042>044-200315-
+Hawk Channel from Ocean Reef to Craig Key out to the reef-
+Hawk Channel from Craig Key to west end of Seven Mile Bridge out
+to the reef-
+Hawk Channel from west end of Seven Mile Bridge to Halfmoon Shoal
+out to the reef-
+1015 AM EST Thu Nov 19 2026
+
+.THIS AFTERNOON...Northeast to east winds 10 to 15 knots, 
+becoming northeast and decreasing to near 5 knots. Seas 2 to 4 
+feet, occasionally to 5 feet, subsiding to 1 to 3 feet. Nearshore 
+waters a light to moderate chop, becoming smooth. A slight chance 
+of showers and thunderstorms.
+.TONIGHT...Northwest to north winds 5 to 10 knots, increasing to
+10 to 15 knots after midnight. Seas 1 to 2 feet. Nearshore waters
+smooth to a light chop, becoming a light to moderate chop. A 
+slight chance of showers.
+.FRIDAY...West to northwest winds 10 to 15 knots, increasing to
+near 15 knots, except increasing to 15 to 20 knots off the Upper 
+Keys. Seas 1 to 2 feet, except building to 2 to 3 feet off the 
+Upper Keys. Nearshore waters a light to moderate chop, becoming a 
+moderate chop, except becoming choppy off the Upper Keys. A slight
+chance of showers.
+.FRIDAY NIGHT...West to northwest winds 15 to 20 knots, 
+decreasing to near 10 knots after midnight. Seas 1 to 2 feet, 
+except subsiding to around 2 feet off the Upper Keys. Nearshore 
+waters choppy, becoming a light chop. A slight chance of showers. 
+.SATURDAY...West to northwest winds near 10 knots. Seas 1 to 2
+feet. Nearshore waters a light chop. A slight chance of showers.
+.SATURDAY NIGHT...West winds near 10 knots, becoming southwest to
+west and decreasing to 5 to 10 knots. Seas 1 to 2 feet. Nearshore
+waters a light chop, becoming smooth to a light chop. A slight 
+chance of showers.
+.SUNDAY...Southwest to west winds near 5 to 10 knots, becoming
+west to northwest. Seas around 1 foot. Nearshore waters smooth to
+a light chop. A slight chance of showers. 
+.SUNDAY NIGHT...Northwest to north winds near 5 knots. Seas
+around 1 foot. Nearshore waters smooth. 
+.MONDAY...Northeast winds near 5 knots. Seas around 1 foot.
+Nearshore waters smooth. 
+.MONDAY NIGHT...Northeast to east winds near 5 knots. Seas around
+1 foot. Nearshore waters smooth. A slight chance of showers and
+thunderstorms. 
+
+$$
+
+GMZ052>055-072>075-200315-
+Straits of Florida from Ocean Reef to Craig Key out 20 NM-
+Straits of Florida from Craig Key to west end of Seven Mile
+Bridge out 20 NM-
+Straits of Florida from west end of Seven Mile Bridge to south of
+Halfmoon Shoal out 20 NM-
+Straits of Florida from Halfmoon Shoal to 20 NM west of Dry
+Tortugas out 20 NM-
+Straits of Florida from Ocean Reef to Craig Key 20 to 60 NM out-
+Straits of Florida from Craig Key to west end of Seven Mile
+Bridge 20 to 60 NM out-
+Straits of Florida from west end of Seven Mile Bridge to south of
+Halfmoon Shoal 20 to 60 NM out-
+Straits of Florida from Halfmoon Shoal to 20 NM west of Dry
+Tortugas 20 to 60 NM out-
+1015 AM EST Thu Nov 19 2026
+
+.THIS AFTERNOON...Northeast to east winds near 10 knots, becoming
+northwest to north and decreasing to 5 to 10 knots. Seas 3 to 5 
+feet, occasionally to 6 feet, subsiding to 2 to 3 feet. Wave 
+Detail: East 4 feet at 6 seconds. A slight chance of showers and 
+thunderstorms. 
+.TONIGHT...Northwest to north winds 5 to 10 knots, except
+increasing to 10 to 15 knots off the Upper Keys. Seas 2 to 3 
+feet. Wave Detail: Northeast to east 2 feet at 7 seconds and 
+northwest 1 foot at 3 seconds. A slight chance of showers. 
+.FRIDAY...West to northwest winds near 10 knots, except increasing
+to 15 to 20 knots off the Upper Keys. Seas 2 to 3 feet, except 
+building to 3 to 4 feet, occasionally to 5 feet off the Upper 
+Keys. Wave Detail: West to northwest 2 feet at 4 seconds and
+northeast 2 feet at 6 seconds. A slight chance of showers.
+.FRIDAY NIGHT...West to northwest winds near 10 knots, except
+decreasing to 10 to 15 knots off the Upper Keys. Seas 2 to 3 
+feet, except subsiding to 2 to 4 feet, occasionally to 5 feet off 
+the Upper Keys. A slight chance of showers.
+.SATURDAY...West winds near 10 knots. Seas 1 to 3 feet. A slight 
+chance of showers. 
+.SATURDAY NIGHT...Southwest to west winds 5 to 10 knots. Seas
+1 to 3 feet. A slight chance of showers. 
+.SUNDAY...Southwest to west winds 5 to 10 knots, becoming west to
+northwest. Seas 1 to 3 feet. A slight chance of showers. 
+.SUNDAY NIGHT...North winds near 5 knots. Seas 1 to 2 feet. 
+.MONDAY...Northeast to east winds near 5 knots. Seas 1 to 2 feet.
+A slight chance of showers. 
+.MONDAY NIGHT...Northeast to east winds 5 to 10 knots. Seas 1 to
+2 feet. A chance of showers with a slight chance of
+thunderstorms. 
+
+$$
+
+GMZ033-034-200315-
+Gulf of America from East Cape Sable to Chokoloskee 20 to 60 NM
+out and beyond 5 fathoms-
+Gulf of America including Dry Tortugas and Rebecca Shoal Channel-
+1015 AM EST Thu Nov 19 2026
+
+.THIS AFTERNOON...Northeast to east winds 10 to 15 knots, 
+decreasing to 5 to 10 knots. Seas 2 to 3 feet, subsiding to 1 to 
+2 feet. Wave Detail: Northeast to east 3 feet at 4 seconds and 
+northwest to north 1 foot at 7 seconds. A slight chance of showers
+and thunderstorms.
+.TONIGHT...North to northeast winds 5 to 10 knots, becoming
+northwest to north. Seas 1 to 2 feet. Wave Detail: North to 
+northeast 1 foot at 3 seconds and northwest to north 1 foot at 6 
+seconds. A slight chance of showers. 
+.FRIDAY...Northwest winds 5 to 10 knots, increasing to 10 to
+15 knots in the afternoon. Seas 1 to 2 feet, building to around 2
+feet. Wave Detail: Northwest to north 2 feet at 5 seconds. A 
+slight chance of showers. 
+.FRIDAY NIGHT...Northwest winds 10 to 15 knots, decreasing to 5 
+to 10 knots after midnight. Seas around 2 feet, subsiding to 1 to
+2 feet. A slight chance of showers. 
+.SATURDAY...West to northwest winds 5 to 10 knots. Seas 1 to
+2 feet. A slight chance of showers. 
+.SATURDAY NIGHT...West winds 5 to 10 knots. Seas 1 to 2 feet. A
+slight chance of showers. 
+.SUNDAY...West winds near 5 knots. Seas around 1 foot. 
+.SUNDAY NIGHT...North winds near 5 knots. Seas 1 to 2 feet. 
+.MONDAY...Northeast to east winds near 5 knots. Seas 1 to 2 feet.
+.MONDAY NIGHT...Northeast to east winds near 5 knots. Seas around
+1 foot. A slight chance of showers. 
+
+$$
+
+AJP
