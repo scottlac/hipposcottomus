@@ -701,6 +701,12 @@ func main() {
 	mux.HandleFunc(basePath+"/api/history", handleHistory)
 	mux.HandleFunc(basePath+"/api/weather", handleWeather)
 
+	// --- Analytics page ---
+	// Registered first: it loads the persisted API-health counters, and the
+	// dashboards below start recording into them as soon as they're
+	// initialised. Loading afterwards would overwrite those first results.
+	InitAnalytics(mux)
+
 	// --- Coastal boating dashboards (Ft. Lauderdale, Key Biscayne, Key Largo) ---
 	InitCoastal(mux)
 
@@ -724,9 +730,6 @@ func main() {
 
 	// --- Night Sky astronomy dashboard ---
 	InitAstro(mux)
-
-	// --- Analytics page ---
-	InitAnalytics(mux)
 
 	// --- AI-generated boating blurb for Jordan Lake ---
 	InitBlurb(mux)

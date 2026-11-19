@@ -49,9 +49,10 @@
 - **FTL Tides:** NOAA CO-OPS station `8722939` (hi-lo only — cosine-interpolated into smooth curve)
 - **FTL Water Temp & Wind:** NOAA CO-OPS South Port Everglades `8722956` (about 2 mi from Bahia Mar)
 - **Key Biscayne:** tides `8723251` (Coral Shoal, Biscayne Channel), water temp & wind from Virginia Key `8723214`, marine zones `AMZ630` + `AMZ651` in `FZUS52.KMFL`
-- **Key Largo:** tides `8723651` (Largo Sound), water temp from NDBC `BWSF1` (Blackwater Sound), marine zones `GMZ042` + `GMZ052` in `FZUS52.KKEY`
+- **Key Largo:** tides `8723651` (Largo Sound), water temp from NDBC `BWSF1` (Blackwater Sound), marine zones `GMZ042` + `GMZ052` + `GMZ031` (Florida Bay) in `FZUS52.KKEY`
 - **Adding a coastal location:** add an entry to `coastalLocations`, plus the path in `k8s/manifests.yaml`, `home/index.html`, `home/sw.js`, `analytics.go` `trackedPaths` and `analytics/app.js`
-- **FTL Marine Forecast:** NDBC `FZUS52.KMFL`
+- **Marine forecasts:** NWS Coastal Waters Forecast text product via `api.weather.gov/products/types/CWF/locations/{MFL,KEY}` (primary), with NDBC's HTML copy (`FZUS52.KMFL` / `FZUS52.KKEY`) as fallback; both parsed by zone code in `coastal_marine.go`
+- **Observed water level:** CO-OPS `water_level` minus `predictions` at the sensor station, applied as an offset to the local predicted curve
 
 ## Key Architecture Details
 - Go `embed.FS` for all static assets — each feature file embeds its own directory (`main.go` embeds `static/ home/ poker/`, `coastal.go` embeds `coastal/`, `astro.go` embeds `astro/`, `analytics.go` embeds `analytics/`)
@@ -72,7 +73,7 @@
   - **Blackout (8pm–6am ET)**: one regeneration allowed per blackout period — when the cached blurb predates the start of *this* blackout window (`blackoutStartFor`), or there's no blurb. After that one refresh, further visits during the same overnight period return the cached blurb unchanged.
   - The triggering request always gets served the current (possibly stale) blurb immediately; the frontend's 60s auto-refresh picks up the new one ~2s later. Cold pod / no blurb yet → 204, frontend hides the section.
 - **No prompt caching**: deliberately omitted. Calls are ≥30 min apart but the ephemeral cache TTL is 5 min, so a cached prefix always expires between calls — caching would only ever pay the 1.25× write premium. Plain uncached input is cheapest at this frequency. (Don't add `cache_control` back without also raising call frequency above the TTL.)
-- **Cost tracking**: `recordLLMUsage` folds `resp.Usage` into a per-model `LLMUsageEntry` (tokens + USD, Haiku 4.5 pricing constants at the top of `blurb.go`). All lakes using the same model accumulate on one entry (correct for spend tracking). Persisted to `/data/llm_usage.json` so the meter survives restarts; surfaced on `/analytics/` via the `llmUsage` field in the overview. Per-lake failures are routed via `TrackAPICall("Anthropic-Blurb-"+cfg.Key, err)` so the API-health panel shows them per lake (`Anthropic-Blurb-jordan`, `Anthropic-Blurb-minneola`).
+- **Cost tracking**: `recordLLMUsage` folds `resp.Usage` into a per-model `LLMUsageEntry` (tokens + USD, priced from the per-model `llmPrices` table at the top of `blurb.go`; the model is Haiku 5.5 at effort `low`). All lakes using the same model accumulate on one entry (correct for spend tracking). Persisted to `/data/llm_usage.json` so the meter survives restarts; surfaced on `/analytics/` via the `llmUsage` field in the overview. Per-lake failures are routed via `TrackAPICall("Anthropic-Blurb-"+cfg.Key, err)` so the API-health panel shows them per lake (`Anthropic-Blurb-jordan`, `Anthropic-Blurb-minneola`).
 - **Key**: `ANTHROPIC_API_KEY` from the `anthropic-api-key` Secret (`optional: true` in the manifest). Never in code/repo/logs. `time/tzdata` is blank-imported so `America/New_York` resolves on alpine.
 
 ### Analytics instrumentation

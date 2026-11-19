@@ -115,6 +115,35 @@ func TestTideAt(t *testing.T) {
 	}
 }
 
+// ── Observed water level ────────────────────────────────────────
+
+func TestLevelOffsets(t *testing.T) {
+	observed := []coopsObs{
+		{T: "2026-11-19 15:30", V: "2.00"},
+		{T: "2026-11-19 15:36", V: ""}, // gap in the sensor record
+		{T: "2026-11-19 15:42", V: "2.054"},
+		{T: "2026-11-19 15:48", V: "2.10"}, // no prediction for this instant
+	}
+	predicted := []coopsObs{
+		{T: "2026-11-19 15:30", V: "1.25"},
+		{T: "2026-11-19 15:36", V: "1.22"},
+		{T: "2026-11-19 15:42", V: "1.204"},
+	}
+	got := levelOffsets(observed, predicted)
+	if len(got) != 2 {
+		t.Fatalf("expected 2 matched samples, got %+v", got)
+	}
+	if got[0].Offset != 0.75 || got[0].Time != "2026-11-19T10:30:00-05:00" {
+		t.Errorf("first sample = %+v", got[0])
+	}
+	if got[1].Offset != 0.85 {
+		t.Errorf("second sample = %+v, want offset 0.85", got[1])
+	}
+	if levelOffsets(nil, predicted) != nil {
+		t.Error("expected nil with no observations")
+	}
+}
+
 // ── NDBC water temperature ──────────────────────────────────────
 
 func TestParseNDBCWaterTemp(t *testing.T) {
@@ -272,6 +301,88 @@ func TestParseMarineZone_KeyWest(t *testing.T) {
 	}
 }
 
+// The raw-text fixtures are the same day's products from api.weather.gov
+// (Key West's is the later 10:15 AM issuance).
+func TestParseMarineTextZone_Miami(t *testing.T) {
+	product := readFixture(t, "marine_cwf_MFL.txt")
+
+	bay := parseMarineTextZone(product, "AMZ630")
+	if bay == nil {
+		t.Fatal("AMZ630 (Biscayne Bay) not found")
+	}
+	if bay.Issued != "241 AM EST Thu Nov 19 2026" {
+		t.Errorf("issued = %q", bay.Issued)
+	}
+	if len(bay.Advisories) != 1 || bay.Advisories[0] != "SMALL CRAFT ADVISORY IN EFFECT THROUGH THIS AFTERNOON" {
+		t.Errorf("advisories = %q", bay.Advisories)
+	}
+	if len(bay.Notes) != 1 || bay.Notes[0] != "Winds and waves higher in and near tstms." {
+		t.Errorf("notes = %q", bay.Notes)
+	}
+
+	// The text product and NDBC's HTML rendering of it must parse to the
+	// same forecast, whichever source ends up being used.
+	html := parseMarineZone(readFixture(t, "marine_KMFL.html"), "AMZ630")
+	if len(bay.Periods) != len(html.Periods) {
+		t.Fatalf("text has %d periods, html has %d", len(bay.Periods), len(html.Periods))
+	}
+	for i := range bay.Periods {
+		if bay.Periods[i] != html.Periods[i] {
+			t.Errorf("period %d differs:\n text: %+v\n html: %+v", i, bay.Periods[i], html.Periods[i])
+		}
+	}
+
+	atl := parseMarineTextZone(product, "AMZ651")
+	if atl == nil || len(atl.Periods) != 10 || !strings.HasPrefix(atl.Periods[0].Text, "E winds 20 to 25 kt") {
+		t.Errorf("AMZ651 = %+v", atl)
+	}
+	if parseMarineTextZone(product, "AMZ999") != nil {
+		t.Error("expected nil for a zone that isn't in the product")
+	}
+
+	syn := parseMarineTextSynopsis(product, "AMZ600")
+	if !strings.HasPrefix(syn, "Gusty east-northeasterly winds will continue") || strings.Contains(syn, "Gulf Stream") {
+		t.Errorf("synopsis = %q", syn)
+	}
+	if syn != parseMarineSynopsis(readFixture(t, "marine_KMFL.html"), "AMZ600") {
+		t.Error("text and html synopsis differ")
+	}
+}
+
+func TestParseMarineTextZone_KeyWest(t *testing.T) {
+	product := readFixture(t, "marine_cwf_KEY.txt")
+
+	hawk := parseMarineTextZone(product, "GMZ042")
+	if hawk == nil {
+		t.Fatal("GMZ042 (Hawk Channel) not found")
+	}
+	if hawk.Issued != "1015 AM EST Thu Nov 19 2026" {
+		t.Errorf("issued = %q", hawk.Issued)
+	}
+	if len(hawk.Periods) == 0 || hawk.Periods[0].Name != "THIS AFTERNOON" {
+		t.Fatalf("periods = %+v", hawk.Periods)
+	}
+	if !strings.HasPrefix(hawk.Periods[0].Text, "Northeast to east winds 10 to 15 knots, becoming northeast") {
+		t.Errorf("first period text = %q", hawk.Periods[0].Text)
+	}
+	for _, p := range hawk.Periods {
+		if strings.Contains(p.Text, "  ") || strings.Contains(p.Text, "\n") {
+			t.Errorf("period %s should be one clean line: %q", p.Name, p.Text)
+		}
+	}
+	for _, zone := range []string{"GMZ052", "GMZ031"} {
+		z := parseMarineTextZone(product, zone)
+		if z == nil || z.Periods[0].Text == hawk.Periods[0].Text {
+			t.Errorf("%s should resolve to its own block", zone)
+		}
+	}
+
+	syn := parseMarineTextSynopsis(product, "GMZ005")
+	if !strings.HasPrefix(syn, "A developing area of low pressure") || strings.Contains(syn, "Gulf Stream") {
+		t.Errorf("synopsis = %q", syn)
+	}
+}
+
 // ── Configuration sanity ────────────────────────────────────────
 
 func TestCoastalLocations_Config(t *testing.T) {
@@ -381,6 +492,7 @@ func TestCoastalSnapshot(t *testing.T) {
 		waterTempAt:     time.Date(2026, 11, 19, 15, 12, 0, 0, time.UTC),
 		waterTempSource: "Virginia Key",
 		wind:            &WindObs{Knots: 12.4, GustKnots: 15.8, Direction: "E", Source: "Virginia Key"},
+		level:           &WaterLevel{Offset: 0.87, Source: "Virginia Key", Time: "2026-11-19T12:54:00-05:00"},
 		marine: []marineZoneData{
 			{Name: "Biscayne Bay", MarineForecast: &MarineForecast{
 				Issued:     "241 AM EST Thu Nov 19 2026",
@@ -406,6 +518,7 @@ func TestCoastalSnapshot(t *testing.T) {
 		"ACTIVE ADVISORY (Biscayne Bay): SMALL CRAFT ADVISORY",
 		"Now: about 1.4 ft and rising",
 		"Thu 4:00 PM: High, 2.2 ft",
+		"Observed water level: running 0.9 ft above the predictions (Virginia Key gauge, Thu 12:54 PM)",
 		"Thu 10:31 PM: Low, 0.5 ft",
 		"Water temperature: 74.8 °F (Virginia Key sensor, Thu 10:12 AM)",
 		"Live wind (Virginia Key sensor): E 12 kt, gusting 16 kt",

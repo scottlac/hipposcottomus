@@ -22,22 +22,21 @@ func renderSiteOG(w io.Writer) error {
 	fillRect(img, img.Bounds(), ogBG)
 
 	// Big centered hippo wordmark.
-	drawTextCentered(img, "🦛  hipposcottomus", ogWidth/2, 280, titleFace, ogText)
+	drawTextCentered(img, "hipposcottomus", ogWidth/2, 280, titleFace, ogText)
 	drawTextCentered(img, "Dashboards & projects by Scott", ogWidth/2, 340, subtitleFace, ogMuted)
 
-	// Dashboard list along the bottom.
-	dashboards := []string{
-		"🌊 Jordan Lake",
-		"⚓ Ft. Lauderdale",
-		"🂡 Hold'em Equity",
-		"🔭 Night Sky",
-		"📊 Analytics",
+	// What's on the site, in two rows: water dashboards, then everything else.
+	rows := [][]string{
+		{"Jordan Lake", "Lake Gaston", "Ft. Lauderdale", "Key Biscayne", "Key Largo"},
+		{"Night Sky", "Hold'em Equity", "QR Codes", "Ranked Voting", "Analytics"},
 	}
-	y := 470
-	x := 140
-	step := (ogWidth - 2*x) / (len(dashboards) - 1)
-	for i, label := range dashboards {
-		drawTextCentered(img, label, x+i*step, y, subtitleFace, ogAccent)
+	const margin = 150
+	for r, row := range rows {
+		y := 450 + r*56
+		step := (ogWidth - 2*margin) / (len(row) - 1)
+		for i, label := range row {
+			drawTextCentered(img, label, margin+i*step, y, subtitleFace, ogAccent)
+		}
 	}
 
 	drawText(img, "hipposcottomus.com", 60, ogHeight-30, subtitleFace, ogMuted)

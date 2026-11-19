@@ -66,6 +66,25 @@ type WindObs struct {
 	Source    string  `json:"source"` // station name
 }
 
+// LevelPoint is one observed-minus-predicted water level sample.
+type LevelPoint struct {
+	Time   string  `json:"time"` // RFC 3339
+	Offset float64 `json:"offset"`
+}
+
+// WaterLevel compares a tide gauge's observed water level with its own
+// prediction. Wind and pressure push real water levels off the astronomical
+// prediction, and that offset is much the same across nearby water — so it can
+// be applied to the predictions for a location that has no gauge of its own.
+type WaterLevel struct {
+	Offset    float64      `json:"offset"`    // latest observed − predicted, ft
+	Observed  float64      `json:"observed"`  // at the gauge, ft MLLW
+	Predicted float64      `json:"predicted"` // at the gauge, ft MLLW
+	Time      string       `json:"time"`
+	Source    string       `json:"source"` // gauge name
+	Series    []LevelPoint `json:"series"` // last 12 hours
+}
+
 // marineZoneConfig is one NWS marine zone shown on a dashboard.
 type marineZoneConfig struct {
 	Zone string // "AMZ630"
@@ -94,7 +113,7 @@ type coastalLocation struct {
 	TideStation     string // CO-OPS tide prediction station id
 	TideStationName string
 
-	// CO-OPS station with live sensors (water temperature and wind).
+	// CO-OPS station with live sensors (water temperature, wind, water level).
 	// Empty if none is close enough to be representative.
 	ObsStation     string
 	ObsStationName string
@@ -122,6 +141,7 @@ type coastalLocation struct {
 	waterTempAt     time.Time
 	waterTempSource string
 	wind            *WindObs
+	level           *WaterLevel
 	forecast        []WeatherPeriod
 	hourly          []WeatherPeriod
 	uv              *UVData
@@ -196,8 +216,9 @@ var coastalLocations = []*coastalLocation{
 		MarineZones: []marineZoneConfig{
 			{Zone: "GMZ042", Name: "Hawk Channel — Ocean Reef to Craig Key, out to the reef"},
 			{Zone: "GMZ052", Name: "Straits of Florida — Ocean Reef to Craig Key, out 20 NM"},
+			{Zone: "GMZ031", Name: "Florida Bay — Barnes, Blackwater and Buttonwood Sounds"},
 		},
-		About: `Key Largo, FL (Upper Keys, ocean side). Tide predictions are for Largo Sound, the enclosed sound inside John Pennekamp Coral Reef State Park that reaches the ocean through the narrow South Sound Creek and North Sound Creek. Tidal range inside the sound is very small — well under 1 ft — so tide height rarely matters for depth; what matters is the current in the creeks and timing. Water temperature is from Blackwater Sound on the bay side of the island, a shallow sound that runs a little warmer in summer and cooler after winter cold fronts than the reef. There is no live wind sensor nearby, so wind is forecast only. Boats here run out through the creeks into Hawk Channel and on to the reef (Molasses, Grecian Rocks, the Christ of the Abyss at Key Largo Dry Rocks) for diving, snorkeling and fishing. Two marine zones are given: Hawk Channel (inside the reef, somewhat protected) and the Straits of Florida (outside the reef, open water). The forecast text covers a long stretch of the Keys; where it says "off the Upper Keys", that clause is the one that applies here. Dive and snorkel trips care most about seas at the reef and thunderstorms.`,
+		About: `Key Largo, FL (Upper Keys, ocean side). Tide predictions are for Largo Sound, the enclosed sound inside John Pennekamp Coral Reef State Park that reaches the ocean through the narrow South Sound Creek and North Sound Creek. Tidal range inside the sound is very small — well under 1 ft — so tide height rarely matters for depth; what matters is the current in the creeks and timing. Water temperature is from Blackwater Sound on the bay side of the island, a shallow sound that runs a little warmer in summer and cooler after winter cold fronts than the reef. There is no live wind sensor nearby, so wind is forecast only. Boats here run out through the creeks into Hawk Channel and on to the reef (Molasses, Grecian Rocks, the Christ of the Abyss at Key Largo Dry Rocks) for diving, snorkeling and fishing. Three marine zones are given: Hawk Channel (ocean side, inside the reef, somewhat protected), the Straits of Florida (outside the reef, open water), and Florida Bay (the bay side: Barnes, Blackwater and Buttonwood Sounds — shallow, protected, reached from the ocean side through cuts such as Adams Cut and Jewfish Creek). Lead with the ocean side, since that is where most trips from Largo Sound go; mention the bay when it is the better option for the day, such as when the ocean side is rough. The forecast text covers a long stretch of the Keys; where it says "off the Upper Keys", that clause is the one that applies here. Dive and snorkel trips care most about seas at the reef and thunderstorms.`,
 	},
 }
 
@@ -530,6 +551,91 @@ func (loc *coastalLocation) updateObservations() {
 	if werr != nil {
 		loc.logf("wind observation error: %v", werr)
 	}
+
+	level, lerr := fetchWaterLevel(loc.ObsStation, loc.ObsStationName)
+	TrackAPICall(loc.trackLabel("NOAA-WaterLevel"), lerr)
+	loc.mu.Lock()
+	loc.level = level // nil on error, as with wind
+	loc.mu.Unlock()
+	if lerr != nil {
+		loc.logf("water level error: %v", lerr)
+	} else {
+		loc.logf("water level is %+.2f ft vs predicted at %s", level.Offset, level.Source)
+	}
+}
+
+// levelOffsets pairs each observed water level with the gauge's prediction for
+// the same instant and returns observed − predicted for every match.
+func levelOffsets(observed, predicted []coopsObs) []LevelPoint {
+	pred := make(map[string]float64, len(predicted))
+	for _, p := range predicted {
+		if v, err := strconv.ParseFloat(p.V, 64); err == nil {
+			pred[p.T] = v
+		}
+	}
+	var out []LevelPoint
+	for _, o := range observed {
+		v, err := strconv.ParseFloat(o.V, 64) // gaps in the record have an empty value
+		if err != nil {
+			continue
+		}
+		p, ok := pred[o.T]
+		if !ok {
+			continue
+		}
+		t, err := parseNOAATime(o.T)
+		if err != nil {
+			continue
+		}
+		out = append(out, LevelPoint{Time: localStamp(t), Offset: math.Round((v-p)*100) / 100})
+	}
+	return out
+}
+
+// fetchWaterLevel reads the last 12 hours of observed and predicted water
+// level at a gauge.
+func fetchWaterLevel(station, name string) (*WaterLevel, error) {
+	base := fmt.Sprintf("%s?station=%s&datum=MLLW&time_zone=gmt&units=english&format=json&range=12", noaaBaseURL, station)
+
+	var obs coopsObsResp
+	if err := coastalGetJSON(base+"&product=water_level", &obs); err != nil {
+		return nil, err
+	}
+	if obs.Error != nil {
+		return nil, fmt.Errorf("NOAA: %s", obs.Error.Message)
+	}
+	var pred struct {
+		Predictions []coopsObs `json:"predictions"`
+		Error       *struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := coastalGetJSON(base+"&product=predictions", &pred); err != nil {
+		return nil, err
+	}
+	if pred.Error != nil {
+		return nil, fmt.Errorf("NOAA: %s", pred.Error.Message)
+	}
+
+	series := levelOffsets(obs.Data, pred.Predictions)
+	if len(series) == 0 {
+		return nil, fmt.Errorf("no overlapping observed and predicted water levels")
+	}
+	last := series[len(series)-1]
+	at, _ := time.Parse(time.RFC3339, last.Time)
+	if age := time.Since(at); age > coastalObsMaxAge {
+		return nil, fmt.Errorf("latest water level is %s old", age.Round(time.Minute))
+	}
+	// Recover the latest observed/predicted pair for display.
+	wl := &WaterLevel{Offset: last.Offset, Time: last.Time, Source: name, Series: series}
+	for i := len(obs.Data) - 1; i >= 0; i-- {
+		if t, err := parseNOAATime(obs.Data[i].T); err == nil && t.Equal(at) {
+			wl.Observed, _ = strconv.ParseFloat(obs.Data[i].V, 64)
+			wl.Predicted = math.Round((wl.Observed-last.Offset)*100) / 100
+			break
+		}
+	}
+	return wl, nil
 }
 
 func (loc *coastalLocation) fetchWind() (*WindObs, error) {
@@ -620,33 +726,80 @@ func (loc *coastalLocation) updateWeather() {
 
 // ── Marine forecast ─────────────────────────────────────────────
 
-func (loc *coastalLocation) updateMarine() {
-	page, err := fetchMarinePage(loc.MarineProduct)
+// marineSource is one way of obtaining and reading the forecast product.
+type marineSource struct {
+	label    string // analytics label kind
+	fetch    func() (string, error)
+	zone     func(doc, zone string) *MarineForecast
+	synopsis func(doc, zone string) string
+}
+
+// marineOffice is the NWS office id for the location's product:
+// "FZUS52.KMFL" → "MFL".
+func (loc *coastalLocation) marineOffice() string {
+	if n := len(loc.MarineProduct); n >= 3 {
+		return loc.MarineProduct[n-3:]
+	}
+	return ""
+}
+
+// readMarine fetches from one source and parses every configured zone.
+func (loc *coastalLocation) readMarine(src marineSource) ([]marineZoneData, string, error) {
+	doc, err := src.fetch()
+	if err != nil {
+		return nil, "", err
+	}
 	var zones []marineZoneData
-	if err == nil {
-		for _, z := range loc.MarineZones {
-			if mf := parseMarineZone(page, z.Zone); mf != nil {
-				zones = append(zones, marineZoneData{Name: z.Name, MarineForecast: mf})
-			} else {
-				loc.logf("marine zone %s not found in %s", z.Zone, loc.MarineProduct)
-			}
-		}
-		if len(zones) == 0 {
-			err = fmt.Errorf("none of the configured zones found in %s", loc.MarineProduct)
+	for _, z := range loc.MarineZones {
+		if mf := src.zone(doc, z.Zone); mf != nil {
+			zones = append(zones, marineZoneData{Name: z.Name, MarineForecast: mf})
+		} else {
+			loc.logf("marine zone %s not found via %s", z.Zone, src.label)
 		}
 	}
-	TrackAPICall(loc.trackLabel("NDBC-Marine"), err)
-	if err != nil {
-		loc.logf("marine forecast error: %v", err)
+	if len(zones) == 0 {
+		// Say what did come back: a block page and a changed layout need
+		// different fixes.
+		sample := marineText(doc)
+		if len(sample) > 80 {
+			sample = sample[:80]
+		}
+		return nil, "", fmt.Errorf("none of the configured zones found (%d bytes, starts %q)", len(doc), sample)
+	}
+	return zones, src.synopsis(doc, loc.MarineSynopsis), nil
+}
+
+// updateMarine reads the marine forecast from the NWS API, falling back to
+// NDBC's copy of the same product if that fails.
+func (loc *coastalLocation) updateMarine() {
+	sources := []marineSource{
+		{
+			label:    "NWS-Marine",
+			fetch:    func() (string, error) { return fetchMarineProductText(loc.marineOffice()) },
+			zone:     parseMarineTextZone,
+			synopsis: parseMarineTextSynopsis,
+		},
+		{
+			label:    "NDBC-Marine",
+			fetch:    func() (string, error) { return fetchMarinePage(loc.MarineProduct) },
+			zone:     parseMarineZone,
+			synopsis: parseMarineSynopsis,
+		},
+	}
+	for _, src := range sources {
+		zones, synopsis, err := loc.readMarine(src)
+		TrackAPICall(loc.trackLabel(src.label), err)
+		if err != nil {
+			loc.logf("marine forecast via %s failed: %v", src.label, err)
+			continue
+		}
+		loc.mu.Lock()
+		loc.marine = zones
+		loc.marineSynopsis = synopsis
+		loc.mu.Unlock()
+		loc.logf("updated marine forecast via %s (%d zone(s))", src.label, len(zones))
 		return
 	}
-	synopsis := parseMarineSynopsis(page, loc.MarineSynopsis)
-
-	loc.mu.Lock()
-	loc.marine = zones
-	loc.marineSynopsis = synopsis
-	loc.mu.Unlock()
-	loc.logf("updated marine forecast (%d zone(s))", len(zones))
 }
 
 // ── Shared HTTP helper ──────────────────────────────────────────
@@ -707,7 +860,8 @@ func (loc *coastalLocation) handleTides(w http.ResponseWriter, r *http.Request) 
 		HiLo    []TideEvent `json:"hiLo"`
 		Curve   []TidePoint `json:"curve"`
 		Station string      `json:"station"`
-	}{loc.tideHiLo, loc.tideCurve, loc.TideStationName}
+		Level   *WaterLevel `json:"level"`
+	}{loc.tideHiLo, loc.tideCurve, loc.TideStationName, loc.level}
 	loc.mu.RUnlock()
 	writeJSON(w, resp)
 }

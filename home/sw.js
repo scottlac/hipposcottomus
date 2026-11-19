@@ -9,7 +9,7 @@
 //
 // Bump CACHE_VERSION on any frontend change you want to force-refresh.
 
-const CACHE_VERSION = "hippo-v12";
+const CACHE_VERSION = "hippo-v13";
 
 const SHELL = [
   "/",

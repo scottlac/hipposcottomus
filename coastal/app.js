@@ -116,6 +116,17 @@ const tideChart = new Chart(document.getElementById("tideChart"), {
         showLine: false,
         data: [],
       },
+      {
+        // Prediction shifted by how far a nearby gauge is reading off its
+        // own prediction. Hidden from the legend until there's data.
+        label: "Observed (est.)",
+        borderColor: "#4ade80",
+        backgroundColor: "transparent",
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.3,
+        data: [],
+      },
     ],
   },
   options: {
@@ -123,7 +134,14 @@ const tideChart = new Chart(document.getElementById("tideChart"), {
     maintainAspectRatio: false,
     interaction: { mode: "index", intersect: false },
     plugins: {
-      legend: { labels: { color: "#94a3b8", boxWidth: 12, padding: 16 } },
+      legend: {
+        labels: {
+          color: "#94a3b8",
+          boxWidth: 12,
+          padding: 16,
+          filter: (item, data) => data.datasets[item.datasetIndex].data.length > 0,
+        },
+      },
       tooltip: {
         ...tooltipStyle,
         callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} ft` },
@@ -274,12 +292,14 @@ async function fetchTides() {
         document.getElementById("nextTideTime").textContent = "";
         const h = tideHeightNow(data.curve || [], now.getTime());
         document.getElementById("tideNow").textContent =
-          h == null ? "" : `${next.type === "High" ? "Rising ↑" : "Falling ↓"} · about ${h.toFixed(1)} ft now`;
+          h == null ? "" : `${next.type === "High" ? "Rising ↑" : "Falling ↓"} · predicted ${h.toFixed(1)} ft now`;
       }
 
       // Tide schedule
       renderTideSchedule(data.hiLo);
     }
+
+    renderWaterLevel(data.level, data.curve || []);
 
     // Show a fixed window: the last 6 hours through the next 48.
     const nowMs = wall(new Date()).getTime();
@@ -290,6 +310,38 @@ async function fetchTides() {
   } catch (err) {
     console.error("Failed to fetch tides:", err);
   }
+}
+
+// Observed water level: a nearby gauge's observed-minus-predicted offset,
+// applied to this location's predicted curve.
+function renderWaterLevel(level, curve) {
+  const note = document.getElementById("tideOffset");
+  const line = tideChart.data.datasets[3];
+  const legend = document.getElementById("tideChartNote");
+  if (!level || !Array.isArray(level.series) || !level.series.length) {
+    note.textContent = "";
+    line.data = [];
+    legend.hidden = true;
+    return;
+  }
+  const off = level.offset;
+  if (Math.abs(off) < 0.1) {
+    note.textContent = `Water level matching predictions (${level.source} gauge)`;
+    note.classList.remove("card__absolute--alert");
+  } else {
+    note.textContent =
+      `Running ${Math.abs(off).toFixed(1)} ft ${off > 0 ? "above" : "below"} predictions (${level.source} gauge)`;
+    note.classList.toggle("card__absolute--alert", Math.abs(off) >= 0.5);
+  }
+  line.data = [];
+  for (const p of level.series) {
+    const t = parseNOAATime(p.time);
+    const h = tideHeightNow(curve, t.getTime());
+    if (h != null) line.data.push({ x: t, y: h + p.offset });
+  }
+  legend.textContent =
+    `Green line: the prediction shifted by the difference between observed and predicted water level at the ${level.source} gauge.`;
+  legend.hidden = line.data.length === 0;
 }
 
 function renderTideSchedule(events) {

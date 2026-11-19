@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 )
@@ -53,6 +54,9 @@ If the forecast shows a clear trend across periods (building, easing, a wind shi
 
 ## Tides
 The snapshot gives the tide state now and the next several highs and lows. Mention tide when it changes a decision: a low falling in the middle of the day where depth is tight, or the tide turning to run against the wind at an inlet or channel. Don't recite the full tide table — the dashboard shows it.
+
+## Observed water level
+Tide predictions are astronomical only; wind and pressure move the real water. When the snapshot gives an "observed water level" line, the predicted heights in the tide list are off by about that much. Under 0.3 ft: ignore it. 0.3–0.5 ft: worth a few words if depth or clearance is tight here. More than 0.5 ft: say it plainly — running high means more water over the shallows but less clearance under fixed bridges and possible water over low docks and ramps at high tide; running low means thinner water than the tide table suggests. Never add the offset to the tide heights yourself and quote the sum as a measurement; say "running about X ft above predictions".
 
 ## Live wind (knots)
 A sensor reading from right now. Use it to confirm or correct the forecast ("already 18 kt gusting 22 at the sensor"). If it agrees with the forecast, there's no need to quote both.
@@ -160,6 +164,15 @@ func (loc *coastalLocation) snapshotAt(now time.Time) string {
 		sb.WriteString("  n/a\n")
 	}
 
+	if l := loc.level; l != nil {
+		dir := "above"
+		if l.Offset < 0 {
+			dir = "below"
+		}
+		fmt.Fprintf(&sb, "  Observed water level: running %.1f ft %s the predictions (%s gauge, %s)\n",
+			math.Abs(l.Offset), dir, l.Source, blurbClock(mustParseStamp(l.Time)))
+	}
+
 	// Sensors
 	if loc.waterTemp != nil {
 		fmt.Fprintf(&sb, "\nWater temperature: %.1f °F (%s sensor, %s)\n",
@@ -228,6 +241,12 @@ func (loc *coastalLocation) snapshotAt(now time.Time) string {
 	}
 
 	return sb.String()
+}
+
+// mustParseStamp parses a timestamp this package formatted itself.
+func mustParseStamp(s string) time.Time {
+	t, _ := time.Parse(time.RFC3339, s)
+	return t
 }
 
 // uvPeakToday is the highest forecast UV index among today's remaining hours.

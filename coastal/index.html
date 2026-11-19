@@ -27,7 +27,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
 <body>
   <header>
@@ -63,6 +63,7 @@
           <span class="card__value" id="nextTideType">—</span>
           <span class="card__unit" id="nextTideDetail"></span>
           <span class="card__absolute" id="tideNow"></span>
+          <span class="card__absolute" id="tideOffset"></span>
         </div>
         <div class="card__updated" id="nextTideTime"></div>
       </div>
@@ -123,6 +124,7 @@
       <div class="chart-container">
         <h2>Tide Predictions (48 h)</h2>
         <canvas id="tideChart"></canvas>
+        <p class="chart-note" id="tideChartNote" hidden></p>
       </div>
       <div class="chart-container">
         <h2>Forecast Wind (next 24 h)</h2>
@@ -153,14 +155,14 @@
       · Marine: <a href="{{.MarineURL}}" target="_blank" rel="noopener">NDBC {{.MarineProduct}}</a>
     </p>
     <p class="footer__note">
-      All times are Eastern. Tide curves are interpolated between NOAA's predicted highs and lows, and predictions don't include wind or weather effects. Not for navigation.
+      All times are Eastern. Tide curves are interpolated between NOAA's predicted highs and lows; predictions don't include wind or weather effects, which is what the observed water level shows where a gauge is nearby. Not for navigation.
     </p>
     <p>
       {{range .Others}}<a href="{{.Path}}">{{.Name}}</a> · {{end}}<a href="/">hipposcottomus</a>
     </p>
   </footer>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
   <script>
     try {
       navigator.sendBeacon(
