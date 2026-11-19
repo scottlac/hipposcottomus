@@ -69,6 +69,25 @@ header h1 {
   font-size: 0.9rem;
 }
 
+.locations {
+  margin-top: 0.6rem;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.locations a {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.2rem 0.75rem;
+}
+
+.locations a:hover { color: var(--accent-blue); border-color: var(--accent-blue); }
+
 /* ===== Main ===== */
 main {
   flex: 1;
@@ -78,10 +97,42 @@ main {
   padding: 0 1rem 2rem;
 }
 
+/* ===== Marine advisory banner ===== */
+.advisory {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: rgba(251, 146, 60, 0.12);
+  border: 1px solid var(--accent-orange);
+  border-radius: var(--radius);
+  padding: 0.85rem 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.advisory[hidden] { display: none; }
+.advisory__icon { font-size: 1.25rem; line-height: 1.3; }
+.advisory__row { margin: 0; font-size: 0.9rem; line-height: 1.45; color: var(--text); }
+.advisory__row strong { color: var(--accent-orange); }
+.advisory__zone { color: var(--text-muted); }
+
+/* ===== AI-generated summary ===== */
+.blurb {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.08), rgba(244, 114, 182, 0.06));
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-blue);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.blurb__text { color: var(--text); font-size: 1rem; line-height: 1.55; margin: 0; }
+.blurb__meta { color: var(--text-muted); font-size: 0.75rem; margin: 0.5rem 0 0; }
+.blurb__attr { margin-left: 0.35rem; }
+
 /* ===== Cards ===== */
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
 }
@@ -136,6 +187,12 @@ main {
 .card__unit {
   font-size: 0.85rem;
   color: var(--text-muted);
+}
+
+.card__absolute {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
 }
 
 .card__updated {
@@ -315,19 +372,64 @@ canvas {
   margin-bottom: 0.75rem;
 }
 
-.marine-forecast__text {
+.marine-forecast__synopsis {
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.marine-forecast__empty { color: var(--text-muted); font-size: 0.85rem; }
+
+.marine-zone {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1rem 1.25rem;
-  font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
-  font-size: 0.78rem;
-  line-height: 1.6;
+  padding: 0.85rem 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.marine-zone__name {
+  font-weight: 600;
+  font-size: 0.95rem;
   color: var(--text);
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 500px;
-  overflow-y: auto;
+  cursor: pointer;
+}
+
+.marine-zone__issued {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 0.5rem 0 0;
+}
+
+.marine-zone__advisory {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent-orange);
+  margin: 0.5rem 0 0;
+}
+
+.marine-zone__periods { margin: 0.75rem 0 0; }
+
+.marine-zone__periods dt {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--accent-blue);
+  margin-top: 0.7rem;
+}
+
+.marine-zone__periods dd {
+  margin: 0.1rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.marine-zone__note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0.75rem 0 0;
 }
 
 /* ===== Footer ===== */
@@ -345,6 +447,9 @@ footer a {
 }
 
 footer a:hover { text-decoration: underline; }
+
+footer p + p { margin-top: 0.5rem; }
+.footer__note { font-size: 0.72rem; }
 
 /* ===== Responsive ===== */
 @media (max-width: 480px) {

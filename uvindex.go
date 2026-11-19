@@ -29,6 +29,9 @@ type UVData struct {
 // openMeteoResponse is the subset of the Open-Meteo forecast API we read.
 // All blocks are optional — the API only returns what we ask for.
 type openMeteoResponse struct {
+	// Offset of the location's civil time from UTC; the time strings below
+	// are in that local time and carry no zone of their own.
+	UTCOffsetSeconds int `json:"utc_offset_seconds"`
 	Current struct {
 		Time    string  `json:"time"`
 		UVIndex float64 `json:"uv_index"`
@@ -62,13 +65,17 @@ func fetchUVIndex(lat, lon float64) (*UVData, error) {
 
 	// Build the next-24h hourly slice starting from the first time that's
 	// >= now (Open-Meteo includes earlier hours since midnight by default).
+	// The timestamps are the location's wall-clock time, so they have to be
+	// read in the location's zone — not the server's (UTC in the container),
+	// which would silently drop the next several hours from the list.
 	now := time.Now()
+	loc := time.FixedZone("location", data.UTCOffsetSeconds)
 	hourly := make([]UVHour, 0, 24)
 	for i, t := range data.Hourly.Time {
 		if i >= len(data.Hourly.UVIndex) {
 			break
 		}
-		parsed, err := time.ParseInLocation("2006-01-02T15:04", t, time.Local)
+		parsed, err := time.ParseInLocation("2006-01-02T15:04", t, loc)
 		if err != nil {
 			// Best-effort: include it anyway with the raw string.
 			hourly = append(hourly, UVHour{Time: t, UVIndex: data.Hourly.UVIndex[i]})

@@ -12,7 +12,7 @@
 2. **Lake Gaston Dashboard** (`/gaston/`) — Water temp, water level, weather, wind for Lake Gaston, NC/VA. Live data via USGS IV (station 02079785 at Elams, NC) + USGS DV backfill. Full pool ~200 ft. NWS grid is dynamically discovered from the lake centroid (36.50, -77.90).
 3. **Lake Minneola Dashboard** (`/minneola/`) — Water level, *estimated* water temp, weather, wind, UV, AI blurb for Lake Minneola in Clermont, FL (Clermont Chain of Lakes). Water level comes from **SJRWMD station 70400984** sitting directly in the lake (no proxy), served via the **USF Water Atlas API** (`api.wateratlas.usf.edu`, `DataMapper/Agency/SJRWMD_HYDRO/Station/70400984/Hydrology/Levels/GraphData`). The data is daily but with a multi-week SJRWMD publication lag, so polling once every 6 hours with a 120-day look-back is enough. Delta is computed against SJRWMD's adopted **Min Average target of 94.4 ft NAVD-88** (Ch. 40C-8, F.A.C., the regulated normal). The data is NAVD-88-only — earlier the Water Atlas spreadsheet download labeled both NGVD-29 and NAVD-88 columns identically, but the API confirms the underlying datum is NAVD-88 (parameterID 905, `Level_ft_NAVD88`). Water temperature is **estimated** from a 7-day trailing mean of NWS air temperature via Open-Meteo's archive + forecast endpoints; the card carries an "EST" badge. NWS grid is discovered from the lake centroid (28.59, -81.78).
 4. **Lake Conway Dashboard** (`/conway/`) — Same shape as Minneola but for the Lake Conway four-lake chain in south Orlando (Pine Castle / Belle Isle / Edgewood). Water level from Orange County's own data-logger station "Conway Station" (StationID `BCWP`, agency `ORANGECO_DATA_LOGGERS`), fetched via the USF Water Atlas API. The earlier USGS `02262800` is a manual-read station and doesn't publish through the USGS IV/DV endpoints. Water temperature is estimated via the same 7-day air-temp proxy as Minneola (the data logger also publishes temperature but it tends to be noisy). The chain is weir-controlled at 85.46 ft NAVD-88. NWS grid discovered from (28.47, -81.35).
-5. **Ft. Lauderdale Boating** (`/ftlauderdale/`) — Tides, water temp, marine forecast, wind for Fort Lauderdale, FL
+5. **Coastal boating dashboards** — Ft. Lauderdale (`/ftlauderdale/`), Key Biscayne (`/keybiscayne/`), Key Largo (`/keylargo/`): tides, water temp, live wind, marine forecast, AI summary. One shared backend and frontend; each location is an entry in `coastalLocations`
 6. **Hold'em Equity Calculator** (`/poker/`) — Pick hole cards + board, computes Texas Hold'em win probability
 7. **Night Sky** (`/astronomy/`) — Sun/twilight times, moon phase, ISS pass predictions for user location
 8. **Site Analytics** (`/analytics/`) — Page views per dashboard, external API health, Go runtime stats, traffic heatmap
@@ -24,14 +24,14 @@
 - `minneola.go` — Lake Minneola backend: hits the **USF Water Atlas API** (`api.wateratlas.usf.edu/DataMapper/Agency/SJRWMD_HYDRO/Station/70400984/Hydrology/Levels/GraphData?numberOfDays=N`) for water-level history straight from the SJRWMD station inside the lake. `minneolaRefreshLevel(daysBack)` is the shared helper: `minneolaBackfillLevel` calls it with 5 years at startup; `minneolaLevelLoop` calls it with 120 days every 6 hours. Adds NWS forecast + Open-Meteo UV. Water temp is estimated separately (see `minneola_temp_estimate.go`).
 - `conway.go` — Lake Conway backend: hits the USF Water Atlas API (`api.wateratlas.usf.edu/DataMapper/Agency/ORANGECO_DATA_LOGGERS/Station/BCWP/Hydrology/Levels/GraphData?numberOfDays=N`) for water-level history. `conwayRefreshLevel(daysBack)` is the shared helper: `conwayBackfillLevel` runs once at startup with 5 years; `conwayLevelLoop` polls every 6 hours with 120 days. The station only started publishing in April 2026, so historical depth will grow over time. Earlier the file used USGS `02262800` — that station is manual-read monthly and never published anything useful through USGS endpoints.
 - `temp_estimate.go` — Generic Open-Meteo water-temp estimator used by Florida lakes that lack a USGS temp sensor. Provides `LakeTempEstimateConfig` (lat/lon, history target, window days, health-source label), plus `backfillLakeTempEstimate` (5-year archive + recent forecast) and `lakeTempEstimateLoop` (refresh on the lake's weather cadence). Each lake gets a thin driver file (`minneola_temp_estimate.go`, `conway_temp_estimate.go`) that wires its own config; the helpers (`fetchOpenMeteoDaily`, `mergeDailyByDate`, `trailingMeanDailyMean`) live here.
-- `ftl.go` — Ft. Lauderdale backend: NOAA CO-OPS tides, NWS weather, NDBC marine forecast, water temp
+- `coastal.go` — shared coastal backend: per-location config (`coastalLocations`), NOAA CO-OPS tides/water temp/wind, NDBC buoy water temp, NWS weather. `coastal_marine.go` parses NDBC marine forecast pages by zone code; `coastal_blurb.go` holds the AI summary prompt and snapshot
 - `poker.go` — Hold'em equity calculator backend (uses `github.com/paulhankin/poker/v2`)
 - `astro.go` — Night Sky backend: sun/moon/twilight computations, ISS TLE fetch + pass predictions (uses `github.com/joshuaferrara/go-satellite`)
 - `analytics.go` — Site analytics backend: page-view middleware, API health tracker (`TrackAPICall`), heatmap, runtime stats, persistence
 - `static/` — Jordan Lake frontend (index.html, app.js, style.css)
 - `gaston/` — Lake Gaston frontend; clone of `static/` with `FULL_POOL=200.0` and `<base href="/gaston/">` so the same app.js hits `/gaston/api/*`
 - `minneola/` — Lake Minneola frontend; clone of `gaston/` with `FULL_POOL=94.4` (SJRWMD Min Average target in NAVD-88, matching the Water Atlas datum), `<base href="/minneola/">`, an AI blurb section, an EST badge on the temp card, and a footer citing the SJRWMD direct station
-- `ftl/` — Ft. Lauderdale frontend
+- `coastal/` — shared coastal frontend; `index.html` is a Go `html/template` rendered once per location at startup
 - `poker/` — Poker frontend
 - `astro/` — Night Sky frontend
 - `analytics/` — Site Analytics frontend
@@ -47,11 +47,14 @@
 - **Lake Minneola water temperature:** *Estimated* from a 7-day trailing mean of NWS air temperature via Open-Meteo's archive (5-year backfill, ~5-day lag) and forecast (`past_days=92`, covers the lag + today) endpoints. No nearby USGS station — including the obvious Palatlakaha River outflow gauges — reports water temperature. The estimate is good to ~±3 °F for a ~10 ft-deep subtropical lake; the card shows "(est.)" and the blurb prompt is written to never quote the number verbatim.
 - **NWS Weather:** `api.weather.gov` (air temp, wind, forecast)
 - **FTL Tides:** NOAA CO-OPS station `8722939` (hi-lo only — cosine-interpolated into smooth curve)
-- **FTL Water Temp:** NOAA CO-OPS Virginia Key station `8723214` (closest station with water temp)
+- **FTL Water Temp & Wind:** NOAA CO-OPS South Port Everglades `8722956` (about 2 mi from Bahia Mar)
+- **Key Biscayne:** tides `8723251` (Coral Shoal, Biscayne Channel), water temp & wind from Virginia Key `8723214`, marine zones `AMZ630` + `AMZ651` in `FZUS52.KMFL`
+- **Key Largo:** tides `8723651` (Largo Sound), water temp from NDBC `BWSF1` (Blackwater Sound), marine zones `GMZ042` + `GMZ052` in `FZUS52.KKEY`
+- **Adding a coastal location:** add an entry to `coastalLocations`, plus the path in `k8s/manifests.yaml`, `home/index.html`, `home/sw.js`, `analytics.go` `trackedPaths` and `analytics/app.js`
 - **FTL Marine Forecast:** NDBC `FZUS52.KMFL`
 
 ## Key Architecture Details
-- Go `embed.FS` for all static assets — each feature file embeds its own directory (`main.go` embeds `static/ home/ poker/`, `ftl.go` embeds `ftl/`, `astro.go` embeds `astro/`, `analytics.go` embeds `analytics/`)
+- Go `embed.FS` for all static assets — each feature file embeds its own directory (`main.go` embeds `static/ home/ poker/`, `coastal.go` embeds `coastal/`, `astro.go` embeds `astro/`, `analytics.go` embeds `analytics/`)
 - Each feature exposes an `InitXxx(mux *http.ServeMux)` function called from `main.go` to register routes
 - `History` type with `Add`, `AddWithDate`, `Sort`, `SaveToFile`, `LoadFromFile` — no max cap
 - Persistence under `/data/` (env-overridable via `DATA_DIR`): `temp_history.json`, `level_history.json`, `analytics.json`
