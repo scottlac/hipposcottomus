@@ -701,8 +701,8 @@ func main() {
 	mux.HandleFunc(basePath+"/api/history", handleHistory)
 	mux.HandleFunc(basePath+"/api/weather", handleWeather)
 
-	// --- Ft Lauderdale dashboard ---
-	InitFTL(mux)
+	// --- Coastal boating dashboards (Ft. Lauderdale, Key Biscayne, Key Largo) ---
+	InitCoastal(mux)
 
 	// --- Lake Gaston dashboard ---
 	InitGaston(mux)

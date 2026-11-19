@@ -211,6 +211,20 @@ spec:
                 name: jordan-lake-scraper
                 port:
                   number: 8080
+          - path: /keybiscayne
+            pathType: Prefix
+            backend:
+              service:
+                name: jordan-lake-scraper
+                port:
+                  number: 8080
+          - path: /keylargo
+            pathType: Prefix
+            backend:
+              service:
+                name: jordan-lake-scraper
+                port:
+                  number: 8080
           - path: /poker
             pathType: Prefix
             backend:

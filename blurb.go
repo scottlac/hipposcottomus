@@ -19,6 +19,7 @@ import (
 const (
 	blurbModel           = anthropic.ModelClaudeHaiku4_5_20251001
 	blurbModelLabel      = "claude-haiku-4-5"
+	blurbModelDisplay    = "Claude Haiku 4.5" // shown in the dashboards' attribution line
 	blurbMinInterval     = 30 * time.Minute // min time between on-demand generations
 	blurbMaxOutputTokens = 280              // ~3 sentences, with a comfortable ceiling
 	blurbStateFile       = "llm_usage.json"
@@ -362,4 +363,7 @@ func InitBlurb(mux *http.ServeMux) {
 	RegisterBlurb(mux, jordanBlurbConfig)
 	RegisterBlurb(mux, minneolaBlurbConfig)
 	RegisterBlurb(mux, conwayBlurbConfig)
+	for _, loc := range coastalLocations {
+		RegisterBlurb(mux, loc.blurbConfig())
+	}
 }

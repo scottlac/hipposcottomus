@@ -10,7 +10,9 @@
 | 🚤 **Lake Gaston** (NC/VA) | [`/gaston/`](https://hipposcottomus.com/gaston/) | USGS instantaneous-value live readings + daily-value backfill, NWS weather |
 | 🏝️ **Lake Minneola** (FL) | [`/minneola/`](https://hipposcottomus.com/minneola/) | SJRWMD in-lake station via the USF Water Atlas API, estimated water temp from an air-temp trailing mean, UV index |
 | 🛥️ **Lake Conway** (FL) | [`/conway/`](https://hipposcottomus.com/conway/) | Orange County data-logger station via the USF Water Atlas API, estimated water temp |
-| ⚓ **Ft. Lauderdale Boating** | [`/ftlauderdale/`](https://hipposcottomus.com/ftlauderdale/) | NOAA CO-OPS tides (hi/lo points cosine-interpolated into a smooth curve), water temp, NDBC marine forecast |
+| ⚓ **Ft. Lauderdale Boating** | [`/ftlauderdale/`](https://hipposcottomus.com/ftlauderdale/) | NOAA CO-OPS tides (hi/lo points cosine-interpolated into a smooth curve), live water temp and wind from South Port Everglades, NWS marine zone forecast with advisory banner, AI summary |
+| 🏖️ **Key Biscayne Boating** | [`/keybiscayne/`](https://hipposcottomus.com/keybiscayne/) | Same stack: Biscayne Channel tides, live water temp and wind from Virginia Key, Biscayne Bay and Atlantic marine zones |
+| 🤿 **Key Largo Boating** | [`/keylargo/`](https://hipposcottomus.com/keylargo/) | Same stack: Largo Sound tides, Blackwater Sound water temp (NDBC), Hawk Channel and Straits of Florida marine zones |
 | 🔭 **Night Sky** | [`/astronomy/`](https://hipposcottomus.com/astronomy/) | Sun & twilight times, moon phase and rise/set, and visible ISS passes computed from live TLEs |
 
 ## Tools & Analytics
@@ -22,7 +24,7 @@
 
 ## Architecture
 
-- **One Go binary, zero frameworks.** Each app is its own Go file (`main.go`, `gaston.go`, `minneola.go`, `conway.go`, `ftl.go`, `poker.go`, `astro.go`, `qr.go`, `analytics.go`) registering its handlers on a shared server; every frontend is embedded with `embed.FS`, so the deployable artifact is a single static binary (`CGO_ENABLED=0`).
+- **One Go binary, zero frameworks.** Each app is its own Go file (`main.go`, `gaston.go`, `minneola.go`, `conway.go`, `coastal.go`, `poker.go`, `astro.go`, `qr.go`, `analytics.go`) registering its handlers on a shared server; every frontend is embedded with `embed.FS`, so the deployable artifact is a single static binary (`CGO_ENABLED=0`).
 - **Vanilla JS + Chart.js frontends**, Pico.css baseline with CSS custom properties for theming — no build step.
 - **Integrations with 8+ public data APIs** (USACE, USGS, NOAA CO-OPS, NDBC, NWS, Open-Meteo, USF Water Atlas, ISS TLEs), each wrapped with health tracking that surfaces on the analytics dashboard.
 - **Observability:** Prometheus gauges exposed at `/metrics`, with a `ServiceMonitor` for Prometheus Operator auto-discovery and plain scrape annotations as a fallback.

@@ -2,6 +2,15 @@
 const REFRESH = 120_000; // 2 min
 const BASE = document.querySelector("base")?.getAttribute("href")?.replace(/\/$/, "") || "";
 
+// Every location is in Florida's Eastern zone. wall() returns a Date whose
+// *local* fields read as Eastern wall-clock time, so the charts, tide table
+// and cards all show the boat's time even when the viewer is somewhere else.
+const TZ = "America/New_York";
+function wall(d) {
+  return new Date(new Date(d).toLocaleString("en-US", { timeZone: TZ }));
+}
+const fmtTime = (d) => d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+
 // ===== Shared tooltip style =====
 const tooltipStyle = {
   backgroundColor: "#1e293b",
@@ -19,7 +28,7 @@ const nowLinePlugin = {
     const yScale = chart.scales.y;
     if (!xScale || !yScale) return;
 
-    const now = Date.now();
+    const now = wall(new Date()).getTime();
     const pixel = xScale.getPixelForValue(now);
     if (pixel < xScale.left || pixel > xScale.right) return;
 
@@ -210,9 +219,21 @@ const WIND_DEGREES = {
 
 // ===== Fetchers =====
 
-// Parse NOAA local-time string "2026-04-17 14:00" as local Date
+// API times are RFC 3339; chart and table positions use Eastern wall-clock.
 function parseNOAATime(t) {
-  return new Date(t.replace(" ", "T"));
+  return wall(t);
+}
+
+// Height of the tide right now, interpolated from the 10-minute curve.
+function tideHeightNow(curve, now) {
+  for (let i = 0; i < curve.length - 1; i++) {
+    const t0 = parseNOAATime(curve[i].time).getTime();
+    const t1 = parseNOAATime(curve[i + 1].time).getTime();
+    if (now >= t0 && now <= t1 && t1 > t0) {
+      return curve[i].height + ((now - t0) / (t1 - t0)) * (curve[i + 1].height - curve[i].height);
+    }
+  }
+  return null;
 }
 
 async function fetchTides() {
@@ -243,20 +264,27 @@ async function fetchTides() {
       }));
 
       // Find next upcoming tide
-      const now = new Date();
+      const now = wall(new Date());
       const next = data.hiLo.find((e) => parseNOAATime(e.time) > now);
       if (next) {
         const t = parseNOAATime(next.time);
         document.getElementById("nextTideType").textContent = next.type;
         document.getElementById("nextTideDetail").textContent =
-          `${next.height.toFixed(2)} ft`;
-        document.getElementById("nextTideTime").textContent =
-          t.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+          `${next.height.toFixed(2)} ft at ${fmtTime(t)}`;
+        document.getElementById("nextTideTime").textContent = "";
+        const h = tideHeightNow(data.curve || [], now.getTime());
+        document.getElementById("tideNow").textContent =
+          h == null ? "" : `${next.type === "High" ? "Rising ↑" : "Falling ↓"} · about ${h.toFixed(1)} ft now`;
       }
 
       // Tide schedule
       renderTideSchedule(data.hiLo);
     }
+
+    // Show a fixed window: the last 6 hours through the next 48.
+    const nowMs = wall(new Date()).getTime();
+    tideChart.options.scales.x.min = nowMs - 6 * 3600_000;
+    tideChart.options.scales.x.max = nowMs + 48 * 3600_000;
 
     tideChart.update("none");
   } catch (err) {
@@ -269,7 +297,7 @@ function renderTideSchedule(events) {
   el.innerHTML = "";
 
   // Show next 8 events
-  const now = new Date();
+  const now = wall(new Date());
   const upcoming = events.filter((e) => parseNOAATime(e.time) > new Date(now - 3600_000));
   const show = upcoming.slice(0, 8);
 
@@ -281,7 +309,7 @@ function renderTideSchedule(events) {
     div.innerHTML = `
       <span class="tide-event__icon">${e.type === "High" ? "▲" : "▼"}</span>
       <span class="tide-event__type">${e.type}</span>
-      <span class="tide-event__time">${t.toLocaleDateString("en-US", {weekday: "short"})} ${t.toLocaleTimeString("en-US", {hour: "numeric", minute: "2-digit"})}</span>
+      <span class="tide-event__time">${t.toLocaleDateString("en-US", {weekday: "short"})} ${fmtTime(t)}</span>
       <span class="tide-event__height">${e.height.toFixed(2)} ft</span>
     `;
     el.appendChild(div);
@@ -294,8 +322,14 @@ async function fetchWeather() {
     const data = await res.json();
 
     // Water temp
+    const tempSrc = document.getElementById("waterTempSource");
     if (data.waterTemp != null) {
       document.getElementById("waterTemp").textContent = data.waterTemp.toFixed(1);
+      const at = data.waterTempTime ? ` · ${fmtTime(wall(data.waterTempTime))}` : "";
+      tempSrc.textContent = data.waterTempSource ? `${data.waterTempSource}${at}` : "";
+    } else {
+      document.getElementById("waterTemp").textContent = "—";
+      tempSrc.textContent = "Sensor offline";
     }
 
     // Current conditions
@@ -304,16 +338,28 @@ async function fetchWeather() {
       document.getElementById("airTemp").textContent = now.temperature;
       document.getElementById("weatherDesc").textContent = `· ${now.shortForecast}`;
       document.getElementById("weatherIcon").textContent = weatherIcon(now.shortForecast);
-      document.getElementById("windSpeed").textContent = now.windSpeed;
-      document.getElementById("windDir").textContent = now.windDirection;
-
-      const deg = WIND_DEGREES[now.windDirection] ?? 0;
+      // Prefer the live anemometer; fall back to the hourly forecast.
+      const obs = data.wind;
+      let deg;
+      if (obs) {
+        document.getElementById("windSpeed").textContent = `${Math.round(obs.knots)} kt`;
+        document.getElementById("windDir").textContent =
+          `${obs.direction} · gusts ${Math.round(obs.gustKnots)} kt`;
+        document.getElementById("windSource").textContent =
+          `Live at ${obs.source} · ${fmtTime(wall(obs.time))}`;
+        deg = obs.degrees;
+      } else {
+        document.getElementById("windSpeed").textContent = now.windSpeed;
+        document.getElementById("windDir").textContent = now.windDirection;
+        document.getElementById("windSource").textContent = "NWS forecast for this hour";
+        deg = WIND_DEGREES[now.windDirection] ?? 0;
+      }
       const arrow = document.getElementById("windArrow");
       if (arrow) arrow.style.transform = `translate(-50%, 0) rotate(${deg + 180}deg)`;
 
       // Wind chart
       windChart.data.datasets[0].data = data.hourly.map((p) => ({
-        x: new Date(p.startTime),
+        x: wall(p.startTime),
         y: parseWindSpeed(p.windSpeed),
         dir: p.windDirection,
       }));
@@ -412,20 +458,127 @@ function renderForecast(periods) {
   }
 }
 
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text != null) node.textContent = text;
+  return node;
+}
+
 async function fetchMarine() {
   try {
     const res = await fetch(`${BASE}/api/marine`);
     const data = await res.json();
-    const el = document.getElementById("marineForecast");
-    el.textContent = data.forecast || "Marine forecast unavailable.";
+    const zones = data.zones || [];
+
+    // Advisory banner: every distinct advisory across this location's zones.
+    const advisories = new Map();
+    for (const z of zones) {
+      for (const a of z.advisories || []) {
+        if (!advisories.has(a)) advisories.set(a, []);
+        advisories.get(a).push(z.name);
+      }
+    }
+    const banner = document.getElementById("advisorySection");
+    const body = document.getElementById("advisoryBody");
+    body.replaceChildren();
+    for (const [text, names] of advisories) {
+      const row = el("p", "advisory__row");
+      row.append(el("strong", null, text), el("span", "advisory__zone", ` — ${names.join("; ")}`));
+      body.append(row);
+    }
+    banner.hidden = advisories.size === 0;
+
+    const synopsis = document.getElementById("marineSynopsis");
+    synopsis.textContent = data.synopsis || "";
+    synopsis.hidden = !data.synopsis;
+
+    const container = document.getElementById("marineZones");
+    if (!zones.length) {
+      container.replaceChildren(el("p", "marine-forecast__empty", "Marine forecast unavailable."));
+      return;
+    }
+    // Keep whichever zones the user has opened across refreshes.
+    const wasOpen = new Set(
+      [...container.querySelectorAll("details[open]")].map((d) => d.dataset.zone)
+    );
+    const first = container.querySelector("details") === null;
+    container.replaceChildren();
+    zones.forEach((z, i) => {
+      const details = el("details", "marine-zone");
+      details.dataset.zone = z.zone;
+      details.open = first ? i === 0 : wasOpen.has(z.zone);
+      const summary = el("summary", "marine-zone__name", z.name);
+      details.append(summary);
+      if (z.issued) details.append(el("p", "marine-zone__issued", `Issued ${z.issued}`));
+      for (const a of z.advisories || []) details.append(el("p", "marine-zone__advisory", a));
+      const list = el("dl", "marine-zone__periods");
+      for (const p of z.periods || []) {
+        list.append(el("dt", null, p.name), el("dd", null, p.text));
+      }
+      details.append(list);
+      for (const n of z.notes || []) details.append(el("p", "marine-zone__note", n));
+      container.append(details);
+    });
   } catch (err) {
     console.error("Failed to fetch marine forecast:", err);
+  }
+}
+
+// ===== AI-generated boating summary =====
+// A 204 means the server hasn't generated one yet (fresh pod): show the
+// placeholder and poll every 5s for up to a minute, then give up and hide.
+const BLURB_RETRY_MS = 5_000;
+const BLURB_MAX_RETRIES = 12;
+let blurbRetryTimer = null;
+let blurbRetryCount = 0;
+
+async function fetchBlurb() {
+  const section = document.getElementById("blurbSection");
+  const textEl = document.getElementById("blurbText");
+  const metaEl = document.getElementById("blurbMeta");
+  try {
+    const res = await fetch(`${BASE}/api/blurb`);
+    if (res.status === 204) {
+      if (blurbRetryCount >= BLURB_MAX_RETRIES) {
+        section.hidden = true;
+        return;
+      }
+      textEl.textContent = "Generating boating summary…";
+      metaEl.textContent = "";
+      section.hidden = false;
+      if (!blurbRetryTimer) {
+        blurbRetryCount++;
+        blurbRetryTimer = setTimeout(() => {
+          blurbRetryTimer = null;
+          fetchBlurb();
+        }, BLURB_RETRY_MS);
+      }
+      return;
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    textEl.textContent = data.text || "";
+    const ts = data.generatedAt ? new Date(data.generatedAt) : null;
+    if (ts && !isNaN(ts)) {
+      const mins = Math.max(0, Math.round((Date.now() - ts.getTime()) / 60000));
+      metaEl.textContent =
+        mins === 0 ? "just now" : mins < 90 ? `${mins} min ago` : `${Math.round(mins / 60)} h ago`;
+    } else {
+      metaEl.textContent = "";
+    }
+    section.hidden = false;
+    blurbRetryCount = 0;
+  } catch (err) {
+    console.warn("blurb fetch failed:", err);
+    section.hidden = true;
   }
 }
 
 // ===== Init =====
 async function refresh() {
   await Promise.all([fetchTides(), fetchWeather(), fetchMarine()]);
+  fetchBlurb();
 }
 
 refresh();

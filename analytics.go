@@ -49,6 +49,8 @@ var trackedPaths = map[string]string{
 	"/minneola/":       "minneola",
 	"/conway/":         "conway",
 	"/ftlauderdale/":   "ftl",
+	"/keybiscayne/":    "keybiscayne",
+	"/keylargo/":       "keylargo",
 	"/poker/":          "poker",
 	"/qr/":             "qr",
 	"/vote/":           "vote",
