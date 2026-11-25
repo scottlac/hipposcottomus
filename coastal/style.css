@@ -114,6 +114,18 @@ main {
 .advisory__row { margin: 0; font-size: 0.9rem; line-height: 1.45; color: var(--text); }
 .advisory__row strong { color: var(--accent-orange); }
 .advisory__zone { color: var(--text-muted); }
+.advisory__body { flex: 1; min-width: 0; }
+.advisory__alert + .advisory__alert,
+.advisory__alert + .advisory__row { margin-top: 0.35rem; }
+.advisory__alert > summary { cursor: pointer; list-style-position: outside; }
+.advisory__row strong.advisory__warning { color: #f87171; }
+.advisory__text {
+  margin: 0.4rem 0 0.2rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  white-space: pre-line;
+}
 
 /* ===== AI-generated summary ===== */
 .blurb {

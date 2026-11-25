@@ -13,6 +13,7 @@
 | ⚓ **Ft. Lauderdale Boating** | [`/ftlauderdale/`](https://hipposcottomus.com/ftlauderdale/) | NOAA CO-OPS tides (hi/lo points cosine-interpolated into a smooth curve), live water temp, wind and observed-vs-predicted water level from South Port Everglades, NWS marine zone forecast with advisory banner, AI summary |
 | 🏖️ **Key Biscayne Boating** | [`/keybiscayne/`](https://hipposcottomus.com/keybiscayne/) | Same stack: Biscayne Channel tides, live water temp and wind from Virginia Key, Biscayne Bay and Atlantic marine zones |
 | 🤿 **Key Largo Boating** | [`/keylargo/`](https://hipposcottomus.com/keylargo/) | Same stack: Largo Sound tides, Blackwater Sound water temp (NDBC), Hawk Channel, Straits of Florida and Florida Bay marine zones |
+| 🐢 **North Topsail Beach** | [`/northtopsail/`](https://hipposcottomus.com/northtopsail/) | Same stack: Ocean City Beach pier tides; water level against NWS flood levels, water temp and wind from the Wrightsville Beach gauge; NWS coastal flood / high surf alerts; Cape Lookout to Surf City marine zone |
 | 🔭 **Night Sky** | [`/astronomy/`](https://hipposcottomus.com/astronomy/) | Sun & twilight times, moon phase and rise/set, and visible ISS passes computed from live TLEs |
 
 ## Tools & Analytics

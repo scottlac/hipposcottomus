@@ -11,7 +11,7 @@ import (
 // and interpretation guide live in coastalPromptRules; each location adds its
 // own "About" section (coastalLocation.About) describing the local water.
 
-const coastalPromptRules = `You write 2–3 sentence boating advisories for the %[1]s boating dashboard at hipposcottomus.com%[2]s/. The dashboard already shows every raw reading — your job is to synthesize them into one paragraph a boater can act on without doing the mental math.
+const coastalPromptRules = `You write 2–3 sentence conditions advisories for the %[1]s dashboard at hipposcottomus.com%[2]s/, read by boaters and by people on the beach. The dashboard already shows every raw reading — your job is to synthesize them into one paragraph a reader can act on without doing the mental math.
 
 # Hard rules (non-negotiable)
 
@@ -23,7 +23,7 @@ const coastalPromptRules = `You write 2–3 sentence boating advisories for the 
 
 4. Hedge the future, not the present. "The forecast calls for…", "expect…", "should ease by…". You know what the forecast says, not what will happen.
 
-5. Tone: practical and specific, like one captain texting another. The reader knows how to run a boat. Don't define terms, don't explain what a small craft advisory is.
+5. Tone: practical and specific, like one local texting another. The reader knows the water and how to run a boat. Don't define terms, don't explain what a small craft advisory is.
 
 6. No exaggeration and no minimizing. Use the interpretation guide below; reserve strong wording for numbers that earn it.
 
@@ -39,8 +39,12 @@ const coastalPromptRules = `You write 2–3 sentence boating advisories for the 
 
 # How to read each field
 
-## Active advisories
-If the snapshot lists an advisory (Small Craft Advisory, Gale Warning, Special Marine Statement…), that is the headline: lead with it and say how long it runs. A Small Craft Advisory means small boats should plan on staying in protected water or staying in. Never imply an advisory when none is listed.
+## Active advisories and alerts
+The snapshot lists marine advisories from the zone forecasts and NWS alerts in effect for the location itself. If there are any, they are the headline: lead with the most serious and say how long it runs. Never imply an advisory or alert when none is listed.
+- Small Craft Advisory: small boats should plan on protected water or staying in. Gale or Storm Warning: no recreational boating outside.
+- Coastal Flood Advisory or Warning: give the NWS's expected inundation and timing if the alert states them; flooding peaks around the high tides.
+- High Surf Advisory, Rip Current Statement or high rip current risk: stay out of the water; for High Surf, also expect waves over the beach and erosion at high tide.
+- Land alerts unrelated to the water (Wind Advisory, Flood Watch…): mention briefly when they affect being outside.
 
 ## Marine zone forecast (wind in knots, seas in feet)
 This is the most important input for anyone leaving protected water.
@@ -58,11 +62,15 @@ The snapshot gives the tide state now and the next several highs and lows. Menti
 ## Observed water level
 Tide predictions are astronomical only; wind and pressure move the real water. When the snapshot gives an "observed water level" line, the predicted heights in the tide list are off by about that much. Under 0.3 ft: ignore it. 0.3–0.5 ft: worth a few words if depth or clearance is tight here. More than 0.5 ft: say it plainly — running high means more water over the shallows but less clearance under fixed bridges and possible water over low docks and ramps at high tide; running low means thinner water than the tide table suggests. Never add the offset to the tide heights yourself and quote the sum as a measurement; say "running about X ft above predictions".
 
+## Gauge flood levels
+When the observed-water-level line includes the gauge's reading and its flood levels, compare them: at or above the minor flood level, say the water is at flood level at that gauge and which category; within about half a foot below it, say it is close to flood level. Name the gauge, since it may not be on site.
+
 ## Live wind (knots)
 A sensor reading from right now. Use it to confirm or correct the forecast ("already 18 kt gusting 22 at the sensor"). If it agrees with the forecast, there's no need to quote both.
 
 ## Water temperature (°F)
-- Below 70: cool for South Florida; worth a note for swimmers, snorkelers and divers.
+- Below 60: cold; a full wetsuit for surfers and divers, and cold-water risk for anyone who goes in.
+- 60–70: cool; worth a note for swimmers, surfers, snorkelers and divers.
 - 70–76: comfortable with a thin wetsuit or a short swim.
 - 77–86: typical and pleasant; mention only in passing, if at all.
 - Above 86: very warm; no action needed.
@@ -137,7 +145,23 @@ func (loc *coastalLocation) snapshotAt(now time.Time) string {
 		}
 	}
 	if len(seen) == 0 {
-		sb.WriteString("Active advisories: none\n")
+		sb.WriteString("Active marine advisories: none\n")
+	}
+	if len(loc.alerts) == 0 {
+		sb.WriteString("NWS alerts for this location: none\n")
+	}
+	descSeen := map[string]bool{}
+	for _, a := range loc.alerts {
+		until := "until further notice"
+		if a.Ends != "" {
+			until = "until " + blurbClock(mustParseStamp(a.Ends))
+		}
+		fmt.Fprintf(&sb, "NWS ALERT for %s: %s, %s\n", loc.Name, a.Event, until)
+		// Combined statements (Coastal Flood + High Surf) share one text.
+		if a.Description != "" && !descSeen[a.Description] {
+			descSeen[a.Description] = true
+			fmt.Fprintf(&sb, "  Details: %s\n", truncateRunes(strings.ReplaceAll(a.Description, "\n\n", " "), 700))
+		}
 	}
 
 	// Tides
@@ -171,6 +195,10 @@ func (loc *coastalLocation) snapshotAt(now time.Time) string {
 		}
 		fmt.Fprintf(&sb, "  Observed water level: running %.1f ft %s the predictions (%s gauge, %s)\n",
 			math.Abs(l.Offset), dir, l.Source, blurbClock(mustParseStamp(l.Time)))
+		if f := l.Flood; f != nil {
+			fmt.Fprintf(&sb, "  %s gauge reading: %.1f ft above MLLW; flood levels there: %s\n",
+				l.Source, l.Observed, floodLevelsText(f))
+		}
 	}
 
 	// Sensors
@@ -241,6 +269,30 @@ func (loc *coastalLocation) snapshotAt(now time.Time) string {
 	}
 
 	return sb.String()
+}
+
+// floodLevelsText lists the defined flood thresholds, e.g.
+// "minor 6.2 ft, moderate 8.2 ft, major 10.2 ft".
+func floodLevelsText(f *FloodLevels) string {
+	var parts []string
+	for _, l := range []struct {
+		name string
+		v    *float64
+	}{{"minor", f.Minor}, {"moderate", f.Moderate}, {"major", f.Major}} {
+		if l.v != nil {
+			parts = append(parts, fmt.Sprintf("%s %.1f ft", l.name, *l.v))
+		}
+	}
+	return strings.Join(parts, ", ")
+}
+
+// truncateRunes cuts s to at most n runes, marking the cut.
+func truncateRunes(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n]) + "…"
 }
 
 // mustParseStamp parses a timestamp this package formatted itself.

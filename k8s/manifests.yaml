@@ -225,6 +225,13 @@ spec:
                 name: jordan-lake-scraper
                 port:
                   number: 8080
+          - path: /northtopsail
+            pathType: Prefix
+            backend:
+              service:
+                name: jordan-lake-scraper
+                port:
+                  number: 8080
           - path: /poker
             pathType: Prefix
             backend:

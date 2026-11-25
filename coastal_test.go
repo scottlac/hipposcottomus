@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -141,6 +142,90 @@ func TestLevelOffsets(t *testing.T) {
 	}
 	if levelOffsets(nil, predicted) != nil {
 		t.Error("expected nil with no observations")
+	}
+}
+
+// ── Flood levels and alerts ─────────────────────────────────────
+
+func TestFloodLevelsMLLW(t *testing.T) {
+	f := func(v float64) *float64 { return &v }
+	// Wrightsville Beach, 25 Nov 2026: thresholds and MLLW in station datum.
+	raw := map[string]*float64{
+		"nos_minor": f(25.13), "nos_moderate": f(26.07), "nos_major": f(27.33),
+		"nws_minor": f(25.01), "nws_moderate": f(27.01), "nws_major": nil,
+	}
+	datums := []stationDatum{{"STND", f(0)}, {"MLLW", f(18.83)}, {"MHHW", f(23.31)}}
+
+	got, err := floodLevelsMLLW(raw, datums)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// NWS values where defined, NOAA's where NWS has none.
+	if got.Minor == nil || *got.Minor != 6.18 || *got.Moderate != 8.18 || *got.Major != 8.5 {
+		t.Errorf("got minor %v moderate %v major %v, want 6.18 8.18 8.5", *got.Minor, *got.Moderate, *got.Major)
+	}
+
+	if _, err := floodLevelsMLLW(raw, []stationDatum{{"STND", f(0)}}); err == nil {
+		t.Error("expected an error without an MLLW datum")
+	}
+	none, err := floodLevelsMLLW(map[string]*float64{"nws_minor": nil}, datums)
+	if err != nil || none.Minor != nil || none.Moderate != nil || none.Major != nil {
+		t.Errorf("no thresholds should give an empty result, got %+v, %v", none, err)
+	}
+}
+
+func TestAlertsOrderCoastalFirst(t *testing.T) {
+	body := `{"features":[
+	  {"properties":{"event":"Flood Watch","status":"Actual"}},
+	  {"properties":{"event":"Wind Advisory","status":"Actual"}},
+	  {"properties":{"event":"Coastal Flood Advisory","status":"Actual"}},
+	  {"properties":{"event":"High Surf Advisory","status":"Actual"}}
+	]}`
+	var resp alertsResponse
+	if err := json.Unmarshal([]byte(body), &resp); err != nil {
+		t.Fatal(err)
+	}
+	var order []string
+	for _, a := range resp.alerts() {
+		order = append(order, a.Event)
+	}
+	want := "Coastal Flood Advisory, High Surf Advisory, Flood Watch, Wind Advisory"
+	if got := strings.Join(order, ", "); got != want {
+		t.Errorf("order = %s, want %s", got, want)
+	}
+}
+
+func TestAlertsFromResponse(t *testing.T) {
+	body := `{"features":[
+	  {"properties":{"event":"Coastal Flood Advisory","severity":"Minor","status":"Actual",
+	    "headline":"Coastal Flood Advisory issued November 25",
+	    "description":"* WHAT...Up to 3 feet of inundation\nabove ground level.\n\n* WHERE...Coastal Onslow.",
+	    "instruction":null,"onset":"2026-11-25T04:59:00-05:00","ends":"2026-11-26T16:00:00-05:00","expires":"2026-11-25T16:00:00-05:00"}},
+	  {"properties":{"event":"Coastal Flood Advisory","status":"Actual","description":"older copy"}},
+	  {"properties":{"event":"Wind Advisory","severity":"Moderate","status":"Actual","description":"Gusts to 50 mph.",
+	    "ends":null,"expires":"2026-11-26T05:00:00-05:00"}},
+	  {"properties":{"event":"Test Message","status":"Test"}}
+	]}`
+	var resp alertsResponse
+	if err := json.Unmarshal([]byte(body), &resp); err != nil {
+		t.Fatal(err)
+	}
+	got := resp.alerts()
+	if len(got) != 2 {
+		t.Fatalf("expected 2 alerts (duplicate and test dropped), got %+v", got)
+	}
+	// The response lists the Wind Advisory last here; the coastal alert
+	// would be sorted ahead of it either way.
+	cfa := got[0]
+	if cfa.Event != "Coastal Flood Advisory" || cfa.Ends != "2026-11-26T16:00:00-05:00" {
+		t.Errorf("first alert = %+v", cfa)
+	}
+	if cfa.Description != "* WHAT...Up to 3 feet of inundation above ground level.\n\n* WHERE...Coastal Onslow." {
+		t.Errorf("description should be unwrapped with paragraphs kept: %q", cfa.Description)
+	}
+	// Without an end time, the alert runs until it expires.
+	if got[1].Ends != "2026-11-26T05:00:00-05:00" {
+		t.Errorf("wind advisory ends = %q, want its expiry", got[1].Ends)
 	}
 }
 
@@ -383,6 +468,30 @@ func TestParseMarineTextZone_KeyWest(t *testing.T) {
 	}
 }
 
+// Newport/Morehead City's product (25 Nov 2026, a coastal storm): its
+// synopsis heading is followed directly by text, and its Storm Warning
+// headline wraps onto a second line.
+func TestParseMarineTextZone_Newport(t *testing.T) {
+	product := readFixture(t, "marine_cwf_MHX.txt")
+
+	z := parseMarineTextZone(product, "AMZ158")
+	if z == nil {
+		t.Fatal("AMZ158 not found")
+	}
+	if len(z.Advisories) != 1 || z.Advisories[0] != "STORM WARNING IN EFFECT FROM THIS EVENING THROUGH LATE TONIGHT" {
+		t.Errorf("advisories = %q", z.Advisories)
+	}
+	if len(z.Periods) == 0 || z.Periods[0].Name != "TODAY" ||
+		!strings.HasPrefix(z.Periods[0].Text, "NE winds 25 to 30 kt, increasing to 30 to 35 kt late.") {
+		t.Errorf("periods = %+v", z.Periods)
+	}
+
+	syn := parseMarineTextSynopsis(product, "AMZ100")
+	if !strings.HasPrefix(syn, "A strong area of low pressure is forecast to develop") {
+		t.Errorf("synopsis = %q", syn)
+	}
+}
+
 // ── Configuration sanity ────────────────────────────────────────
 
 func TestCoastalLocations_Config(t *testing.T) {
@@ -440,7 +549,7 @@ func TestCoastalRoutes(t *testing.T) {
 	for _, loc := range coastalLocations {
 		page := get(loc.BasePath + "/")
 		body := page.Body.String()
-		if page.Code != 200 || !strings.Contains(body, "<title>"+loc.Name+" Boating Dashboard</title>") {
+		if page.Code != 200 || !strings.Contains(body, "<title>"+loc.title()+"</title>") {
 			t.Errorf("%s: index status %d, title missing", loc.Key, page.Code)
 		}
 		if !strings.Contains(body, `<base href="`+loc.BasePath+`/" />`) {
@@ -477,6 +586,8 @@ func mustCoastalAssets(t *testing.T) (*template.Template, http.Handler) {
 	return tmpl, assets
 }
 
+func ptr(v float64) *float64 { return &v }
+
 // ── Summary snapshot ────────────────────────────────────────────
 
 func TestCoastalSnapshot(t *testing.T) {
@@ -492,7 +603,12 @@ func TestCoastalSnapshot(t *testing.T) {
 		waterTempAt:     time.Date(2026, 11, 19, 15, 12, 0, 0, time.UTC),
 		waterTempSource: "Virginia Key",
 		wind:            &WindObs{Knots: 12.4, GustKnots: 15.8, Direction: "E", Source: "Virginia Key"},
-		level:           &WaterLevel{Offset: 0.87, Source: "Virginia Key", Time: "2026-11-19T12:54:00-05:00"},
+		level: &WaterLevel{Offset: 0.87, Observed: 7.39, Source: "Virginia Key", Time: "2026-11-19T12:54:00-05:00",
+			Flood: &FloodLevels{Minor: ptr(6.18), Moderate: ptr(8.18)}},
+		alerts: []NWSAlert{
+			{Event: "Coastal Flood Advisory", Ends: "2026-11-20T16:00:00-05:00", Description: "Up to 3 feet of inundation.\n\nNear the high tides."},
+			{Event: "High Surf Advisory", Ends: "2026-11-20T19:00:00-05:00", Description: "Up to 3 feet of inundation.\n\nNear the high tides."},
+		},
 		marine: []marineZoneData{
 			{Name: "Biscayne Bay", MarineForecast: &MarineForecast{
 				Issued:     "241 AM EST Thu Nov 19 2026",
@@ -519,6 +635,10 @@ func TestCoastalSnapshot(t *testing.T) {
 		"Now: about 1.4 ft and rising",
 		"Thu 4:00 PM: High, 2.2 ft",
 		"Observed water level: running 0.9 ft above the predictions (Virginia Key gauge, Thu 12:54 PM)",
+		"Virginia Key gauge reading: 7.4 ft above MLLW; flood levels there: minor 6.2 ft, moderate 8.2 ft",
+		"NWS ALERT for Test Key: Coastal Flood Advisory, until Fri 4:00 PM",
+		"NWS ALERT for Test Key: High Surf Advisory, until Fri 7:00 PM",
+		"  Details: Up to 3 feet of inundation. Near the high tides.",
 		"Thu 10:31 PM: Low, 0.5 ft",
 		"Water temperature: 74.8 °F (Virginia Key sensor, Thu 10:12 AM)",
 		"Live wind (Virginia Key sensor): E 12 kt, gusting 16 kt",
@@ -535,6 +655,9 @@ func TestCoastalSnapshot(t *testing.T) {
 		if strings.Contains(got, unwanted) {
 			t.Errorf("snapshot should not contain %q", unwanted)
 		}
+	}
+	if n := strings.Count(got, "Details:"); n != 1 {
+		t.Errorf("a description shared by two alerts should be given once, got %d", n)
 	}
 	if n := strings.Count(got, "ACTIVE ADVISORY"); n != 1 {
 		t.Errorf("identical advisory on two zones should be listed once, got %d", n)

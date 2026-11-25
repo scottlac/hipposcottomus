@@ -351,33 +351,43 @@ func parseMarineTextZone(product, zone string) *MarineForecast {
 }
 
 // parseMarineTextSynopsis returns the forecaster's synopsis paragraph from the
-// synopsis segment of a raw CWF product, or "". Miami writes a prose heading
-// (".Synopsis for Jupiter Inlet to Ocean Reef…") followed by the text as its
-// own paragraph; Key West writes ".SYNOPSIS..." with the text directly under
-// it. Both follow with Gulf Stream position paragraphs, which are left out.
+// synopsis segment of a raw CWF product, or "". The heading is one or more
+// lines ending in "...", and offices differ in what follows it:
+//
+//	Key West:  .SYNOPSIS...                          text on the next line
+//	Newport:   .Synopsis for Eastern NC waters...    text on the next line
+//	Miami:     .Synopsis for Jupiter Inlet to…       heading wraps, then a
+//	           …Bonita Beach FL out to 60 nm...      blank line, then text
+//
+// All of them follow with Gulf Stream position paragraphs, which are left out.
 func parseMarineTextSynopsis(product, zone string) string {
-	seg := marineTextSegment(product, zone)
-	var paras []string
+	var paras [][]string
 	var cur []string
-	for _, line := range append(seg, "") {
+	for _, line := range append(marineTextSegment(product, zone), "") {
 		if t := strings.TrimSpace(line); t != "" {
 			cur = append(cur, t)
 		} else if cur != nil {
-			paras = append(paras, strings.Join(cur, " "))
+			paras = append(paras, cur)
 			cur = nil
 		}
 	}
+	join := func(lines []string) string {
+		return marineSpaceRe.ReplaceAllString(strings.Join(lines, " "), " ")
+	}
 	for i, p := range paras {
-		if !strings.HasPrefix(strings.ToUpper(p), ".SYNOPSIS") {
+		if !strings.HasPrefix(strings.ToUpper(p[0]), ".SYNOPSIS") {
 			continue
 		}
-		// Text on the heading's own paragraph (Key West)…
-		if rest := strings.TrimSpace(strings.TrimPrefix(p, ".SYNOPSIS...")); rest != p && rest != "" {
-			return marineSpaceRe.ReplaceAllString(rest, " ")
+		for k, line := range p {
+			if strings.HasSuffix(line, "...") {
+				if rest := p[k+1:]; len(rest) > 0 {
+					return join(rest) // text under the heading
+				}
+				break
+			}
 		}
-		// …or the paragraph after it (Miami).
 		if i+1 < len(paras) {
-			return marineSpaceRe.ReplaceAllString(paras[i+1], " ")
+			return join(paras[i+1]) // text in the next paragraph
 		}
 	}
 	return ""
