@@ -51,6 +51,7 @@ var trackedPaths = map[string]string{
 	"/ftlauderdale/":   "ftl",
 	"/keybiscayne/":    "keybiscayne",
 	"/keylargo/":       "keylargo",
+	"/northtopsail/":   "northtopsail",
 	"/poker/":          "poker",
 	"/qr/":             "qr",
 	"/vote/":           "vote",

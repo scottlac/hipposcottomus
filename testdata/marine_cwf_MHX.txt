@@ -1,0 +1,681 @@
+
+000
+FZUS52 KMHX 250917
+CWFMHX
+
+Coastal Waters Forecast for North Carolina
+National Weather Service Newport/Morehead City NC
+417 AM EST Wed Nov 25 2026
+
+From S of Currituck Beach Light to N of Surf City NC out 60 NM,
+including the Albemarle and Pamlico Sounds and the Monitor
+National Marine Sanctuary
+
+AMZ100-252230-
+417 AM EST Wed Nov 25 2026
+
+.Synopsis for Eastern North Carolina coastal waters...
+A strong area of low pressure is forecast to develop along the 
+southeast coast and impact area waters today with widespread 
+Gales and Storm conditions expected over and near the Gulf Stream 
+waters, with the worst conditions Wednesday night. High seas will
+linger through the rest of the work week with improving 
+conditions this weekend. 
+
+$$
+
+AMZ230-252230-
+Albemarle Sound-
+417 AM EST Wed Nov 25 2026
+
+...GALE WARNING IN EFFECT FROM 4 PM EST THIS AFTERNOON THROUGH
+THURSDAY MORNING...
+
+.TODAY...NE winds 20 to 25 kt with gusts up to 35 kt. Waves 2 to
+3 ft. A slight chance of showers late this morning. A chance of
+showers early this afternoon, then showers late. 
+.TONIGHT...E winds 25 to 30 kt with gusts up to 40 kt, increasing
+to 35 to 40 kt with occasional gusts up to 50 kt after midnight. 
+Waves 3 to 5 ft. Showers in the evening, then showers with a 
+slight chance of tstms after midnight. 
+.THU...SE winds 25 to 30 kt with gusts up to 40 kt, becoming S
+10 to 15 kt in the afternoon. Waves 2 to 4 ft. Showers with a
+slight chance of tstms in the morning, then a chance of showers
+in the afternoon. 
+.THU NIGHT...SW winds 15 to 20 kt with gusts up to 25 kt. Waves
+around 2 ft. 
+.FRI...SW winds 20 to 25 kt with gusts up to 30 kt. Waves 2 to
+3 ft. 
+.FRI NIGHT...W winds 15 to 20 kt with gusts up to 25 kt. Waves
+around 2 ft. 
+.SAT...W winds 15 to 20 kt, diminishing to 10 to 15 kt in the
+afternoon. Waves around 2 ft. 
+.SAT NIGHT...SW winds 5 to 10 kt. Waves 1 ft or less. 
+.SUN...SW winds 5 to 10 kt. Waves 1 ft or less. 
+.SUN NIGHT...SW winds 10 to 15 kt. Waves around 2 ft.  
+
+Winds and waves higher in and near tstms.
+
+$$
+
+AMZ131-252230-
+Alligator River-
+417 AM EST Wed Nov 25 2026
+
+...GALE WARNING IN EFFECT FROM 4 PM EST THIS AFTERNOON THROUGH
+THURSDAY MORNING...
+
+.TODAY...NE winds 15 to 20 kt with gusts up to 25 kt, increasing
+to 20 to 25 kt with gusts up to 30 kt late. Waves choppy,
+increasing to rough late. A slight chance of showers late this
+morning. A chance of showers early this afternoon, then showers
+late. 
+.TONIGHT...E winds 25 to 30 kt with gusts up to 45 kt. Waves very
+rough. Showers in the evening, then showers with a chance of
+tstms after midnight. 
+.THU...SE winds 25 to 30 kt with gusts up to 35 kt, becoming S
+10 to 15 kt in the afternoon. Waves very rough, diminishing to a
+moderate chop in the afternoon. Showers with a chance of tstms in
+the morning, then a chance of showers in the afternoon. 
+.THU NIGHT...SW winds 10 to 15 kt, increasing to 15 to 20 kt with
+gusts up to 25 kt after midnight. Waves a moderate chop,
+increasing to choppy after midnight. 
+.FRI...SW winds 15 to 20 kt with gusts up to 30 kt. Waves choppy.
+.FRI NIGHT...W winds 15 to 20 kt. Waves choppy. 
+.SAT...W winds 10 to 15 kt. Waves a moderate chop. 
+.SAT NIGHT...SW winds 5 to 10 kt. Waves light chop. 
+.SUN...SW winds 5 to 10 kt. Waves light chop. 
+.SUN NIGHT...SW winds 5 to 10 kt, increasing to 10 to 15 kt after
+midnight. Waves light chop, increasing to a moderate chop after
+midnight.  
+
+Winds and waves higher in and near tstms.
+
+$$
+
+AMZ231-252230-
+Croatan and Roanoke Sounds-
+417 AM EST Wed Nov 25 2026
+
+...GALE WARNING IN EFFECT FROM 4 PM EST THIS AFTERNOON THROUGH
+THURSDAY MORNING...
+
+.TODAY...NE winds 20 to 25 kt with gusts up to 30 kt. Waves
+rough. A slight chance of showers late this morning. A chance of
+showers early this afternoon, then showers late. 
+.TONIGHT...E winds 25 to 30 kt, increasing to 30 to 35 kt after
+midnight. Gusts up to 45 kt. Waves very rough, increasing to
+extremely rough after midnight. Showers in the evening, then
+showers with a chance of tstms after midnight. 
+.THU...SE winds 25 to 30 kt with gusts up to 40 kt, becoming S
+15 to 20 kt in the afternoon. Waves very rough, diminishing to
+choppy in the afternoon. Showers with a chance of tstms in the
+morning, then a chance of showers in the afternoon. 
+.THU NIGHT...SW winds 15 to 20 kt with gusts up to 25 kt. Waves
+choppy. 
+.FRI...SW winds 15 to 20 kt, increasing to 20 to 25 kt in the
+afternoon. Gusts up to 30 kt. Waves choppy, increasing to rough
+in the afternoon. 
+.FRI NIGHT...W winds 15 to 20 kt with gusts up to 25 kt. Waves
+choppy. 
+.SAT...W winds 15 to 20 kt, diminishing to 10 to 15 kt in the
+afternoon. Waves choppy, diminishing to a moderate chop in the
+afternoon. 
+.SAT NIGHT...W winds 5 to 10 kt. Waves light chop. 
+.SUN...SW winds 5 to 10 kt. Waves light chop. 
+.SUN NIGHT...SW winds 10 to 15 kt. Waves a moderate chop.  
+
+Winds and waves higher in and near tstms.
+
+$$
+
+AMZ135-252230-
+Pamlico Sound-
+417 AM EST Wed Nov 25 2026
+
+...GALE WARNING IN EFFECT FROM 2 PM EST THIS AFTERNOON THROUGH
+THURSDAY MORNING...
+
+.TODAY...NE winds 20 to 25 kt with gusts up to 30 kt, increasing
+to 25 to 30 kt with gusts up to 40 kt late. Waves 3 to 5 ft. A
+slight chance of showers early this morning, then a chance of
+showers late this morning. Showers this afternoon. 
+.TONIGHT...E winds 30 to 35 kt with gusts up to 45 kt. Waves 4 to
+6 ft. Showers with a chance of tstms. 
+.THU...SE winds 25 to 30 kt with gusts up to 40 kt, becoming SW
+15 to 20 kt with gusts up to 25 kt in the afternoon. Waves 2 to
+4 ft. Showers with a chance of tstms in the morning, then a
+chance of showers in the afternoon. 
+.THU NIGHT...SW winds 20 to 25 kt with gusts up to 30 kt. Waves
+2 to 4 ft. 
+.FRI...SW winds 20 to 25 kt with gusts up to 30 kt. Waves 2 to
+4 ft. 
+.FRI NIGHT...W winds 20 to 25 kt with gusts up to 30 kt. Waves
+2 to 3 ft. 
+.SAT...W winds 15 to 20 kt, diminishing to 10 to 15 kt in the
+afternoon. Waves 2 to 3 ft. 
+.SAT NIGHT...W winds 5 to 10 kt. Waves 1 ft or less. 
+.SUN...SW winds 5 to 10 kt. Waves 1 ft or less. 
+.SUN NIGHT...SW winds 10 to 15 kt. Waves around 2 ft.  
+
+Winds and waves higher in and near tstms.
+
+$$
+
+AMZ136-252230-
+Pamlico and Pungo Rivers-
+417 AM EST Wed Nov 25 2026
+
+...GALE WARNING IN EFFECT FROM 2 PM EST THIS AFTERNOON THROUGH
+LATE TONIGHT...
+
+.TODAY...NE winds 15 to 20 kt with gusts up to 25 kt, diminishing
+to 10 to 15 kt late this morning, then increasing to 15 to 20 kt
+with gusts up to 30 kt this afternoon. Waves choppy, diminishing
+to a moderate chop late this morning, then increasing to choppy
+this afternoon. A slight chance of showers early this morning,
+then a chance of showers late this morning. Showers this
+afternoon. 
+.TONIGHT...E winds 25 to 30 kt with gusts up to 40 kt. Waves very
+rough. A slight chance of tstms. Showers.
+.THU...SE winds 20 to 25 kt with gusts up to 30 kt, becoming SW
+10 to 15 kt in the afternoon. Waves rough, diminishing to a
+moderate chop in the afternoon. Showers likely with a slight
+chance of tstms in the morning, then a chance of showers in the
+afternoon. 
+.THU NIGHT...SW winds 10 to 15 kt, increasing to 15 to 20 kt
+after midnight. Waves a moderate chop, increasing to choppy after
+midnight. 
+.FRI...SW winds 15 to 20 kt with gusts up to 25 kt. Waves choppy.
+.FRI NIGHT...W winds 10 to 15 kt. Waves a moderate chop.
+.SAT...W winds 10 to 15 kt, diminishing to 5 to 10 kt in the
+afternoon. Waves a moderate chop, diminishing to light chop in
+the afternoon. 
+.SAT NIGHT...SW winds around 5 kt. Waves flat. 
+.SUN...SW winds around 5 kt. Waves flat. 
+.SUN NIGHT...SW winds 5 to 10 kt. Waves light chop. A chance of
+showers after midnight.  
+
+Winds and waves higher in and near tstms.
+
+$$
+
+AMZ137-252230-
+Neuse and Bay Rivers-
+417 AM EST Wed Nov 25 2026
+
+...GALE WARNING IN EFFECT FROM 2 PM EST THIS AFTERNOON THROUGH
+LATE TONIGHT...
+
+.TODAY...NE winds 15 to 20 kt with gusts up to 25 kt, increasing
+to 25 to 30 kt with gusts up to 35 kt. Waves choppy, increasing
+to very rough. A slight chance of showers early this morning,
+then showers late this morning and afternoon. 
+.TONIGHT...E winds 25 to 30 kt with gusts up to 40 kt. Waves very
+rough. A chance of tstms. Showers.
+.THU...S winds 15 to 20 kt with gusts up to 25 kt, becoming SW
+10 to 15 kt in the afternoon. Waves choppy, diminishing to a
+moderate chop in the afternoon. Showers likely with a slight
+chance of tstms in the morning, then a chance of showers in the
+afternoon. 
+.THU NIGHT...SW winds 15 to 20 kt. Gusts up to 25 kt after
+midnight. Waves choppy. 
+.FRI...SW winds 15 to 20 kt with gusts up to 25 kt. Waves choppy.
+.FRI NIGHT...W winds 15 to 20 kt, diminishing to 10 to 15 kt
+after midnight. Waves choppy, diminishing to a moderate chop
+after midnight. 
+.SAT...W winds 10 to 15 kt, diminishing to 5 to 10 kt in the
+afternoon. Waves a moderate chop, diminishing to light chop in
+the afternoon. 
+.SAT NIGHT...W winds 5 to 10 kt. Waves light chop. 
+.SUN...SW winds around 5 kt. Waves flat. 
+.SUN NIGHT...SW winds 5 to 10 kt, increasing to 10 to 15 kt after
+midnight. Waves light chop, increasing to a moderate chop after
+midnight.  
+
+Winds and waves higher in and near tstms.
+
+$$
+
+AMZ150-252230-
+S of Currituck Beach Light to Oregon Inlet NC out 20 nm-
+417 AM EST Wed Nov 25 2026
+
+...STORM WARNING IN EFFECT FROM THIS EVENING THROUGH LATE
+TONIGHT...
+
+.TODAY...NE winds 20 to 25 kt with gusts up to 35 kt. Seas 8 to
+9 ft, building to 9 to 11 ft this afternoon. Near shore, seas
+7 to 8 ft, building to 7 to 10 ft this afternoon. Wave Detail: NE
+9 ft at 8 seconds and NE 1 ft at 3 seconds, becoming NE 11 ft at
+9 seconds and NE 1 ft at 3 seconds. A slight chance of showers
+late this morning. A chance of showers early this afternoon, then
+showers late. 
+.TONIGHT...E winds 25 to 35 kt, increasing to 35 to 40 kt after
+midnight. Gusts up to 50 kt. Seas 14 to 19 ft after midnight.
+Seas 11 to 15 ft in the evening. Near shore, seas 13 to 17 ft
+after midnight. Wave Detail: E 15 ft at 10 seconds and E 2 ft at
+4 seconds, becoming E 19 ft at 11 seconds and E 2 ft at
+4 seconds. Showers in the evening, then showers with a chance of
+tstms after midnight. 
+.THU...SE winds 25 to 35 kt with gusts up to 45 kt, becoming S
+20 to 25 kt in the afternoon. Seas 14 to 19 ft, subsiding to
+11 to 15 ft in the afternoon. Near shore, seas 13 to 17 ft,
+subsiding to 9 to 13 ft in the afternoon. Wave Detail: SE 19 ft
+at 12 seconds and SE 2 ft at 4 seconds, becoming SE 15 ft at
+11 seconds and S 1 ft at 4 seconds. Showers with a chance of
+tstms in the morning, then showers likely in the afternoon. 
+.THU NIGHT...SW winds 20 to 25 kt with gusts up to 30 kt. Seas
+9 to 12 ft, except 7 to 10 ft near shore. Wave Detail: SE 12 ft
+at 11 seconds and SW 4 ft at 6 seconds. 
+.FRI...SW winds 20 to 25 kt with gusts up to 30 kt. Seas 7 to
+10 ft, except 6 to 7 ft near shore. Wave Detail: SE 10 ft at
+11 seconds and SW 5 ft at 5 seconds. 
+.FRI NIGHT...W winds 20 to 25 kt with gusts up to 30 kt. Seas
+5 to 8 ft, except 4 to 6 ft near shore. Wave Detail: E 7 ft at
+11 seconds and W 6 ft at 6 seconds. 
+.SAT...W winds 20 to 25 kt, diminishing to 10 to 15 kt in the
+afternoon. Seas 4 to 6 ft, subsiding to 2 to 4 ft in the
+afternoon. 
+.SAT NIGHT...W winds 10 to 15 kt, diminishing to 5 to 10 kt after
+midnight. Seas 2 to 3 ft. 
+.SUN...SW winds 5 to 10 kt. Seas 2 to 3 ft. 
+.SUN NIGHT...SW winds 10 to 15 kt. Seas 2 to 4 ft. 
+
+Winds and seas higher in and near tstms.
+
+$$
+
+AMZ152-252230-
+S of Oregon Inlet to Cape Hatteras NC out 20 nm-
+417 AM EST Wed Nov 25 2026
+
+...STORM WARNING IN EFFECT FROM THIS EVENING THROUGH LATE
+TONIGHT...
+
+.TODAY...NE winds 20 to 25 kt with gusts up to 30 kt, becoming E
+25 to 30 kt with gusts up to 40 kt late. Seas 8 to 11 ft,
+building to 9 to 13 ft this afternoon. Wave Detail: NE 10 ft at
+9 seconds and NE 1 ft at 3 seconds, becoming E 13 ft at
+10 seconds and NE 2 ft at 3 seconds. A slight chance of showers
+early this morning, then a chance of showers late this morning
+and early afternoon. Showers with a slight chance of tstms late. 
+.TONIGHT...E winds 30 to 40 kt with gusts up to 50 kt. Seas 12 to
+16 ft, building to 15 to 20 ft after midnight. Wave Detail: E
+16 ft at 11 seconds and E 2 ft at 4 seconds, becoming E 20 ft at
+12 seconds and E 2 ft at 4 seconds. Showers with a slight chance
+of tstms in the evening, then showers with a chance of tstms
+after midnight. 
+.THU...SE winds 25 to 35 kt with gusts up to 45 kt, becoming SW
+20 to 25 kt in the afternoon. Seas 14 to 19 ft, subsiding to
+11 to 15 ft in the afternoon. Wave Detail: SE 19 ft at 12 seconds
+and SE 2 ft at 4 seconds, becoming SE 15 ft at 11 seconds and S
+2 ft at 5 seconds. Showers with a chance of tstms in the morning,
+then showers likely in the afternoon. 
+.THU NIGHT...SW winds 20 to 25 kt with gusts up to 30 kt. Seas
+9 to 13 ft. Wave Detail: S 13 ft at 12 seconds and SW 10 ft at
+9 seconds. 
+.FRI...SW winds 25 to 30 kt with gusts up to 35 kt. Seas 8 to
+11 ft. Wave Detail: SW 11 ft at 9 seconds and S 11 ft at
+11 seconds. 
+.FRI NIGHT...W winds 20 to 25 kt with gusts up to 30 kt. Seas
+7 to 10 ft, subsiding to 5 to 8 ft after midnight. Wave Detail:
+SW 10 ft at 9 seconds and SE 9 ft at 11 seconds, becoming W 8 ft
+at 9 seconds and E 5 ft at 11 seconds. 
+.SAT...W winds 20 to 25 kt, diminishing to around 15 kt in the
+afternoon. Seas 4 to 6 ft. 
+.SAT NIGHT...W winds 10 to 15 kt. Seas 2 to 4 ft. 
+.SUN...SW winds 5 to 10 kt. Seas 2 to 3 ft. 
+.SUN NIGHT...SW winds 10 to 15 kt. Seas 2 to 4 ft. 
+
+Winds and seas higher in and near tstms.
+
+$$
+
+AMZ154-252230-
+S of Cape Hatteras to Ocracoke Inlet NC out 20 nm
+including the Monitor National Marine Sanctuary-
+417 AM EST Wed Nov 25 2026
+
+...STORM WARNING IN EFFECT FROM THIS EVENING THROUGH LATE
+TONIGHT...
+
+.TODAY...NE winds 20 to 25 kt with gusts up to 30 kt, becoming E
+30 to 35 kt with gusts up to 45 kt. Seas 8 to 11 ft, building to
+9 to 13 ft this afternoon. Wave Detail: NE 11 ft at 10 seconds
+and NE 1 ft at 4 seconds, becoming E 13 ft at 10 seconds and NE
+2 ft at 4 seconds. A chance of showers this morning, then showers
+with a slight chance of tstms this afternoon. 
+.TONIGHT...E winds 30 to 40 kt with gusts up to 50 kt. Seas 12 to
+16 ft, building to 14 to 19 ft after midnight. Wave Detail: E
+16 ft at 11 seconds and E 2 ft at 4 seconds, becoming E 19 ft at
+12 seconds and E 2 ft at 4 seconds. Showers with a chance of
+tstms in the evening, then showers with tstms likely after
+midnight. 
+.THU...S winds 25 to 30 kt with gusts up to 40 kt, becoming SW
+20 to 25 kt with gusts up to 30 kt in the afternoon. Seas 13 to
+18 ft, subsiding to 11 to 15 ft in the afternoon. Wave Detail: SE
+18 ft at 12 seconds and SE 2 ft at 4 seconds, becoming S 15 ft at
+11 seconds and SW 3 ft at 5 seconds. Showers with a chance of
+tstms in the morning, then a chance of showers in the afternoon. 
+.THU NIGHT...SW winds 25 to 30 kt with gusts up to 35 kt. Seas
+10 to 14 ft. Wave Detail: SE 14 ft at 12 seconds and SW 12 ft at
+9 seconds. A slight chance of showers in the evening. 
+.FRI...W winds 25 to 30 kt with gusts up to 40 kt. Seas 9 to
+12 ft. Wave Detail: SW 12 ft at 9 seconds and E 11 ft at
+12 seconds. 
+.FRI NIGHT...W winds 25 to 30 kt. Seas 7 to 10 ft. Wave Detail:
+SW 10 ft at 9 seconds and E 4 ft at 12 seconds. 
+.SAT...W winds 20 to 25 kt, diminishing to 10 to 15 kt in the
+afternoon. Seas 5 to 7 ft, subsiding to 3 to 5 ft in the
+afternoon. 
+.SAT NIGHT...W winds 10 to 15 kt, diminishing to 5 to 10 kt after
+midnight. Seas 2 to 4 ft. 
+.SUN...W winds 5 to 10 kt. Seas 2 to 3 ft. 
+.SUN NIGHT...SW winds 15 to 20 kt. Seas 3 to 5 ft. A chance of
+showers after midnight.  
+
+Winds and seas higher in and near tstms.
+
+$$
+
+AMZ156-252230-
+S of Ocracoke Inlet to Cape Lookout NC out 20 nm-
+417 AM EST Wed Nov 25 2026
+
+...STORM WARNING IN EFFECT FROM THIS EVENING THROUGH LATE
+TONIGHT...
+
+.TODAY...NE winds 25 to 30 kt with gusts up to 40 kt, increasing
+to 30 to 35 kt with gusts up to 45 kt late. Seas 5 to 7 ft,
+building to 6 to 9 ft this afternoon. Wave Detail: E 7 ft at
+10 seconds and NE 1 ft at 3 seconds, becoming E 9 ft at
+10 seconds and NE 2 ft at 4 seconds. Adjacent sounds and rivers
+very rough, increasing to extremely rough late. A chance of
+showers early this morning, then showers likely late this
+morning. Showers with a slight chance of tstms this afternoon. 
+.TONIGHT...E winds 30 to 40 kt with gusts up to 50 kt. Seas 9 to
+12 ft. Wave Detail: E 12 ft at 11 seconds and E 2 ft at
+4 seconds. Adjacent sounds and rivers extremely rough. A chance
+of tstms. Showers.
+.THU...S winds 25 to 30 kt with gusts up to 40 kt, becoming SW
+20 to 25 kt with gusts up to 30 kt in the afternoon. Seas 8 to
+11 ft, subsiding to 6 to 9 ft in the afternoon. Wave Detail: SE
+11 ft at 11 seconds and SE 2 ft at 4 seconds, becoming S 9 ft at
+11 seconds and SW 6 ft at 7 seconds. Adjacent sounds and rivers
+very rough, diminishing to rough in the afternoon. Showers likely
+with a chance of tstms in the morning, then a chance of showers
+in the afternoon. 
+.THU NIGHT...SW winds 25 to 30 kt with gusts up to 35 kt. Seas
+5 to 8 ft. Wave Detail: SW 8 ft at 9 seconds and SE 8 ft at
+11 seconds. Adjacent sounds and rivers very rough. 
+.FRI...W winds 25 to 30 kt with gusts up to 35 kt. Seas 5 to
+8 ft. Wave Detail: SW 8 ft at 9 seconds and SE 8 ft at
+11 seconds. Adjacent sounds and rivers very rough. 
+.FRI NIGHT...W winds 25 to 30 kt, diminishing to 20 to 25 kt
+after midnight. Seas 4 to 6 ft. Wave Detail: SW 6 ft at 9 seconds
+and E 4 ft at 11 seconds. Adjacent sounds and rivers very rough,
+diminishing to rough after midnight. 
+.SAT...W winds 20 to 25 kt, diminishing to 10 to 15 kt in the
+afternoon. Seas 3 to 5 ft. Adjacent sounds and rivers rough,
+diminishing to a moderate chop in the afternoon. 
+.SAT NIGHT...W winds 10 to 15 kt, diminishing to 5 to 10 kt after
+midnight. Seas 2 to 4 ft. Adjacent sounds and rivers a moderate
+chop, diminishing to light chop after midnight.
+.SUN...W winds 5 to 10 kt. Seas 2 to 3 ft. Adjacent sounds and
+rivers light chop. 
+.SUN NIGHT...SW winds 10 to 15 kt, increasing to 15 to 20 kt
+after midnight. Seas 2 to 4 ft. Adjacent sounds and rivers a
+moderate chop, increasing to choppy after midnight. A chance of
+showers after midnight.  
+
+Winds and seas higher in and near tstms.
+
+$$
+
+AMZ158-252230-
+S of Cape Lookout to N of Surf City NC out 20 nm-
+417 AM EST Wed Nov 25 2026
+
+...STORM WARNING IN EFFECT FROM THIS EVENING THROUGH LATE
+TONIGHT...
+
+.TODAY...NE winds 25 to 30 kt, increasing to 30 to 35 kt late.
+Gusts up to 40 kt. Seas 7 to 10 ft, building to 9 to 12 ft this
+afternoon. Near shore, seas 5 to 8 ft. Wave Detail: E 10 ft at
+10 seconds and E 3 ft at 5 seconds. Adjacent sounds and rivers
+very rough, increasing to extremely rough late. A chance of
+showers early this morning, then showers with a slight chance of
+tstms late this morning and afternoon. 
+.TONIGHT...E winds 30 to 35 kt, becoming SE 25 to 35 kt after
+midnight. Gusts up to 45 kt. Seas 10 to 14 ft, building to 12 to
+16 ft after midnight. Near shore, seas 7 to 10 ft. Wave Detail:
+SE 14 ft at 11 seconds and E 3 ft at 4 seconds. Adjacent sounds
+and rivers extremely rough, diminishing to very rough after
+midnight. Showers with a chance of tstms. 
+.THU...SW winds 20 to 25 kt with gusts up to 30 kt. Seas 11 to
+15 ft, subsiding to 9 to 13 ft in the afternoon. Near shore, seas
+8 to 11 ft. Wave Detail: SE 14 ft at 12 seconds and SE 1 ft at
+5 seconds, becoming S 11 ft at 11 seconds and SW 7 ft at
+8 seconds. Adjacent sounds and rivers rough. A chance of showers
+with a slight chance of tstms in the morning, then a slight
+chance of showers in the afternoon. 
+.THU NIGHT...SW winds 25 to 30 kt with gusts up to 35 kt. Seas
+8 to 11 ft, except 6 to 8 ft near shore. Wave Detail: SW 10 ft at
+9 seconds and SE 10 ft at 11 seconds. Adjacent sounds and rivers
+very rough. 
+.FRI...W winds 25 to 30 kt. Seas 7 to 10 ft, except 5 to 7 ft
+near shore. Wave Detail: SW 10 ft at 9 seconds and SE 8 ft at
+11 seconds. Adjacent sounds and rivers very rough. 
+.FRI NIGHT...W winds 20 to 25 kt, diminishing to 15 to 20 kt
+after midnight. Gusts up to 30 kt. Seas 6 to 9 ft, subsiding to
+5 to 7 ft after midnight. Near shore, seas 4 to 6 ft. Wave
+Detail: SW 8 ft at 8 seconds and E 3 ft at 11 seconds, becoming
+SW 6 ft at 8 seconds and E 3 ft at 11 seconds. Adjacent sounds
+and rivers rough, diminishing to choppy after midnight. 
+.SAT...W winds 15 to 20 kt, diminishing to 10 to 15 kt in the
+afternoon. Seas 3 to 5 ft. Adjacent sounds and rivers choppy,
+diminishing to a moderate chop in the afternoon. 
+.SAT NIGHT...W winds 5 to 10 kt. Seas 2 to 4 ft. Adjacent sounds
+and rivers light chop. 
+.SUN...SW winds 5 to 10 kt. Seas 2 to 3 ft. Adjacent sounds and
+rivers light chop. 
+.SUN NIGHT...SW winds 10 to 15 kt, increasing to 15 to 20 kt
+after midnight. Seas 3 to 5 ft. Adjacent sounds and rivers a
+moderate chop, increasing to choppy after midnight.  
+
+Winds and seas higher in and near tstms.
+
+$$
+
+AMZ180-252230-
+Waters from Currituck Beach Light to Oregon Inlet NC from 20 to
+60 NM-
+417 AM EST Wed Nov 25 2026
+
+...STORM WARNING IN EFFECT FROM THIS EVENING THROUGH THURSDAY
+MORNING...
+
+.TODAY...E winds 25 to 30 kt. Gusts up to 35 kt, increasing to
+40 kt late. Seas 8 to 11 ft, building to 10 to 14 ft this
+afternoon. A chance of showers late this morning and early
+afternoon. Showers late. 
+.TONIGHT...E winds 35 to 45 kt with gusts up to 55 kt. Seas 13 to
+18 ft, building to 16 to 21 ft after midnight. Showers in the
+evening, then showers with a chance of tstms after midnight. 
+.THU...SE winds 35 to 45 kt with gusts up to 55 kt, becoming S
+25 to 30 kt with gusts up to 35 kt in the afternoon. Seas 16 to
+21 ft, subsiding to 13 to 18 ft in the afternoon. Showers with a
+chance of tstms in the morning, then showers likely in the
+afternoon. 
+.THU NIGHT...SW winds 25 to 30 kt with gusts up to 35 kt. Seas
+12 to 16 ft, subsiding to 10 to 14 ft after midnight. A slight
+chance of showers in the evening. 
+.FRI...SW winds 25 to 30 kt with gusts up to 35 kt. Seas 9 to
+13 ft. 
+.FRI NIGHT...W winds 25 to 30 kt with gusts up to 35 kt. Seas
+8 to 11 ft. 
+.SAT...W winds 20 to 25 kt, diminishing to 15 to 20 kt in the
+afternoon. Seas 6 to 9 ft, subsiding to 5 to 7 ft in the
+afternoon. 
+.SAT NIGHT...W winds 10 to 15 kt. Seas 3 to 5 ft. 
+.SUN...W winds 5 to 10 kt, becoming SW 10 to 15 kt in the
+afternoon. Seas 2 to 4 ft. 
+.SUN NIGHT...SW winds 15 to 20 kt. Seas 3 to 5 ft. 
+
+Winds and seas higher in and near tstms.
+
+$$
+
+AMZ182-252230-
+Waters from Oregon Inlet to Cape Hatteras NC from 20 to 60 NM-
+417 AM EST Wed Nov 25 2026
+
+...STORM WARNING IN EFFECT FROM THIS EVENING THROUGH THURSDAY
+MORNING...
+
+.TODAY...E winds 25 to 30 kt with gusts up to 40 kt, increasing
+to 30 to 35 kt with gusts up to 45 kt late. Seas 9 to 13 ft,
+building to 12 to 16 ft this afternoon. A chance of showers this
+morning, then showers with a slight chance of tstms this
+afternoon. 
+.TONIGHT...E winds 35 to 45 kt with gusts up to 55 kt. Seas 14 to
+19 ft, building to 18 to 21 ft after midnight. Showers. A slight
+chance of tstms in the evening, then a chance of tstms after
+midnight. 
+.THU...SE winds 35 to 45 kt with gusts up to 55 kt, becoming S
+25 to 30 kt in the afternoon. Seas 16 to 21 ft, subsiding to
+13 to 17 ft in the afternoon. Showers with a chance of tstms in
+the morning, then showers likely with a slight chance of tstms in
+the afternoon. 
+.THU NIGHT...SW winds 25 to 30 kt with gusts up to 35 kt. Seas
+12 to 16 ft. A chance of showers. 
+.FRI...SW winds 30 to 35 kt with gusts up to 40 kt. Seas 11 to
+15 ft. 
+.FRI NIGHT...W winds 25 to 30 kt with gusts up to 35 kt. Seas
+10 to 14 ft, subsiding to 8 to 11 ft after midnight. 
+.SAT...W winds 20 to 25 kt, diminishing to 15 to 20 kt in the
+afternoon. Seas 7 to 10 ft, subsiding to 5 to 7 ft in the
+afternoon. 
+.SAT NIGHT...W winds 15 to 20 kt, diminishing to 10 to 15 kt
+after midnight. Seas 4 to 6 ft. 
+.SUN...W winds 5 to 10 kt, becoming SW 10 to 15 kt in the
+afternoon. Seas 3 to 4 ft. 
+.SUN NIGHT...SW winds 20 to 25 kt. Seas 3 to 4 ft, building to
+4 to 6 ft after midnight. A chance of showers after midnight.  
+
+Winds and seas higher in and near tstms.
+
+$$
+
+AMZ184-252230-
+Waters from Cape Hatteras to Ocracoke Inlet NC from 20 to 60 NM-
+417 AM EST Wed Nov 25 2026
+
+...STORM WARNING IN EFFECT FROM THIS EVENING THROUGH THURSDAY
+MORNING...
+
+.TODAY...E winds 25 to 30 kt with gusts up to 40 kt, increasing
+to 30 to 40 kt with gusts up to 45 kt this afternoon. Seas 11 to
+14 ft, building to 12 to 16 ft this afternoon. A slight chance of
+tstms this morning. Showers. A chance of tstms this afternoon. 
+.TONIGHT...E winds 40 to 45 kt with gusts up to 60 kt. Seas 15 to
+20 ft, building to 19 to 21 ft after midnight. Showers. A chance
+of tstms in the evening, then tstms likely after midnight. 
+.THU...S winds 35 to 45 kt with gusts up to 55 kt, becoming SW
+20 to 25 kt with gusts up to 30 kt in the afternoon. Seas 16 to
+21 ft, subsiding to 14 to 16 ft in the afternoon. Showers with a
+chance of tstms in the morning, then showers likely with a slight
+chance of tstms in the afternoon. 
+.THU NIGHT...SW winds 25 to 30 kt with gusts up to 35 kt. Seas
+13 to 15 ft. A chance of showers. 
+.FRI...SW winds 30 to 35 kt with gusts up to 40 kt. Seas 12 to
+14 ft. A slight chance of showers. 
+.FRI NIGHT...W winds 25 to 30 kt with gusts up to 35 kt. Seas
+10 to 14 ft, subsiding to 8 to 11 ft after midnight. 
+.SAT...W winds 20 to 25 kt, diminishing to 15 to 20 kt in the
+afternoon. Seas 6 to 9 ft, subsiding to 5 to 7 ft in the
+afternoon. 
+.SAT NIGHT...W winds 15 to 20 kt, diminishing to 10 to 15 kt
+after midnight. Seas 4 to 6 ft. 
+.SUN...W winds 5 to 10 kt, becoming SW 10 to 15 kt in the
+afternoon. Seas 3 to 4 ft. 
+.SUN NIGHT...SW winds 20 to 25 kt, increasing to 25 to 30 kt
+after midnight. Seas 3 to 4 ft, building to 4 to 6 ft after
+midnight. A chance of showers after midnight.  
+
+Winds and seas higher in and near tstms.
+
+$$
+
+AMZ186-252230-
+Waters from Ocracoke Inlet to Cape Lookout NC from 20 to 60 NM-
+417 AM EST Wed Nov 25 2026
+
+...STORM WARNING IN EFFECT FROM THIS EVENING THROUGH THURSDAY
+MORNING...
+
+.TODAY...E winds 30 to 35 kt. Gusts up to 40 kt, increasing to
+45 kt late. Seas 12 to 16 ft. A slight chance of tstms this
+morning. Showers. A chance of tstms this afternoon. 
+.TONIGHT...SE winds 35 to 45 kt with gusts up to 55 kt. Seas
+15 to 20 ft, building to 18 to 22 ft after midnight. Showers. A
+chance of tstms in the evening, then tstms likely after midnight.
+.THU...S winds 30 to 40 kt with gusts up to 45 kt, becoming SW
+25 to 30 kt in the afternoon. Seas 16 to 21 ft, subsiding to
+12 to 16 ft in the afternoon. Showers with a slight chance of
+tstms, mainly in the morning. 
+.THU NIGHT...SW winds 25 to 30 kt with gusts up to 35 kt. Seas
+12 to 15 ft. A chance of showers. 
+.FRI...SW winds 30 to 35 kt with gusts up to 40 kt. Seas 10 to
+14 ft. 
+.FRI NIGHT...W winds 25 to 30 kt with gusts up to 35 kt. Seas
+9 to 13 ft, subsiding to 7 to 10 ft after midnight. 
+.SAT...W winds 20 to 25 kt, diminishing to 15 to 20 kt in the
+afternoon. Seas 5 to 8 ft, subsiding to 4 to 6 ft in the
+afternoon. 
+.SAT NIGHT...W winds 10 to 15 kt. Seas 3 to 5 ft. 
+.SUN...W winds 5 to 10 kt, becoming SW 10 to 15 kt in the
+afternoon. Seas 3 to 4 ft. 
+.SUN NIGHT...SW winds 20 to 25 kt. Seas 3 to 5 ft. A chance of
+showers after midnight.  
+
+Winds and seas higher in and near tstms.
+
+$$
+
+AMZ188-252230-
+Waters from Cape Lookout to Surf City NC from 20 to 60 NM-
+417 AM EST Wed Nov 25 2026
+
+...STORM WARNING IN EFFECT FROM THIS EVENING THROUGH THURSDAY
+MORNING...
+
+.TODAY...E winds 30 to 35 kt with gusts up to 45 kt. Seas 12 to
+16 ft. Showers with a slight chance of tstms early this morning,
+then showers with a chance of tstms late this morning and
+afternoon. 
+.TONIGHT...SE winds 30 to 40 kt with gusts up to 50 kt. Seas
+15 to 20 ft. Showers with a chance of tstms. 
+.THU...SW winds 25 to 30 kt with gusts up to 40 kt. Seas 14 to
+19 ft, subsiding to 11 to 15 ft in the afternoon. Showers likely
+with a slight chance of tstms in the morning, then a slight
+chance of showers and tstms in the afternoon. 
+.THU NIGHT...SW winds 25 to 30 kt with gusts up to 35 kt. Seas
+10 to 14 ft. A slight chance of showers in the evening. 
+.FRI...W winds around 30 kt with gusts up to 40 kt. Seas 9 to
+13 ft. 
+.FRI NIGHT...W winds 25 to 30 kt, diminishing to 20 to 25 kt
+after midnight. Gusts up to 35 kt. Seas 8 to 11 ft, subsiding to
+6 to 9 ft after midnight. 
+.SAT...W winds 20 to 25 kt, diminishing to 10 to 15 kt in the
+afternoon. Seas 5 to 7 ft. 
+.SAT NIGHT...W winds 10 to 15 kt. Seas 3 to 5 ft. 
+.SUN...W winds 5 to 10 kt, becoming SW 10 to 15 kt in the
+afternoon. Seas 2 to 3 ft. 
+.SUN NIGHT...SW winds 20 to 25 kt. Seas 3 to 5 ft. A chance of
+showers after midnight.  
+
+Winds and seas higher in and near tstms.
+
+$$

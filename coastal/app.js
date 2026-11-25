@@ -10,6 +10,11 @@ function wall(d) {
   return new Date(new Date(d).toLocaleString("en-US", { timeZone: TZ }));
 }
 const fmtTime = (d) => d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+// "today 4:00 PM" / "Thu 4:00 PM", for wall-clock Dates from wall().
+const fmtWhen = (d) => {
+  const sameDay = d.toDateString() === wall(new Date()).toDateString();
+  return `${sameDay ? "today" : d.toLocaleDateString("en-US", { weekday: "short" })} ${fmtTime(d)}`;
+};
 
 // ===== Shared tooltip style =====
 const tooltipStyle = {
@@ -322,6 +327,7 @@ function renderWaterLevel(level, curve) {
     note.textContent = "";
     line.data = [];
     legend.hidden = true;
+    renderFloodStatus(null);
     return;
   }
   const off = level.offset;
@@ -342,6 +348,27 @@ function renderWaterLevel(level, curve) {
   legend.textContent =
     `Green line: the prediction shifted by the difference between observed and predicted water level at the ${level.source} gauge.`;
   legend.hidden = line.data.length === 0;
+
+  renderFloodStatus(level);
+}
+
+// The gauge's own reading against its NWS flood levels.
+function renderFloodStatus(level) {
+  const note = document.getElementById("tideFlood");
+  const f = level && level.flood;
+  if (!f || f.minor == null) {
+    note.textContent = "";
+    return;
+  }
+  const obs = level.observed;
+  const at = `${level.source} gauge ${obs.toFixed(1)} ft`;
+  let text;
+  if (f.major != null && obs >= f.major) text = `${at}: major flood level (${f.major.toFixed(1)} ft)`;
+  else if (f.moderate != null && obs >= f.moderate) text = `${at}: moderate flood level (${f.moderate.toFixed(1)} ft)`;
+  else if (obs >= f.minor) text = `${at}: above minor flood level (${f.minor.toFixed(1)} ft)`;
+  else text = `${at}, ${(f.minor - obs).toFixed(1)} ft below minor flood level`;
+  note.textContent = text;
+  note.classList.toggle("card__absolute--alert", obs >= f.minor - 0.5);
 }
 
 function renderTideSchedule(events) {
@@ -533,13 +560,36 @@ async function fetchMarine() {
     }
     const banner = document.getElementById("advisorySection");
     const body = document.getElementById("advisoryBody");
+    // Keep whichever alerts the user has opened across refreshes.
+    const openAlerts = new Set(
+      [...body.querySelectorAll("details[open]")].map((d) => d.dataset.event)
+    );
     body.replaceChildren();
+
+    // NWS alerts for the location itself (coastal flood, high surf, rip
+    // currents…) first: they're about where the reader is standing.
+    const alerts = data.alerts || [];
+    for (const a of alerts) {
+      const details = el("details", "advisory__alert");
+      details.dataset.event = a.event;
+      details.open = openAlerts.has(a.event);
+      const summary = el("summary", "advisory__row");
+      const name = el("strong", /Warning|Emergency/.test(a.event) ? "advisory__warning" : null, a.event);
+      const until = a.ends ? ` — until ${fmtWhen(wall(a.ends))}` : " — until further notice";
+      summary.append(name, el("span", "advisory__zone", until));
+      details.append(summary);
+      if (a.description) details.append(el("p", "advisory__text", a.description));
+      if (a.instruction) details.append(el("p", "advisory__text", a.instruction));
+      body.append(details);
+    }
+
     for (const [text, names] of advisories) {
       const row = el("p", "advisory__row");
-      row.append(el("strong", null, text), el("span", "advisory__zone", ` — ${names.join("; ")}`));
+      const cls = /WARNING/.test(text) ? "advisory__warning" : null;
+      row.append(el("strong", cls, text), el("span", "advisory__zone", ` — ${names.join("; ")}`));
       body.append(row);
     }
-    banner.hidden = advisories.size === 0;
+    banner.hidden = advisories.size === 0 && alerts.length === 0;
 
     const synopsis = document.getElementById("marineSynopsis");
     synopsis.textContent = data.synopsis || "";
@@ -596,7 +646,7 @@ async function fetchBlurb() {
         section.hidden = true;
         return;
       }
-      textEl.textContent = "Generating boating summary…";
+      textEl.textContent = "Generating summary…";
       metaEl.textContent = "";
       section.hidden = false;
       if (!blurbRetryTimer) {

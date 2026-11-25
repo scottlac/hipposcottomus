@@ -11,6 +11,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -83,6 +84,28 @@ type WaterLevel struct {
 	Time      string       `json:"time"`
 	Source    string       `json:"source"` // gauge name
 	Series    []LevelPoint `json:"series"` // last 12 hours
+	Flood     *FloodLevels `json:"flood,omitempty"`
+}
+
+// FloodLevels are a gauge's flood thresholds in ft above its MLLW, so they
+// compare directly with WaterLevel.Observed. A nil level is not defined for
+// the gauge.
+type FloodLevels struct {
+	Minor    *float64 `json:"minor,omitempty"`
+	Moderate *float64 `json:"moderate,omitempty"`
+	Major    *float64 `json:"major,omitempty"`
+}
+
+// NWSAlert is an active NWS watch, warning or advisory for the location's
+// point (Coastal Flood Advisory, High Surf Advisory, Rip Current Statement…).
+type NWSAlert struct {
+	Event       string `json:"event"`
+	Severity    string `json:"severity"`
+	Headline    string `json:"headline"`
+	Description string `json:"description"`
+	Instruction string `json:"instruction,omitempty"`
+	Onset       string `json:"onset,omitempty"` // RFC 3339
+	Ends        string `json:"ends,omitempty"`  // RFC 3339; "until further notice" when empty
 }
 
 // marineZoneConfig is one NWS marine zone shown on a dashboard.
@@ -106,6 +129,11 @@ type coastalLocation struct {
 	Name     string // "Key Biscayne"
 	Place    string // subtitle locality, e.g. "Biscayne Channel, FL"
 	OGBlurb  string // link-preview description
+
+	// Title and Icon head the page; empty means "<Name> Boating Dashboard"
+	// and an anchor.
+	Title string
+	Icon  string
 
 	// ── Data sources ──
 	Lat, Lon float64 // NWS forecast grid point and UV lookup (must be on land)
@@ -142,6 +170,8 @@ type coastalLocation struct {
 	waterTempSource string
 	wind            *WindObs
 	level           *WaterLevel
+	flood           *FloodLevels // thresholds at ObsStation; fetched once
+	alerts          []NWSAlert
 	forecast        []WeatherPeriod
 	hourly          []WeatherPeriod
 	uv              *UVData
@@ -220,6 +250,41 @@ var coastalLocations = []*coastalLocation{
 		},
 		About: `Key Largo, FL (Upper Keys, ocean side). Tide predictions are for Largo Sound, the enclosed sound inside John Pennekamp Coral Reef State Park that reaches the ocean through the narrow South Sound Creek and North Sound Creek. Tidal range inside the sound is very small — well under 1 ft — so tide height rarely matters for depth; what matters is the current in the creeks and timing. Water temperature is from Blackwater Sound on the bay side of the island, a shallow sound that runs a little warmer in summer and cooler after winter cold fronts than the reef. There is no live wind sensor nearby, so wind is forecast only. Boats here run out through the creeks into Hawk Channel and on to the reef (Molasses, Grecian Rocks, the Christ of the Abyss at Key Largo Dry Rocks) for diving, snorkeling and fishing. Three marine zones are given: Hawk Channel (ocean side, inside the reef, somewhat protected), the Straits of Florida (outside the reef, open water), and Florida Bay (the bay side: Barnes, Blackwater and Buttonwood Sounds — shallow, protected, reached from the ocean side through cuts such as Adams Cut and Jewfish Creek). Lead with the ocean side, since that is where most trips from Largo Sound go; mention the bay when it is the better option for the day, such as when the ocean side is rough. The forecast text covers a long stretch of the Keys; where it says "off the Upper Keys", that clause is the one that applies here. Dive and snorkel trips care most about seas at the reef and thunderstorms.`,
 	},
+	{
+		Key:      "northtopsail",
+		BasePath: "/northtopsail",
+		Name:     "North Topsail Beach",
+		Title:    "North Topsail Beach Dashboard",
+		Icon:     "🏖️",
+		Place:    "Topsail Island, NC",
+		OGBlurb:  "Tides, observed water level against flood levels, NWS coastal alerts, water temperature, wind, and the marine forecast for North Topsail Beach, NC.",
+		Lat:      34.4896, Lon: -77.4325,
+		TideStation:     "8657419",
+		TideStationName: "Ocean City Beach fishing pier",
+		ObsStation:      "8658163",
+		ObsStationName:  "Wrightsville Beach",
+		MarineProduct:   "FZUS52.KMHX",
+		MarineSynopsis:  "AMZ100",
+		MarineZones: []marineZoneConfig{
+			{Zone: "AMZ158", Name: "Atlantic — Cape Lookout to Surf City, out 20 NM"},
+		},
+		About: `North Topsail Beach, NC: the town on the northern part of Topsail Island, a narrow barrier island in Onslow County. The ocean beach faces southeast onto Onslow Bay; New River Inlet is at the north end of the island, with Topsail Sound and the Intracoastal Waterway behind it. Most people reading this dashboard are staying on the island: walking the beach, surf fishing from the beach and the piers, surfing, and swimming in season; some run boats out of New River Inlet. Tide predictions are for the Ocean City Beach fishing pier on the ocean front at the southern end of town; at that pier the average high tide is about 4.3 ft and the average low about 0.2 ft above MLLW. There is no gauge on the island: observed water level, water temperature and live wind come from the Wrightsville Beach station on the ocean about 28 miles southwest, so treat them as indicative rather than exact here. Onshore northeast to east winds and coastal storms push water up on this coast; a high tide running well above predictions here means a narrow or vanished beach at high tide, waves reaching the dunes, ocean overwash, and flooding of low spots along the island's main road and the sound side. For this location, put any coastal flood, high surf, rip current or storm alert first, and say what it means for someone on the beach or driving the island, not just for boats.`,
+	},
+}
+
+// title is the page heading.
+func (loc *coastalLocation) title() string {
+	if loc.Title != "" {
+		return loc.Title
+	}
+	return loc.Name + " Boating Dashboard"
+}
+
+func (loc *coastalLocation) icon() string {
+	if loc.Icon != "" {
+		return loc.Icon
+	}
+	return "⚓"
 }
 
 // trackLabel returns the analytics source label for one kind of fetch.
@@ -552,8 +617,26 @@ func (loc *coastalLocation) updateObservations() {
 		loc.logf("wind observation error: %v", werr)
 	}
 
+	loc.mu.RLock()
+	flood := loc.flood
+	loc.mu.RUnlock()
+	if flood == nil {
+		var ferr error
+		flood, ferr = fetchFloodLevels(loc.ObsStation)
+		if ferr != nil {
+			loc.logf("flood levels error: %v", ferr) // retried next poll
+		} else {
+			loc.mu.Lock()
+			loc.flood = flood
+			loc.mu.Unlock()
+		}
+	}
+
 	level, lerr := fetchWaterLevel(loc.ObsStation, loc.ObsStationName)
 	TrackAPICall(loc.trackLabel("NOAA-WaterLevel"), lerr)
+	if level != nil && flood != nil && (flood.Minor != nil || flood.Moderate != nil || flood.Major != nil) {
+		level.Flood = flood
+	}
 	loc.mu.Lock()
 	loc.level = level // nil on error, as with wind
 	loc.mu.Unlock()
@@ -636,6 +719,178 @@ func fetchWaterLevel(station, name string) (*WaterLevel, error) {
 		}
 	}
 	return wl, nil
+}
+
+// fetchFloodLevels returns a gauge's NWS flood thresholds (falling back to
+// NOAA's where NWS defines none), converted from the station datum the API
+// reports them in to ft above MLLW.
+func fetchFloodLevels(station string) (*FloodLevels, error) {
+	// The response also carries non-numeric fields ("self"), so decode the
+	// thresholds by name.
+	var levels struct {
+		NWSMinor    *float64 `json:"nws_minor"`
+		NWSModerate *float64 `json:"nws_moderate"`
+		NWSMajor    *float64 `json:"nws_major"`
+		NOSMinor    *float64 `json:"nos_minor"`
+		NOSModerate *float64 `json:"nos_moderate"`
+		NOSMajor    *float64 `json:"nos_major"`
+	}
+	url := fmt.Sprintf("https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/%s/floodlevels.json?units=english", station)
+	if err := coastalGetJSON(url, &levels); err != nil {
+		return nil, err
+	}
+	raw := map[string]*float64{
+		"nws_minor": levels.NWSMinor, "nws_moderate": levels.NWSModerate, "nws_major": levels.NWSMajor,
+		"nos_minor": levels.NOSMinor, "nos_moderate": levels.NOSModerate, "nos_major": levels.NOSMajor,
+	}
+	var datums struct {
+		Datums []stationDatum `json:"datums"`
+	}
+	url = fmt.Sprintf("https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/%s/datums.json?units=english", station)
+	if err := coastalGetJSON(url, &datums); err != nil {
+		return nil, err
+	}
+	return floodLevelsMLLW(raw, datums.Datums)
+}
+
+// stationDatum is one entry of a CO-OPS station's datums list.
+type stationDatum struct {
+	Name  string   `json:"name"`
+	Value *float64 `json:"value"`
+}
+
+// floodLevelsMLLW converts floodlevels.json values (station datum) to ft
+// above MLLW.
+func floodLevelsMLLW(raw map[string]*float64, datums []stationDatum) (*FloodLevels, error) {
+	var mllw *float64
+	for _, d := range datums {
+		if d.Name == "MLLW" {
+			mllw = d.Value
+		}
+	}
+	if mllw == nil {
+		return nil, fmt.Errorf("station has no MLLW datum")
+	}
+	pick := func(level string) *float64 {
+		for _, src := range []string{"nws_", "nos_"} {
+			if v := raw[src+level]; v != nil {
+				x := math.Round((*v-*mllw)*100) / 100
+				return &x
+			}
+		}
+		return nil
+	}
+	fl := &FloodLevels{Minor: pick("minor"), Moderate: pick("moderate"), Major: pick("major")}
+	if fl.Minor == nil && fl.Moderate == nil && fl.Major == nil {
+		return &FloodLevels{}, nil // defined for no level: remember that, don't refetch
+	}
+	return fl, nil
+}
+
+// alertsResponse is the part of api.weather.gov/alerts/active we read.
+type alertsResponse struct {
+	Features []struct {
+		Properties struct {
+			Event       string `json:"event"`
+			Severity    string `json:"severity"`
+			Status      string `json:"status"`
+			Headline    string `json:"headline"`
+			Description string `json:"description"`
+			Instruction string `json:"instruction"`
+			Onset       string `json:"onset"`
+			Ends        string `json:"ends"`
+			Expires     string `json:"expires"`
+		} `json:"properties"`
+	} `json:"features"`
+}
+
+// fetchAlerts returns the NWS alerts in effect at a point.
+func fetchAlerts(lat, lon float64) ([]NWSAlert, error) {
+	var resp alertsResponse
+	url := fmt.Sprintf("https://api.weather.gov/alerts/active?point=%.4f,%.4f", lat, lon)
+	if err := coastalGetJSON(url, &resp); err != nil {
+		return nil, err
+	}
+	return resp.alerts(), nil
+}
+
+// alerts keeps the real (not test or exercise) alerts, one per event: an
+// update reissues the same event, and the API lists the newest first.
+func (resp alertsResponse) alerts() []NWSAlert {
+	alerts := []NWSAlert{}
+	seen := map[string]bool{}
+	defer func() {
+		// Alerts about the water's edge first; the rest (wind, rain, heat…)
+		// after, each group in the API's order.
+		sort.SliceStable(alerts, func(i, j int) bool {
+			return isCoastalAlert(alerts[i].Event) && !isCoastalAlert(alerts[j].Event)
+		})
+	}()
+	for _, f := range resp.Features {
+		p := f.Properties
+		if p.Status != "Actual" || p.Event == "" || seen[p.Event] {
+			continue
+		}
+		seen[p.Event] = true
+		ends := p.Ends
+		if ends == "" {
+			ends = p.Expires
+		}
+		alerts = append(alerts, NWSAlert{
+			Event:       p.Event,
+			Severity:    p.Severity,
+			Headline:    p.Headline,
+			Description: tidyAlertText(p.Description),
+			Instruction: tidyAlertText(p.Instruction),
+			Onset:       p.Onset,
+			Ends:        ends,
+		})
+	}
+	return alerts
+}
+
+// isCoastalAlert reports whether an NWS event is about the coast or the
+// water: coastal flooding, surf, rip currents, storm surge, tropical systems,
+// marine and beach hazards.
+func isCoastalAlert(event string) bool {
+	e := strings.ToLower(event)
+	for _, k := range []string{"coastal", "surf", "rip current", "storm surge", "hurricane", "tropical", "marine", "beach", "tsunami", "lakeshore"} {
+		if strings.Contains(e, k) {
+			return true
+		}
+	}
+	return false
+}
+
+// tidyAlertText unwraps the NWS's fixed-width lines while keeping paragraph
+// breaks.
+func tidyAlertText(s string) string {
+	var paras []string
+	for _, p := range strings.Split(strings.ReplaceAll(s, "\r", ""), "\n\n") {
+		if t := strings.TrimSpace(marineSpaceRe.ReplaceAllString(p, " ")); t != "" {
+			paras = append(paras, t)
+		}
+	}
+	return strings.Join(paras, "\n\n")
+}
+
+func (loc *coastalLocation) updateAlerts() {
+	alerts, err := fetchAlerts(loc.Lat, loc.Lon)
+	TrackAPICall(loc.trackLabel("NWS-Alerts"), err)
+	if err != nil {
+		loc.logf("alerts error: %v", err) // keep the last list rather than blank it
+		return
+	}
+	loc.mu.Lock()
+	loc.alerts = alerts
+	loc.mu.Unlock()
+	if len(alerts) > 0 {
+		names := make([]string, len(alerts))
+		for i, a := range alerts {
+			names[i] = a.Event
+		}
+		loc.logf("active alerts: %s", strings.Join(names, ", "))
+	}
 }
 
 func (loc *coastalLocation) fetchWind() (*WindObs, error) {
@@ -838,6 +1093,7 @@ func coastalGetJSON(url string, out any) error {
 
 func (loc *coastalLocation) updateAll() {
 	loc.updateTides()
+	loc.updateAlerts()
 	loc.updateObservations()
 	loc.updateWeather()
 	loc.updateMarine()
@@ -896,10 +1152,14 @@ func (loc *coastalLocation) handleMarine(w http.ResponseWriter, r *http.Request)
 	resp := struct {
 		Zones    []marineZoneData `json:"zones"`
 		Synopsis string           `json:"synopsis,omitempty"`
-	}{loc.marine, loc.marineSynopsis}
+		Alerts   []NWSAlert       `json:"alerts"`
+	}{loc.marine, loc.marineSynopsis, loc.alerts}
 	loc.mu.RUnlock()
 	if resp.Zones == nil {
 		resp.Zones = []marineZoneData{}
+	}
+	if resp.Alerts == nil {
+		resp.Alerts = []NWSAlert{}
 	}
 	writeJSON(w, resp)
 }
@@ -920,6 +1180,7 @@ func (loc *coastalLocation) renderIndex(tmpl *template.Template) ([]byte, error)
 	}
 	marineURL := fmt.Sprintf(ndbcForecastURLFmt, loc.MarineProduct)
 	data := struct {
+		Title, Icon                            string
 		Name, Place, BasePath, OGBlurb         string
 		TideStation, TideStationName           string
 		MarineProduct, MarineURL               string
@@ -927,6 +1188,7 @@ func (loc *coastalLocation) renderIndex(tmpl *template.Template) ([]byte, error)
 		BuoyStation, BuoyStationName, BlurbTag string
 		Others                                 []link
 	}{
+		Title: loc.title(), Icon: loc.icon(),
 		Name: loc.Name, Place: loc.Place, BasePath: loc.BasePath, OGBlurb: loc.OGBlurb,
 		TideStation: loc.TideStation, TideStationName: loc.TideStationName,
 		MarineProduct: loc.MarineProduct, MarineURL: marineURL,
